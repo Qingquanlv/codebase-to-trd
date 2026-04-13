@@ -566,6 +566,14 @@ Agent 生成最终报告时使用此模板。将所有分析内容填入对应�
   .file-link:hover { color:#1d4ed8 !important; }
   .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
   .term-link:hover { color:#6d28d9; }
+  /* ─── Panel nav / pin buttons ─────────────────────────────────────────── */
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
 </style>
 </head>
 <body>
@@ -998,9 +1006,12 @@ sequenceDiagram
 <div class="code-panel" id="codePanel">
   <div class="panel-resize-grip" id="panelResizeGrip"></div>
   <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
     <span class="code-panel-path" id="codePanelPath"></span>
     <span class="code-panel-badge" id="codePanelBadge"></span>
     <a id="panelGhLink" class="panel-gh-link" href="#" target="_blank" rel="noopener" style="display:none">⤢ 在浏览器中打开</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
     <button class="code-panel-close" id="codePanelClose" title="关闭 (Esc)">×</button>
   </div>
   <div id="iframePanelBody">
@@ -1111,24 +1122,72 @@ sequenceDiagram
   const iframeEl     = document.getElementById('githubIframe');
   const termBody     = document.getElementById('termPanelBody');
   const resizeGrip   = document.getElementById('panelResizeGrip');
+  const navBack      = document.getElementById('panelNavBack');
+  const navFwd       = document.getElementById('panelNavFwd');
+  const pinBtn       = document.getElementById('panelPin');
+
+  // ── Navigation history ──────────────────────────────────────────────────
+  const navHistory = [];
+  let navIndex = -1;
+  function updateNavBtns() {
+    navBack.disabled = navIndex <= 0;
+    navFwd.disabled  = navIndex >= navHistory.length - 1;
+  }
+  function pushNav(entry) {
+    navHistory.splice(navIndex + 1);
+    navHistory.push(entry);
+    navIndex = navHistory.length - 1;
+    updateNavBtns();
+  }
+  navBack.addEventListener('click', () => {
+    if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  navFwd.addEventListener('click', () => {
+    if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  function _loadEntry(e) {
+    if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanel(e.key);
+  }
+
+  // ── Pin state ───────────────────────────────────────────────────────────
+  let pinned = false;
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    pinBtn.title = pinned ? '取消固定' : '固定面板';
+    panel.classList.toggle('pinned', pinned);
+    if (pinned) {
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    } else if (panel.classList.contains('open')) {
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
 
   // ── Panel open / close ───────────────────────────────────────────────────
   function openPanel() {
     panel.classList.add('open');
-    backdrop.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    if (!pinned) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
   }
-  function closePanel() {
+  function _doClose() {
     panel.classList.remove('open');
     backdrop.classList.remove('open');
     document.body.style.overflow = '';
     if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
     iframeBody.style.display = 'none';
     termBody.style.display   = 'none';
+    navHistory.length = 0; navIndex = -1; updateNavBtns();
   }
-  closeBtn.addEventListener('click', closePanel);
+  function closePanel() { if (!pinned) _doClose(); }
+  function forceClose()  {
+    pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板';
+    panel.classList.remove('pinned'); _doClose();
+  }
+  closeBtn.addEventListener('click', forceClose);
   backdrop.addEventListener('click', closePanel);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
 
   // ── Resize (drag left edge) ───────────────────────────────────────────────
   // Overlay prevents the iframe from swallowing mousemove/mouseup during drag
@@ -1160,7 +1219,7 @@ sequenceDiagram
   });
 
   // ── Open github1s iframe ─────────────────────────────────────────────────
-  function openGitHubPanel(ghPath, label) {
+  function _openGitHubPanel(ghPath, label) {
     panel.dataset.type   = 'github';
     pathEl.textContent   = label || ghPath;
     badgeEl.textContent  = 'github1s';
@@ -1193,6 +1252,10 @@ sequenceDiagram
       iframeEl.src = GH1S_BASE + '/blob/' + GH_BRANCH + '/' + ghPath;
     }, 60);
   }
+  function openGitHubPanel(ghPath, label) {
+    pushNav({ type: 'github', path: ghPath, label: label || ghPath });
+    _openGitHubPanel(ghPath, label);
+  }
 
   // ── Term panel ───────────────────────────────────────────────────────────
   function renderTermHTML(key) {
@@ -1209,8 +1272,7 @@ sequenceDiagram
       (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
       (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
   }
-  function openTermPanel(key) {
-    if (!PROJECT_TERMS[key]) return;
+  function _openTermPanel(key) {
     panel.dataset.type   = 'term';
     pathEl.textContent   = key;
     badgeEl.textContent  = '术语解释';
@@ -1223,6 +1285,11 @@ sequenceDiagram
     termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
       btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
     openPanel();
+  }
+  function openTermPanel(key) {
+    if (!PROJECT_TERMS[key]) return;
+    pushNav({ type: 'term', key });
+    _openTermPanel(key);
   }
 
   // ── Unified click handler ────────────────────────────────────────────────

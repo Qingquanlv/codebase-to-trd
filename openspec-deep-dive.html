@@ -317,6 +317,14 @@
     .fit-grid, .eval-grid { grid-template-columns: 1fr; }
     .code-panel { width: 100vw; }
   }
+  /* ─── Panel nav / pin buttons ─────────────────────────────────────────── */
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
 </style>
 </head>
 <body>
@@ -1053,9 +1061,12 @@ sequenceDiagram
 <div class="code-panel" id="codePanel">
   <div class="panel-resize-grip" id="panelResizeGrip"></div>
   <div class="panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
     <span class="panel-badge" id="panelBadge">FILE</span>
     <span class="panel-title" id="panelTitle"></span>
     <a id="panelGhLink" href="#" target="_blank" rel="noopener" style="display:none">在新标签页中打开 ↗</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
     <button class="panel-close" id="panelClose">✕</button>
   </div>
   <div id="iframePanelBody">
@@ -1231,12 +1242,55 @@ const iframeBody = document.getElementById('iframePanelBody');
 const termBody   = document.getElementById('termPanelBody');
 const iframeEl   = document.getElementById('panelIframe');
 const loading    = document.getElementById('iframeLoading');
+const navBack    = document.getElementById('panelNavBack');
+const navFwd     = document.getElementById('panelNavFwd');
+const pinBtn     = document.getElementById('panelPin');
+
+// ── Navigation history ────────────────────────────────────────────────────────
+const navHistory = [];
+let navIndex = -1;
+function updateNavBtns() {
+  navBack.disabled = navIndex <= 0;
+  navFwd.disabled  = navIndex >= navHistory.length - 1;
+}
+function pushNav(entry) {
+  navHistory.splice(navIndex + 1);
+  navHistory.push(entry);
+  navIndex = navHistory.length - 1;
+  updateNavBtns();
+}
+navBack.addEventListener('click', () => {
+  if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+});
+navFwd.addEventListener('click', () => {
+  if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+});
+function _loadEntry(e) {
+  if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+  else if (e.type === 'term') _openTermPanel(e.key);
+}
+
+// ── Pin state ─────────────────────────────────────────────────────────────────
+let pinned = false;
+pinBtn.addEventListener('click', () => {
+  pinned = !pinned;
+  pinBtn.classList.toggle('active', pinned);
+  pinBtn.title = pinned ? '取消固定' : '固定面板';
+  panel.classList.toggle('pinned', pinned);
+  if (pinned) {
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  } else if (panel.classList.contains('open')) {
+    backdrop.classList.add('open');
+  }
+});
 
 function openPanel() {
   backdrop.classList.add('open');
   panel.classList.add('open');
+  if (pinned) backdrop.classList.remove('open');
 }
-function closePanel() {
+function _doClose() {
   backdrop.classList.remove('open');
   panel.classList.remove('open');
   iframeBody.classList.remove('visible');
@@ -1244,10 +1298,17 @@ function closePanel() {
   if (iframeEl) { iframeEl.src = 'about:blank'; }
   if (loading) loading.style.display = 'flex';
   if (ghLink) ghLink.style.display = 'none';
+  navHistory.length = 0; navIndex = -1; updateNavBtns();
+}
+function closePanel() { if (!pinned) _doClose(); }
+function forceClose()  {
+  pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板';
+  panel.classList.remove('pinned'); _doClose();
 }
 
-closeBtn.addEventListener('click', closePanel);
+closeBtn.addEventListener('click', forceClose);
 backdrop.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
 
 // ── Resize Logic ─────────────────────────────────────────────────────────────
 const resizeGrip = document.getElementById('panelResizeGrip');
@@ -1277,7 +1338,7 @@ document.addEventListener('mouseup', () => {
 });
 
 // ── GitHub iframe Panel ───────────────────────────────────────────────────────
-function openGitHubPanel(filePath, label) {
+function _openGitHubPanel(filePath, label) {
   const url = `https://github1s.com/${GH_REPO}/blob/${GH_BRANCH}/${filePath}`;
   badge.textContent = 'FILE';
   badge.style.background = '#dbeafe';
@@ -1307,6 +1368,10 @@ function openGitHubPanel(filePath, label) {
   }, 10000);
   iframeEl.src = url;
 }
+function openGitHubPanel(filePath, label) {
+  pushNav({ type: 'github', path: filePath, label: label || filePath });
+  _openGitHubPanel(filePath, label);
+}
 
 // ── Term Panel ───────────────────────────────────────────────────────────────
 function renderTermHTML(key) {
@@ -1326,8 +1391,7 @@ function renderTermHTML(key) {
   `;
 }
 
-function openTermPanel(key) {
-  if (!PROJECT_TERMS[key]) return;
+function _openTermPanel(key) {
   badge.textContent = 'TERM';
   badge.style.background = '#ede9fe';
   badge.style.color = '#7c3aed';
@@ -1336,12 +1400,21 @@ function openTermPanel(key) {
   iframeBody.classList.remove('visible');
   termBody.classList.add('visible');
   termBody.innerHTML = renderTermHTML(key);
+  termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+    btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+  termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+    btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
   openPanel();
+}
+function openTermPanel(key) {
+  if (!PROJECT_TERMS[key]) return;
+  pushNav({ type: 'term', key });
+  _openTermPanel(key);
 }
 
 // ── Unified click handler ─────────────────────────────────────────────────────
 document.addEventListener('click', e => {
-  const fileEl = e.target.closest('[data-file]');
+  const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
   const termEl = e.target.closest('.term-link[data-term]');
   if (fileEl) {
     e.preventDefault();
