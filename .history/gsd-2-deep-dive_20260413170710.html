@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSD 2 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+  }
+  .toc h3 { font-size: 14px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Main Content --- */
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; }
+
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+
+  /* --- Core Conclusions Box --- */
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+
+  /* --- Section Headings --- */
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+
+  /* --- Body Text --- */
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Module Card --- */
+  .module-card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; }
+  .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); }
+
+  /* --- Diagram Container --- */
+  .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
+  .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+
+  /* --- Evaluation Grid --- */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card h4 { font-size: 16px; margin-bottom: 12px; }
+  .eval-card.strength { background: #f0fdf4; border-color: #86efac; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness { background: #fff7ed; border-color: #fdba74; }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  /* --- Code Blocks --- */
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+
+  /* --- Command Flow Block --- */
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+
+  /* --- Usage Mode Cards --- */
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 20px 0; }
+  .usage-card { padding: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .usage-card .usage-title { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .usage-card .usage-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .usage-card .usage-label { color: var(--text-secondary); min-width: 52px; font-weight: 500; }
+  .usage-card .usage-value { color: var(--text); }
+
+  /* --- Fit/Unfit Section --- */
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .fit-card { padding: 20px; border-radius: 12px; }
+  .fit-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .fit-card.fit { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit-card.fit h4 { color: var(--success); }
+  .fit-card.unfit { background: #fff7ed; border: 1px solid #fdba74; }
+  .fit-card.unfit h4 { color: var(--warning); }
+
+  /* --- Timeline --- */
+  .timeline { margin: 20px 0; }
+  .timeline-step { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .timeline-step:last-child { border-bottom: none; }
+  .step-title { font-weight: 600; font-size: 14px; min-width: 220px; color: var(--accent); }
+  .step-desc { font-size: 14px; color: var(--text-secondary); }
+
+  /* --- Directory Table --- */
+  .dir-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 14px; }
+  .dir-table th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 220px; }
+
+  /* --- Directory Group Rationale --- */
+  .dir-rationale { font-size: 13px !important; color: var(--text-secondary) !important; font-style: italic; margin: 4px 0 8px !important; padding: 8px 12px; background: var(--bg-alt); border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; }
+
+  /* --- Directory Tree --- */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root   { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir    { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry  { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file   { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+
+  /* --- Cast of Characters Table --- */
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #ffffff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:nth-child(2) code { font-size: 12px; color: #c7254e; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .fit-grid { grid-template-columns: 1fr; }
+    .usage-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar TOC -->
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 磁盘驱动状态机</a>
+  <a href="#section-2-2" class="toc-h3">2.2 每单元新鲜会话</a>
+  <a href="#section-2-3" class="toc-h3">2.3 竞品横向对比</a>
+  <a href="#section-3" class="toc-h2">3 使用方式与执行链路</a>
+  <a href="#section-3-1" class="toc-h3">3.1 适合解决什么问题</a>
+  <a href="#section-3-2" class="toc-h3">3.2 最小可运行路径</a>
+  <a href="#section-3-3" class="toc-h3">3.3 核心使用模式</a>
+  <a href="#section-3-4" class="toc-h3">3.4 完整链路示例</a>
+  <a href="#section-4" class="toc-h2">4 系统详细设计</a>
+  <a href="#section-4-1" class="toc-h3">4.1 系统架构设计</a>
+  <a href="#section-4-1-1" class="toc-h4">4.1.1 架构图</a>
+  <a href="#section-4-1-2" class="toc-h4">4.1.2 目录与核心文件</a>
+  <a href="#section-4-2" class="toc-h3">4.2 关键模块实现细节</a>
+  <a href="#section-4-2-1" class="toc-h4">4.2.1 声明式调度管道</a>
+  <a href="#section-4-2-2" class="toc-h4">4.2.2 复杂度分级器</a>
+  <a href="#section-4-2-3" class="toc-h4">4.2.3 崩溃恢复机制</a>
+  <a href="#section-4-2-4" class="toc-h4">4.2.4 分层上下文注入</a>
+  <a href="#section-5" class="toc-h2">5 方案评价</a>
+  <a href="#section-5-1" class="toc-h3">5.1 优势分析</a>
+  <a href="#section-5-2" class="toc-h3">5.2 局限分析</a>
+</nav>
+
+<!-- Main Content -->
+<main class="content">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>GSD 2 深度解读</h1>
+    <div class="subtitle">基于磁盘状态机的自主编程 Agent — TypeScript + Pi SDK</div>
+    <div class="lead">GSD（Get Shit Done）2 是一个运行在终端里的自主编程 Agent，它的核心创新是把整个开发工作流的状态存在磁盘文件而非内存中，从而实现了崩溃恢复、多终端协同和无限长任务执行。读完本文，你将理解它与其他 AI 编程工具的本质差异、如何在项目中落地使用，以及那些让它"聪明"的关键工程决策。</div>
+  </header>
+
+  <!-- Core Conclusions -->
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>磁盘即状态机</strong> — 所有工作流进度存在 <code>.gsd/</code> 目录，进程崩溃后从磁盘恢复，而不是重头开始</li>
+      <li><strong>每单元独立上下文</strong> — 每个子任务（plan / execute / verify）都在全新的 200k token 窗口执行，彻底消除上下文污染</li>
+      <li><strong>声明式调度取代条件分支</strong> — 用规则表（dispatch table）替换 130 行 if-else，"下一步做什么"变得可测试、可扩展</li>
+      <li><strong>亚毫秒复杂度分级驱动模型路由</strong> — 纯启发式算法在调用 LLM 前判断任务难度，动态分配 Opus / Sonnet / Haiku，平衡质量与成本</li>
+      <li><strong>Rust N-API 加速关键路径</strong> — grep / glob / AST 解析 / git 操作通过 N-API 调用 Rust，绕过 Node.js I/O 瓶颈</li>
+    </ul>
+  </div>
+
+  <!-- Section 1: 摘要 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>随着 LLM 能力提升，"让 AI 写代码"从聊天补全演进为自主 Agent。但现有工具面临两个根本性问题：一是<strong>上下文污染</strong>——长任务中历史对话越积越多，模型注意力被稀释，代码质量在几十轮后急剧下滑；二是<strong>状态易失</strong>——所有进度存在内存中，一次网络中断或进程崩溃就意味着一切重来。GSD 2 针对这两个痛点做了系统性设计。</p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+
+  <h4 id="section-1-2-1">1.2.1 预期一：长任务持续推进能力</h4>
+  <p>传统对话型 AI 工具的有效窗口通常在几十轮内。GSD 的目标是让 Agent 能稳定推进"新增功能模块"这类需要多天工作量的任务，关键实现是：把一个大需求拆解为 Milestone → Slice → Task 三层结构，每个最小单元（Unit）都在独立的全新 LLM 会话中执行，完成后结果写回磁盘，下个单元读磁盘而非历史对话获取上下文。</p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：进程级可靠性</h4>
+  <p>GSD 的 auto 模式可能持续运行数小时。通过锁文件（crash-recovery）+ JSONL 取证（session-forensics）+ OS 互斥锁（session-lock）三层保护，即使 Node.js 进程崩溃，下次启动时也能精确定位到崩溃位置并提示用户是否继续。</p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：成本感知的自适应质量</h4>
+  <p>项目内置了一套无需 LLM 调用的复杂度分级器：在调度每个 Unit 前，通过任务元数据启发式地判断 light / standard / heavy，并结合当前 budget 使用率和历史失败率动态调整分配的模型。目标是在预算耗尽前优先完成更多工作，而不是用最贵的模型处理所有任务。</p>
+
+  <!-- Section 2: 设计理念 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 磁盘驱动状态机（Disk-Driven State Machine）</h3>
+  <p>GSD 最根本的设计选择：<strong>所有工作流状态不存在内存里，只存在磁盘上</strong>。<code>.gsd/</code> 目录下的 Markdown 文件（ROADMAP / SLICE / TASK / SUMMARY）加上 SQLite 数据库就是整个系统的唯一真相来源。</p>
+  <p>这个选择带来了一系列连锁收益：进程可以随时崩溃然后重启；用户可以同时在多个终端查看状态；Git worktree 隔离每个 Milestone 的开发分支；而且整个状态是人类可读的 Markdown，用户随时可以手动编辑干预。代价是磁盘 I/O 变成热路径，这也是引入 Rust 原生引擎的直接原因。</p>
+
+  <h3 id="section-2-2">2.2 每单元新鲜会话（Fresh Session Per Unit）</h3>
+  <p>对话型 AI 工具的通病是"历史越长，质量越差"。GSD 的解法是彻底的：<strong>每个 Unit（Task / Slice / Milestone 级别）都在一个全新的 LLM 会话（新的 context window）里执行</strong>。上一个 Unit 的输出不是通过对话历史传递，而是写成 SUMMARY 文件，下一个 Unit 的 Prompt 里按需 inline 这个文件的内容。</p>
+  <p>这种设计的精妙之处在于"按需"两字——<code>auto-prompts.ts</code> 里有一套分层上下文注入机制，根据 <code>inline_level</code>（full / references / compressed）和当前 context budget 决定把多少历史内容塞进 Prompt，而不是无脑全部 inline。</p>
+
+  <h3 id="section-2-3">2.3 声明式架构理念（竞品横向对比）</h3>
+  <p>GSD 在多个核心模块都选择了声明式（declarative）而非命令式（imperative）的设计：dispatch table 替代 if-else 链、规则化的 TTSR guardrails、schema 驱动的状态类型。这反映了一个设计判断：可观察性和可测试性比"快速写完"更重要。</p>
+  <p>与同类工具的横向对比：</p>
+  <table>
+    <thead>
+      <tr><th>工具</th><th>核心定位</th><th>优势</th><th>劣势</th><th>适合谁</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>GSD 2</strong></td>
+        <td>磁盘状态机驱动的多步自主 Agent</td>
+        <td>崩溃恢复、无限长任务、成本感知路由、Git worktree 隔离</td>
+        <td>初始设置复杂、Milestone 拆解需学习成本、依赖闭源 Pi SDK</td>
+        <td>需要长期持续推进复杂功能的独立开发者 / 小团队</td>
+      </tr>
+      <tr>
+        <td><strong>Claude Code</strong></td>
+        <td>交互式 AI 编程助手（Anthropic 官方）</td>
+        <td>与 Claude 模型深度整合、交互体验流畅、工具调用能力强</td>
+        <td>无持久状态、长任务上下文污染、无自主调度</td>
+        <td>实时交互式编程、快速原型、调试</td>
+      </tr>
+      <tr>
+        <td><strong>Aider</strong></td>
+        <td>Git-native 的 AI 代码编辑器</td>
+        <td>与 Git 工作流天然结合、支持多种模型、轻量易用</td>
+        <td>无任务分解、无自主循环、依赖人工驱动每一步</td>
+        <td>需要精确控制每次 commit 的开发者</td>
+      </tr>
+      <tr>
+        <td><strong>OpenHands</strong></td>
+        <td>基于 Docker 沙箱的自主软件工程 Agent</td>
+        <td>完全隔离的执行环境、支持浏览器操作、开源</td>
+        <td>运行重、无跨会话持久状态、速度慢</td>
+        <td>需要安全沙箱环境的企业级场景</td>
+      </tr>
+      <tr>
+        <td><strong>Gemini CLI</strong></td>
+        <td>Google 生态 AI 命令行工具</td>
+        <td>超大 context window（1M token）、免费额度高</td>
+        <td>生态初期、无任务管理系统、无持久状态</td>
+        <td>需要处理超大代码库的单次分析任务</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>GSD 的核心赢面</strong>：在"无人值守长期推进复杂需求"这个场景无对手；<strong>输面</strong>：日常快问快答和小修改场景下，启动一个 Milestone 太重，不如 Claude Code 直接。</p>
+
+  <!-- Section 3: 使用方式与执行链路 -->
+  <h2 id="section-3">3 项目使用方式与执行链路</h2>
+
+  <h3 id="section-3-1">3.1 当前适合解决什么问题</h3>
+
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✅ 适合的任务类型</h4>
+      <ul>
+        <li><strong>中大型功能开发</strong> — 如"新增用户权限系统"，需要设计、实现、测试多个步骤</li>
+        <li><strong>无人值守批量推进</strong> — 可以挂在后台运行，完成一个 Slice 后自动继续</li>
+        <li><strong>需要干净 Git 历史的场景</strong> — 每个 Milestone 一个独立分支，squash-merge 保持主分支整洁</li>
+        <li><strong>跨终端协同</strong> — 磁盘状态可跨终端查看，多人项目可共享 <code>.gsd/</code> 目录状态</li>
+        <li><strong>高可靠性要求的自动化场景</strong> — CI/CD headless 模式、定时任务驱动的自动维护</li>
+      </ul>
+    </div>
+    <div class="fit-card unfit">
+      <h4>⚠️ 不太适合的任务类型</h4>
+      <ul>
+        <li><strong>五分钟内的小修改</strong> — 创建 Milestone 的开销大于任务本身</li>
+        <li><strong>完全开放式的探索性研究</strong> — GSD 需要明确的目标和可验证的完成标准</li>
+        <li><strong>纯设计 / 头脑风暴</strong> — 需要人机高频交互的创意过程不适合自主循环</li>
+        <li><strong>需要即时视觉反馈的前端调试</strong> — 当前版本对 UI 像素级调整的理解有限</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="section-3-2">3.2 最小可运行路径</h3>
+  <p>从零开始，用 GSD 完成第一个自主任务只需 5 步：</p>
+
+  <div class="cmd-flow">
+    <div class="cmd-comment"># 第一步：安装</div>
+    <div class="cmd-line">npm install -g gsd-pi</div>
+    <div class="cmd-comment"># 第二步：进入你的项目目录，首次运行会触发 onboarding（配置 LLM API Key）</div>
+    <div class="cmd-line">cd my-project && gsd</div>
+    <div class="cmd-comment"># 第三步：创建一个 Milestone（描述你的目标）</div>
+    <div class="cmd-line">/gsd discuss "为用户登录接口添加失败次数限制功能"</div>
+    <div class="cmd-comment"># 第四步：启动自主执行</div>
+    <div class="cmd-line">/gsd auto</div>
+    <div class="cmd-comment"># 第五步：查看进度（另一个终端或 Web UI）</div>
+    <div class="cmd-line">gsd web   # 打开浏览器 Dashboard</div>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A["npm install -g gsd-pi\n安装"] --> B["gsd\nonboarding 配置 API Key"]
+    B --> C["/gsd discuss\n创建 Milestone"]
+    C --> D["/gsd auto\n自主执行循环"]
+    D --> E["gsd web\n查看进度 & 结果"]
+    </div>
+    <div class="caption">图 3-1: 最小可运行路径（5 步从零到自主 Agent）</div>
+  </div>
+
+  <h3 id="section-3-3">3.3 核心使用模式</h3>
+
+  <div class="usage-grid">
+    <div class="usage-card">
+      <div class="usage-title">🪜 Step 模式（交互逐步）</div>
+      <div class="usage-row">
+        <span class="usage-label">何时用</span>
+        <span class="usage-value">想要控制每一步的输出，或第一次使用某个新 Milestone 时</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">输入</span>
+        <span class="usage-value"><code>/gsd step</code>，每次执行一个 Unit 后等待用户确认</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">预期输出</span>
+        <span class="usage-value">一次一个 Task 的代码变更 + SUMMARY，人工审核后继续</span>
+      </div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">🤖 Auto 模式（无人值守）</div>
+      <div class="usage-row">
+        <span class="usage-label">何时用</span>
+        <span class="usage-value">任务拆解清晰、测试覆盖好、可以放心跑完整个 Milestone</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">输入</span>
+        <span class="usage-value"><code>/gsd auto</code>，Agent 自动循环直至 Milestone 完成或遇到阻塞</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">预期输出</span>
+        <span class="usage-value">完整的代码实现 + 测试 + SUMMARY，以及一个新的 git commit</span>
+      </div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">🔧 Headless 模式（CI/CD）</div>
+      <div class="usage-row">
+        <span class="usage-label">何时用</span>
+        <span class="usage-value">需要在无 TTY 环境中运行，如 GitHub Actions、定时脚本</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">输入</span>
+        <span class="usage-value"><code>gsd --headless auto</code>，配合 stdin JSON 预置答案</span>
+      </div>
+      <div class="usage-row">
+        <span class="usage-label">预期输出</span>
+        <span class="usage-value">结构化 JSON 事件流 + 退出码（0 = 成功），可被 CI 消费</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 id="section-3-4">3.4 从需求到交付的一次完整链路</h3>
+  <p>以"为现有系统新增用户登录失败次数限制"为例，追踪一次完整的 GSD 执行链路：</p>
+
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="step-title">① 用户提出目标</div>
+      <div class="step-desc">用户运行 <code>/gsd discuss "为登录接口添加失败次数限制，5次后锁定15分钟"</code>，GSD 启动一个 <code>discuss-milestone</code> Unit，与用户澄清边界：是 Redis 还是数据库存计数？锁定是软锁还是硬锁？</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② Plan Milestone</div>
+      <div class="step-desc">discuss 完成后，自动触发 <code>plan-milestone</code> Unit。Agent 读取讨论结果，生成 ROADMAP.md：3 个 Slice——"数据模型变更"、"接口逻辑实现"、"集成测试"。状态写入 <code>.gsd/milestones/M01/ROADMAP.md</code> 和 SQLite。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ Plan Slice（逐个）</div>
+      <div class="step-desc">对每个 Slice，GSD 分配一个全新会话执行 <code>plan-slice</code>。Agent 读取 ROADMAP inline 到 Prompt，输出 SLICE.md：具体到文件级别的任务列表，如"修改 User 表添加 login_attempt_count 字段"。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ Execute Tasks（新鲜上下文）</div>
+      <div class="step-desc">每个 Task 在独立新会话中执行。<code>auto-prompts.ts</code> 根据 inline_level 配置决定把多少 SLICE 内容塞进 Prompt（full / references / compressed），复杂度分级器决定用 Sonnet 还是 Opus 执行。代码变更直接提交到 Milestone 专属的 git worktree。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ Run UAT / 写入 SUMMARY</div>
+      <div class="step-desc">所有 Task 完成后，<code>run-uat</code> Unit 执行测试命令，写入 verdict（PASS / FAIL）。Slice 完成后生成 SUMMARY.md 作为下个 Slice 的"压缩历史记忆"。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑥ Worktree Merge + 继续</div>
+      <div class="step-desc">Slice 全部通过后，Milestone 的 git worktree squash-merge 回主分支。调度器自动推进到下一个 Milestone，或以 info 级别 stop 通知用户所有工作已完成。整个过程用户可以随时打断，下次 <code>/gsd auto</code> 从磁盘状态精确续行。</div>
+    </div>
+  </div>
+
+  <!-- Section 4: 系统详细设计 -->
+  <h2 id="section-4">4 系统详细设计</h2>
+
+  <h3 id="section-4-1">4.1 系统架构设计</h3>
+
+  <h4 id="section-4-1-1">4.1.1 系统架构图</h4>
+
+  <!-- Directory Tree -->
+  <p>先从目录结构了解项目的整体轮廓（<code>★</code> 为关键入口文件，<span style="color:#2563eb;font-weight:600">蓝色</span>为目录，<span style="color:#c7254e;font-weight:600">红色</span>为入口文件）——</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">gsd-2/</span>
+<span class="tree-branch">├── </span><span class="tree-dir">src/</span>                                 <span class="tree-comment">← 核心应用层：启动引导、CLI 分发、扩展注册</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry">loader.ts ★</span>                     <span class="tree-comment">← 最先执行，在 SDK 求值前预设所有环境变量</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry">cli.ts ★</span>                        <span class="tree-comment">← 主 CLI 入口，解析命令参数并分发到各模式</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">resources/extensions/gsd/</span>       <span class="tree-comment">← GSD 工作流引擎核心（auto / dispatch / prompts）</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">web/</span>                             <span class="tree-comment">← Web 服务层：Bridge、Dashboard、Settings API</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">headless*.ts</span>                    <span class="tree-comment">← 无头模式（CI/CD）：无 TTY 环境的自动执行器</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/</span>                            <span class="tree-comment">← Monorepo 子包</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">pi-coding-agent/</span>                 <span class="tree-comment">← Pi SDK（闭源）：LLM session factory、工具系统</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">pi-tui/</span>                          <span class="tree-comment">← 终端 UI 组件库：对话框、进度条、选择菜单</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">native/</span>                          <span class="tree-comment">← N-API Rust 绑定层（TypeScript 封装 Rust 函数）</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">pi-agent-core/ pi-ai/ …</span>         <span class="tree-comment">← 其他 SDK 子包</span>
+<span class="tree-branch">├── </span><span class="tree-dir">native/</span>                              <span class="tree-comment">← Rust 原生引擎：grep / glob / AST / git / diff / 语法高亮</span>
+<span class="tree-branch">├── </span><span class="tree-dir">docs/</span>                                <span class="tree-comment">← 架构文档（architecture.md、FILE-SYSTEM-MAP.md）& 用户文档</span>
+<span class="tree-branch">├── </span><span class="tree-dir">studio/</span>                              <span class="tree-comment">← Electron 桌面应用（renderer + main + preload）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">web/</span>                                 <span class="tree-comment">← Next.js Web 前端：页面、组件、API routes</span>
+<span class="tree-branch">├── </span><span class="tree-dir">scripts/</span>                             <span class="tree-comment">← 构建脚本：版本管理、打包、发布、CI 工具</span>
+<span class="tree-branch">└── </span><span class="tree-dir">.gsd/</span>                                <span class="tree-comment">← 运行时生成：Milestone / Slice / Task 状态（用户项目目录中）</span></pre>
+  </div>
+
+  <!-- Cast of Characters -->
+  <p>再认识一下系统里的主要"演员"——</p>
+  <table class="cast-table">
+    <thead>
+      <tr><th>角色</th><th>代表文件</th><th>职责一句话</th><th>与谁交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CLI 引导者</td>
+        <td><code>src/loader.ts</code><br><code>src/cli.ts</code></td>
+        <td>用户看到的第一扇门：在任何 SDK 求值前完成环境变量注入，解析命令并决定进哪个模式</td>
+        <td>扩展注册器, Pi SDK</td>
+      </tr>
+      <tr>
+        <td>状态机主循环</td>
+        <td><code>gsd/auto.ts</code></td>
+        <td>永动机：读磁盘状态 → 调用调度器决定下一个 Unit → 开新会话 → 执行 → 回到起点</td>
+        <td>调度器, 崩溃守卫, Prompt 构建器</td>
+      </tr>
+      <tr>
+        <td>声明式调度器</td>
+        <td><code>auto-dispatch.ts</code></td>
+        <td>系统的"法官"：维护一张有序规则表，第一条匹配的规则决定下一步该执行哪个 Unit 类型</td>
+        <td>状态读取器, Prompt 构建器</td>
+      </tr>
+      <tr>
+        <td>磁盘状态读取器</td>
+        <td><code>state.ts</code><br><code>gsd-db.ts</code></td>
+        <td>系统的唯一记忆：把 .gsd/ 里的 Markdown 文件 + SQLite 翻译成结构化的 GSDState 对象供调度器读取</td>
+        <td>调度器, 崩溃守卫</td>
+      </tr>
+      <tr>
+        <td>Prompt 构建器</td>
+        <td><code>auto-prompts.ts</code></td>
+        <td>每次 LLM 调用前的"厨师"：按 context budget 决定把哪些历史文档 inline 进 Prompt，避免塞满又不丢关键信息</td>
+        <td>状态读取器, 模型路由器</td>
+      </tr>
+      <tr>
+        <td>复杂度分级器</td>
+        <td><code>complexity-classifier.ts</code></td>
+        <td>不花一分钱 LLM 的情报官：用启发式算法在亚毫秒内给任务打分（light/standard/heavy），指导模型选择</td>
+        <td>模型路由器, 调度器</td>
+      </tr>
+      <tr>
+        <td>崩溃守卫</td>
+        <td><code>crash-recovery.ts</code><br><code>session-forensics.ts</code></td>
+        <td>每次 Unit 开始前写锁文件，下次启动时检测锁残留，从 JSONL session 取证恢复崩溃现场</td>
+        <td>状态机主循环, 磁盘状态读取器</td>
+      </tr>
+      <tr>
+        <td>原生性能引擎</td>
+        <td><code>native/</code><br><code>native-parser-bridge.ts</code></td>
+        <td>Node.js 的加速器：把高频的 grep/glob/AST/git 操作通过 N-API 委托给 Rust，将关键路径提速 10-50x</td>
+        <td>Prompt 构建器, 工具系统</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>系统整体分四层：启动层负责初始化和环境准备；执行层是工作流引擎的核心，由状态机主循环、调度器、Prompt 构建器和智能路由组成；存储层是唯一状态真相来源；扩展层提供 LLM provider 和 24 个功能扩展。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    %% 主链路: CLI → Loader → Auto.ts → Dispatch → Prompt → Pi SDK → 磁盘
+    subgraph 启动层
+      CLI["gsd 命令\nCLI 入口"] --> Loader["loader.ts\n环境变量预设"]
+      Loader --> CLIMain["cli.ts\n模式分发 & 扩展加载"]
+    end
+    subgraph 执行层
+      CLIMain --> Auto["auto.ts\n状态机主循环"]
+      Auto --> Dispatch["auto-dispatch.ts\n声明式规则调度"]
+      Auto --> Classifier["complexity-classifier.ts\n任务复杂度评级"]
+      Dispatch --> Prompt["auto-prompts.ts\n分层上下文注入"]
+      Classifier --> Router["auto-model-selection.ts\n动态模型路由"]
+    end
+    subgraph 存储层
+      Dispatch --> Disk[("磁盘 .gsd/\nMD + SQLite 唯一状态")]
+      Auto --> Crash["crash-recovery.ts\n锁文件 + JSONL 取证"]
+      Crash --> Disk
+    end
+    subgraph 扩展层
+      Auto --> PiSDK["Pi SDK\nLLM Session Factory"]
+      PiSDK --> LLM["20+ LLM Providers\nOpus / Sonnet / Haiku / …"]
+      CLIMain --> Extensions["24 个扩展模块\n浏览器/LSP/内存/工作树…"]
+      Prompt --> Native["native/ Rust 引擎\ngrep/glob/AST/git"]
+    end
+    </div>
+    <div class="caption">图 4-1: GSD 2 系统架构图（按职责层分组）</div>
+  </div>
+
+  <p><strong>如何读这张图：</strong>从用户输入 <code>gsd auto</code> 开始，请求先进入<strong>启动层</strong>的 <code>loader.ts</code>（在 Pi SDK 任何代码求值前完成品牌名称、版本号等环境变量注入），再由 <code>cli.ts</code> 解析命令并加载所有扩展模块。随后进入<strong>执行层</strong>的核心：<code>auto.ts</code> 是永动的状态机主循环，它每轮调用 <code>auto-dispatch.ts</code>（按规则表确定下一个 Unit 类型），同时调用 <code>complexity-classifier.ts</code> 给任务打分，由 <code>auto-model-selection.ts</code> 路由到合适的 LLM。<code>auto-prompts.ts</code> 负责把<strong>存储层</strong>磁盘上的历史文档按 budget 裁剪后注入 Prompt。<code>crash-recovery.ts</code> 全程监守，一旦进程崩溃可从 <code>.gsd/</code> 磁盘精确恢复。最终通过<strong>扩展层</strong>的 Pi SDK 调用 LLM，实际文件操作则通过 Rust 原生引擎加速。</p>
+
+  <h4 id="section-4-1-2">4.1.2 目录与核心文件说明</h4>
+
+  <!-- 角色组 1: 启动与引导层 -->
+  <p><strong>【启动与引导层】</strong>
+    <code>★ src/loader.ts</code>&ensp;·&ensp;<code>src/cli.ts</code>&ensp;·&ensp;<code>src/resource-loader.ts</code>&ensp;·&ensp;<code>src/tool-bootstrap.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：必须在 Pi SDK 任何模块求值之前完成品牌名称（<code>PI_PACKAGE_DIR</code>）和运行时路径的注入；没有这层，SDK 无法知道自己是 GSD 而不是原始 Pi，工具路径（fd/rg 可执行文件）也会因平台差异而找不到。"两文件加载器"（loader → cli）的架构专门为此设计。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>★ src/loader.ts</td><td>快速路径：--version / --help 在任何 import 前处理；设置 PI_PACKAGE_DIR / GSD_VERSION / GSD_BIN_PATH 三个关键环境变量；最后动态 import cli.ts</td></tr>
+      <tr><td>src/cli.ts</td><td>主 CLI 入口：解析 argv，检测运行模式（interactive / headless / web / rpc），初始化扩展注册器，启动 TUI 或无头执行器</td></tr>
+      <tr><td>src/resource-loader.ts</td><td>初始化并校验 bundled resources（prompt 模板、扩展包），首次运行时同步到 GSD_HOME</td></tr>
+      <tr><td>src/tool-bootstrap.ts</td><td>探测 fd / rg 可执行文件是否可用，不可用时回退到内建版本</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 2: 工作流引擎层 -->
+  <p><strong>【工作流引擎层】</strong>
+    <code>★ src/resources/extensions/gsd/auto.ts</code>&ensp;·&ensp;<code>auto-dispatch.ts</code>&ensp;·&ensp;<code>auto-prompts.ts</code>&ensp;·&ensp;<code>auto-loop.ts</code>&ensp;·&ensp;<code>auto-verification.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：这一层是 GSD 区别于普通 LLM wrapper 的本质所在——它把"问题 → 规划 → 执行 → 验证"变成一个持久的磁盘驱动状态机循环，而不是一次性对话。没有这层，用户的每次交互都是独立的、无记忆的；有了这层，一个跨越数天的复杂需求可以被 Agent 自主推进到完成。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>★ auto.ts</td><td>状态机主循环的编排者：读取 GSDState → 调用 dispatch → 分配模型 → 开启新 Pi 会话 → 注入 Prompt → 等待 agent_end → 循环</td></tr>
+      <tr><td>auto-dispatch.ts</td><td>声明式规则调度表（替代 130 行 if-else）：每条规则有 name + match 函数，顺序评估第一个匹配的规则决定下一个 Unit 类型</td></tr>
+      <tr><td>auto-prompts.ts</td><td>分层上下文注入引擎：按 inline_level 和 context budget 决定把多少历史文档 inline 进 Prompt，内置 30k 字符 preamble 上限</td></tr>
+      <tr><td>auto-loop.ts</td><td>单次 auto 迭代的执行体：处理 session 生命周期、Pi 事件流、超时恢复</td></tr>
+      <tr><td>auto-verification.ts</td><td>强制验证阶段：每个 Slice 完成后运行 UAT 命令并检查 verdict 文件，防止未验证的代码悄悄通过</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 3: 状态存储层 -->
+  <p><strong>【状态存储层】</strong>
+    <code>★ src/resources/extensions/gsd/state.ts</code>&ensp;·&ensp;<code>gsd-db.ts</code>&ensp;·&ensp;<code>paths.ts</code>&ensp;·&ensp;<code>.gsd/</code>（用户项目目录）
+  </p>
+  <p class="dir-rationale">为什么存在：所有工作流进度必须在进程崩溃、终端关闭、机器重启后仍然完整保留。把状态放进磁盘文件（Markdown + SQLite）而不是内存，是实现崩溃恢复、多终端协同和人工干预的基础。这层是整个系统"可靠性"承诺的物理实现。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件/目录</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>★ state.ts</td><td>DB 优先的状态派生：从 SQLite 读取结构化状态，对未迁移项目回退到解析 Markdown 文件，输出统一的 GSDState 对象</td></tr>
+      <tr><td>gsd-db.ts</td><td>SQLite 封装层：Milestone / Slice / Task 的 CRUD，提供事务性写入，是状态的权威存储</td></tr>
+      <tr><td>paths.ts</td><td>所有 .gsd/ 路径的唯一解析器：resolveMilestoneFile / resolveSliceFile / resolveTaskFile 等，防止路径散落各处</td></tr>
+      <tr><td>.gsd/milestones/</td><td>每个 Milestone 一个子目录，含 ROADMAP.md / CONTEXT.md / SUMMARY.md 和若干 Slice 子目录</td></tr>
+      <tr><td>.gsd/runtime/</td><td>临时运行时文件：锁文件、rewrite 计数器、UAT 计数器，进程间通过文件系统通信</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 4: 智能路由层 -->
+  <p><strong>【智能路由层】</strong>
+    <code>src/resources/extensions/gsd/complexity-classifier.ts</code>&ensp;·&ensp;<code>auto-model-selection.ts</code>&ensp;·&ensp;<code>context-budget.ts</code>&ensp;·&ensp;<code>routing-history.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：大模型 API 成本差异悬殊（Opus vs Haiku 约 15 倍），不能所有任务都用最贵的模型。这层在调用任何 LLM 前完成"任务难度评估 + 预算感知 + 历史失败率学习"，动态分配模型，在质量和成本之间找到最优平衡。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>complexity-classifier.ts</td><td>纯启发式复杂度分级（无 LLM 调用）：基于 unit 类型、任务元数据（文件数/依赖数/代码块数）、关键词检测，亚毫秒输出 light/standard/heavy</td></tr>
+      <tr><td>auto-model-selection.ts</td><td>综合分级结果、budget 压力（&gt;90% 强降级为 light）、用户偏好，最终选定 LLM provider 和 model ID</td></tr>
+      <tr><td>context-budget.ts</td><td>根据 context window 大小计算各部分的 token 预算（preamble / inline context / 任务数量范围）</td></tr>
+      <tr><td>routing-history.ts</td><td>自适应学习：记录每个 unit 类型在各 tier 的失败率，高失败率时自动上调分级</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 5: 崩溃恢复层 -->
+  <p><strong>【崩溃恢复层】</strong>
+    <code>★ src/resources/extensions/gsd/crash-recovery.ts</code>&ensp;·&ensp;<code>session-forensics.ts</code>&ensp;·&ensp;<code>session-lock.ts</code>&ensp;·&ensp;<code>interrupted-session.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：auto 模式的单次执行单元可能持续 5-30 分钟；网络中断、OOM、用户 Ctrl-C 随时可能发生。没有这层，任何崩溃都意味着丢失当前 Unit 的全部进度，必须重新执行。这层将"崩溃"变成了一个可恢复的检查点，而不是灾难。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>★ crash-recovery.ts</td><td>锁文件写/读/删除：每次 Unit 开始写入含 PID + sessionFile 路径的锁，正常结束删锁，下次启动检测残锁判断是否崩溃</td></tr>
+      <tr><td>session-forensics.ts</td><td>JSONL 取证：从崩溃时的 Pi session 文件中提取已完成的工具调用，重建"崩溃前最后状态"摘要供用户参考</td></tr>
+      <tr><td>session-lock.ts</td><td>OS 级互斥锁（flock）：防止同一项目两个 auto 进程并发执行，配合锁文件实现双重保护</td></tr>
+      <tr><td>interrupted-session.ts</td><td>综合评估中断类型：区分"崩溃"和"用户主动暂停"，为每种情况提供不同的恢复建议文本</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 6: 原生性能层 -->
+  <p><strong>【原生性能层】</strong>
+    <code>native/</code>&ensp;·&ensp;<code>packages/native/</code>&ensp;·&ensp;<code>src/resources/extensions/gsd/native-parser-bridge.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：GSD 的状态机每轮循环都需要批量解析 .gsd/ 目录下的大量 Markdown 文件；auto-prompts 需要频繁 grep 代码库寻找相关上下文。Node.js 的单线程 I/O 在这些高频场景下成为明显瓶颈。通过 N-API Rust 模块将这些操作下放到原生层，可将关键路径提速 10-50 倍。</p>
+  <table class="dir-table">
+    <thead><tr><th>文件/目录</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>native/src/</td><td>Rust 实现：grep 搜索引擎、glob 文件发现、git 操作、AST 解析（tree-sitter）、diff 生成、语法高亮（syntect）</td></tr>
+      <tr><td>packages/native/</td><td>N-API 绑定包：将 Rust 函数暴露为 Node.js 模块，处理 Rust ↔ JS 类型转换</td></tr>
+      <tr><td>native-parser-bridge.ts</td><td>TypeScript 封装层：<code>nativeBatchParseGsdFiles()</code> 批量调用 Rust 解析器，失败时回退到 JS 实现</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 角色组 7: 能力扩展层 -->
+  <p><strong>【能力扩展层】</strong>
+    <code>src/resources/extensions/</code>&ensp;·&ensp;<code>src/extension-registry.ts</code>
+  </p>
+  <p class="dir-rationale">为什么存在：GSD 的核心引擎只做状态机编排，所有具体能力（浏览器操作、LSP 语言服务、内存管理、远程通知、工作树管理）都以扩展形式解耦。扩展注册器实现了按需发现和动态启用，用户可以根据项目需要选择性加载，避免引入不必要的依赖。</p>
+  <table class="dir-table">
+    <thead><tr><th>目录/文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>extensions/gsd/</td><td>GSD 核心工作流扩展（本文档的主要分析对象）：auto mode、slash commands、state machine</td></tr>
+      <tr><td>extensions/browser-tools/</td><td>Playwright 浏览器自动化：截图、点击、表单填写，用于 E2E 测试和 Web UI 操作</td></tr>
+      <tr><td>extensions/lsp/</td><td>Language Server Protocol 客户端：代码补全建议、符号跳转、诊断信息，增强代码理解能力</td></tr>
+      <tr><td>extensions/memory/</td><td>会话内记忆管道：自动提炼和存储关键事实，供后续 Prompt 引用</td></tr>
+      <tr><td>src/extension-registry.ts</td><td>扩展注册表：持久化扩展元数据（manifest）、管理 enable/disable 状态、按需发现新扩展</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-4-2">4.2 关键模块实现细节</h3>
+
+  <!-- Module 1: 声明式调度管道 -->
+  <h4 id="section-4-2-1">4.2.1 关键模块一：声明式调度管道（auto-dispatch.ts）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/resources/extensions/gsd/auto-dispatch.ts</span>
+      <span>🏷️ 规则表模式（Chain of Responsibility 变体）</span>
+    </div>
+    <p><strong>要解决的问题</strong>：GSD 的工作流有 10+ 种 Unit 类型（discuss / plan / execute / uat / complete 等），决定"下一步该执行哪个"需要考虑当前 Milestone 状态、Slice 状态、是否有崩溃残留、预算是否超限……用命令式 if-else 实现会产生一个数百行的怪兽函数，无法单独测试每条规则，添加新规则会引入隐患。</p>
+    <p><strong>解决方案</strong>：把所有调度逻辑提取为一张有序的 <code>DispatchRule[]</code> 数组，每条规则有 name 和 async match 函数。match 返回 <code>DispatchAction</code>（dispatch / stop / skip）或 null（不匹配，继续下一条）。调度引擎只需顺序评估规则表，第一条返回非 null 的规则获胜。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Auto as auto.ts 主循环
+    participant State as state.ts 状态读取
+    participant Dispatch as auto-dispatch.ts 规则表
+    participant Rule1 as check-crash-recovery
+    participant Rule2 as check-budget-ceiling
+    participant RuleN as execute-next-task
+    participant Prompt as auto-prompts.ts
+
+    Auto->>State: deriveState(basePath)
+    State-->>Auto: GSDState
+    Auto->>Dispatch: evaluateRules(ctx)
+    Dispatch->>Rule1: match(ctx)
+    Rule1-->>Dispatch: null（无崩溃）
+    Dispatch->>Rule2: match(ctx)
+    Rule2-->>Dispatch: null（预算正常）
+    Dispatch->>RuleN: match(ctx)
+    RuleN-->>Dispatch: {action:"dispatch", unitType:"execute-task"}
+    Dispatch-->>Auto: DispatchAction
+    Auto->>Prompt: buildExecuteTaskPrompt(...)
+    Prompt-->>Auto: 构建好的 Prompt
+      </div>
+      <div class="caption">图 4-2: 声明式调度管道执行流程</div>
+    </div>
+
+    <pre><code class="language-typescript">// 文件: src/resources/extensions/gsd/auto-dispatch.ts (核心数据结构)
+export type DispatchAction =
+  | { action: "dispatch"; unitType: string; unitId: string; prompt: string; matchedRule?: string }
+  | { action: "stop"; reason: string; level: "info" | "warning" | "error" }
+  | { action: "skip"; matchedRule?: string };
+
+export interface DispatchRule {
+  name: string;                                          // 可读名称，用于日志和测试
+  match: (ctx: DispatchContext) => Promise&lt;DispatchAction | null&gt;; // null = 不匹配，继续评估
+}
+
+// 规则按优先级排列，顺序至关重要
+const DISPATCH_RULES: DispatchRule[] = [
+  { name: "check-crash-recovery",  match: async (ctx) => { /* 最高优先：检测崩溃残留 */ } },
+  { name: "check-budget-ceiling",  match: async (ctx) => { /* 预算超限则 stop */ } },
+  { name: "check-active-override", match: async (ctx) => { /* 用户手动覆盖命令 */ } },
+  // ... 10+ 条业务规则
+  { name: "execute-next-task",     match: async (ctx) => { /* 默认：执行下一个待办 Task */ } },
+];
+
+// 调度引擎：极简的顺序评估
+export async function evaluateDispatchRules(ctx: DispatchContext): Promise&lt;DispatchAction&gt; {
+  for (const rule of DISPATCH_RULES) {
+    const result = await rule.match(ctx);  // null = 本规则不适用
+    if (result) return { ...result, matchedRule: rule.name };
+  }
+  return { action: "stop", reason: "no matching rule", level: "warning" };
+}</code></pre>
+    <p><strong>代价与局限</strong>：规则的顺序本身就是隐式的业务逻辑，乱序会导致静默错误（如崩溃检测放在预算检测后面会漏掉崩溃场景）。规则条数增多后，调试"为什么选了这条规则"需要靠日志中的 <code>matchedRule</code> 字段追溯。</p>
+  </div>
+
+  <!-- Module 2: 复杂度分级器 -->
+  <h4 id="section-4-2-2">4.2.2 关键模块二：复杂度分级器（complexity-classifier.ts）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/resources/extensions/gsd/complexity-classifier.ts</span>
+      <span>🏷️ 启发式分级 + 自适应学习</span>
+    </div>
+    <p><strong>要解决的问题</strong>：模型路由需要知道"这个 Task 有多难"，但用 LLM 来判断难度有明显的自我矛盾（贵的 LLM 才能判准难度，用了就没省到）。需要一个零 LLM 调用的快速分级器。</p>
+    <p><strong>解决方案</strong>：两阶段判断。第一阶段按 unit 类型给默认分级（plan-milestone = heavy, complete-slice = light）；第二阶段对 execute-task 类型做元数据分析：读取 TASK.md 的文件引用数、依赖数、代码块数量、复杂度关键词，并结合历史失败率做自适应上调；最后用当前 budget 使用率做一次强制降级（90%+ 时 heavy → light）。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Router as 模型路由器
+    participant Classifier as complexity-classifier.ts
+    participant Meta as TASK.md 元数据
+    participant History as routing-history.ts 失败率
+
+    Router->>Classifier: classifyUnit(unitType, unitId, budgetPct)
+    Classifier->>Classifier: 查 UNIT_TYPE_TIERS 表得默认 tier
+    alt unitType == "execute-task"
+      Classifier->>Meta: extractTaskMetadata(unitId)
+      Meta-->>Classifier: fileCount, depCount, keywords...
+      Classifier->>Classifier: analyzeTaskComplexity() 上调 tier
+    end
+    Classifier->>History: getAdaptiveTierAdjustment(unitType, tier)
+    History-->>Classifier: 历史高失败率 → 上调
+    Classifier->>Classifier: applyBudgetPressure(budgetPct) 强制降级
+    Classifier-->>Router: {tier: "standard", reason: "...", downgraded: false}
+      </div>
+      <div class="caption">图 4-3: 复杂度分级器决策流程</div>
+    </div>
+
+    <pre><code class="language-typescript">// 文件: src/resources/extensions/gsd/complexity-classifier.ts (核心逻辑)
+const UNIT_TYPE_TIERS: Record&lt;string, ComplexityTier&gt; = {
+  "complete-slice":    "light",   // 收尾工作，不需要深度推理
+  "run-uat":           "light",   // 执行验证命令，结果写文件
+  "discuss-milestone": "standard",
+  "plan-slice":        "heavy",   // 规划需要全局视角
+  "execute-task":      "standard",// 默认 standard，元数据分析可上调
+  "reassess-roadmap":  "heavy",   // 重新评估整体方向
+}
+
+function applyBudgetPressure(result: ClassificationResult, budgetPct?: number): ClassificationResult {
+  if (!budgetPct) return result;
+  let tier = result.tier;
+  // 强制降级：预算超 90% 时即使是 heavy 任务也用最便宜的模型
+  if (budgetPct >= 0.90 && tier === "heavy")    tier = "light";
+  else if (budgetPct >= 0.75 && tier === "heavy") tier = "standard";
+  else if (budgetPct >= 0.50 && tier === "heavy") tier = "standard";
+  return { ...result, tier, downgraded: tier !== result.tier };
+}</code></pre>
+    <p><strong>代价与局限</strong>：启发式规则会有误判——一个关键词很少但实际上修改面很广的重构任务可能被错误分为 light。自适应学习的粒度是 unit 类型级别，无法区分同一类型内不同任务的差异。</p>
+  </div>
+
+  <!-- Module 3: 崩溃恢复机制 -->
+  <h4 id="section-4-2-3">4.2.3 关键模块三：崩溃恢复机制（crash-recovery.ts）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/resources/extensions/gsd/crash-recovery.ts + session-forensics.ts</span>
+      <span>🏷️ 心跳锁文件 + JSONL 取证</span>
+    </div>
+    <p><strong>要解决的问题</strong>：auto 模式的单个 Unit 执行可能持续数分钟到数十分钟。网络中断、内存溢出、用户强制关闭都会导致进程非正常退出。如何在下次启动时让用户无缝感知到"上次崩溃了"并提供恢复选项？</p>
+    <p><strong>解决方案</strong>：三层嵌套保护。第一层：每次 Unit 开始前在 <code>.gsd/runtime/auto.lock</code> 写入含 PID + sessionFile 路径的 JSON 锁文件，正常退出时删除；下次启动检测到锁文件且 PID 进程已不存在 → 判定崩溃。第二层：从崩溃时的 Pi session JSONL 文件读取已完成的工具调用，重建崩溃前状态摘要（session-forensics）。第三层：OS 级 flock 互斥锁防止并发执行。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Auto as auto.ts
+    participant Lock as crash-recovery.ts
+    participant OS as session-lock.ts (flock)
+    participant Forensics as session-forensics.ts
+    participant User as 用户终端
+
+    Auto->>OS: acquireLock(basePath)
+    OS-->>Auto: 互斥锁获取成功
+    Auto->>Lock: writeLock(basePath, unitType, unitId, sessionFile)
+    Note over Lock: 写入 .gsd/runtime/auto.lock
+    Auto->>Auto: 执行 Unit（可能崩溃）
+    Note over Auto,Lock: 进程崩溃，锁文件未删除
+
+    Auto->>Lock: detectCrash(basePath)
+    Lock->>Lock: 读取锁文件，检查 PID 是否存活
+    Lock-->>Auto: {crashed: true, unitType, sessionFile}
+    Auto->>Forensics: synthesizeCrashRecovery(sessionFile)
+    Forensics->>Forensics: 解析 JSONL，提取已完成工具调用
+    Forensics-->>Auto: 崩溃摘要
+    Auto->>User: "上次在执行 execute-task 时崩溃，是否继续？"
+      </div>
+      <div class="caption">图 4-4: 崩溃恢复三层保护机制</div>
+    </div>
+
+    <pre><code class="language-typescript">// 文件: src/resources/extensions/gsd/crash-recovery.ts (核心逻辑)
+export function isLockProcessAlive(lock: LockData): boolean {
+  const pid = lock.pid;
+  if (pid === process.pid) return true;  // 同一进程，肯定活着
+  try {
+    process.kill(pid, 0);  // 信号 0 = 探活（不发送真实信号）
+    return true;
+  } catch (err) {
+    // ESRCH = 进程不存在（崩溃）
+    // EPERM = 进程存在但无权限（仍然活着）
+    return (err as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+// Pi 的 session JSONL 是追加写入的，每行一个事件
+// 崩溃后文件在磁盘上完整保留到崩溃点——这是 appendFileSync 的关键价值
+export async function synthesizeCrashRecovery(sessionFile: string): Promise&lt;string&gt; {
+  const lines = readFileSync(sessionFile, 'utf-8').split('\n').filter(Boolean);
+  const toolCalls = lines
+    .map(l =&gt; JSON.parse(l))
+    .filter(e =&gt; e.type === 'tool_result');  // 提取已完成的工具调用
+  // 从工具调用结果重建"崩溃前做了什么"的摘要
+  return formatCrashSummary(toolCalls);
+}</code></pre>
+    <p><strong>代价与局限</strong>：锁文件的 PID 检测在分布式环境（多台机器共享 .gsd/ 目录的场景）下不可靠，但 GSD 主要针对单机开发场景，这个限制可接受。Session JSONL 取证的质量依赖 Pi SDK 的日志完整性。</p>
+  </div>
+
+  <!-- Module 4: 分层上下文注入 -->
+  <h4 id="section-4-2-4">4.2.4 关键模块四：分层上下文注入（auto-prompts.ts）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/resources/extensions/gsd/auto-prompts.ts</span>
+      <span>🏷️ 分层预算分配 + 优雅降级</span>
+    </div>
+    <p><strong>要解决的问题</strong>：每个 Unit 在独立新会话执行，但它需要了解当前任务的上下文——所在 Milestone 的目标、所属 Slice 的计划、关联 Task 的详情。把所有历史文档全部 inline 会超出 context window；什么都不 inline 则 Agent 缺乏背景会走弯路。</p>
+    <p><strong>解决方案</strong>：三档 inline_level 配置（full / references / compressed）+ 30k 字符 preamble 上限的自动裁剪。full 模式把完整 Markdown 文件 inline；references 模式只 inline 文件路径（告诉 Agent "去读这个文件"）；compressed 模式只 inline 文件的关键摘要段落。超出 30k 上限时自动按章节边界截断，而不是硬截字符。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Dispatch as 调度器
+    participant Prompts as auto-prompts.ts
+    participant Budget as context-budget.ts
+    participant Files as .gsd/ 磁盘文件
+    participant Prefs as preferences.ts
+
+    Dispatch->>Prompts: buildExecuteTaskPrompt(ctx)
+    Prompts->>Prefs: loadEffectiveGSDPreferences()
+    Prefs-->>Prompts: {inline_level: "full", context_window: 200000}
+    Prompts->>Budget: computeBudgets(windowTokens)
+    Budget-->>Prompts: {preambleChars: 30000, inlineContextChars: 60000}
+    Prompts->>Files: loadFile(MILESTONE.md)
+    Files-->>Prompts: milestone 内容
+    Prompts->>Files: loadFile(SLICE.md)
+    Files-->>Prompts: slice 内容
+    Prompts->>Prompts: capPreamble(preamble, 30000)
+    Note over Prompts: 按章节边界智能截断，不硬截字符
+    Prompts-->>Dispatch: 裁剪后的完整 Prompt
+      </div>
+      <div class="caption">图 4-5: 分层上下文注入流程</div>
+    </div>
+
+    <pre><code class="language-typescript">// 文件: src/resources/extensions/gsd/auto-prompts.ts (关键逻辑)
+const MAX_PREAMBLE_CHARS = 30_000;  // preamble 硬上限，防止挤占 task 内容空间
+
+function capPreamble(preamble: string): string {
+  if (preamble.length &lt;= MAX_PREAMBLE_CHARS) return preamble;
+  // 按章节边界截断（## 开头的行），而不是硬截字符
+  // 避免截断到句子中间产生语义损坏的 Prompt
+  return truncateAtSectionBoundary(preamble, MAX_PREAMBLE_CHARS).content;
+}
+
+function formatExecutorConstraints(): string {
+  const prefs = loadEffectiveGSDPreferences();
+  const windowTokens = resolveExecutorContextWindow(undefined, prefs?.preferences);
+  const budgets = computeBudgets(windowTokens);
+  // 在 Prompt 中明确告知 Agent 它的上下文窗口大小和建议任务数量范围
+  // Agent 可以据此自行调整输出密度，避免单个 task 写太多/太少
+  return [
+    `## Executor Context Constraints`,
+    `The agent has a **${Math.round(windowTokens / 1000)}K token** context window.`,
+    `- Recommended task count: **${budgets.taskCountRange.min}–${budgets.taskCountRange.max} tasks**`,
+    `- Each task gets ~${Math.round(budgets.inlineContextBudgetChars / 1000)}K chars inline context`,
+  ].join("\n");
+}</code></pre>
+    <p><strong>代价与局限</strong>：inline_level = "references" 要求 Agent 有足够的工具调用能力主动去读文件；如果 Agent 不读或读错，任务质量会下降。compressed 模式的摘要质量依赖于 SUMMARY 文件是否准确，而 SUMMARY 本身是之前 Agent 生成的——存在"错误传播"的风险。</p>
+  </div>
+
+  <!-- Section 5: 方案评价 -->
+  <h2 id="section-5">5 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4 id="section-5-1">5.1 优势分析</h4>
+      <ul>
+        <li><strong>磁盘状态机是真正的差异化</strong>：目前市场上很少有工具能做到跨会话、跨终端、跨崩溃的持久状态，这是 GSD 在"长任务可靠执行"场景的根本护城河</li>
+        <li><strong>声明式调度的工程严谨性</strong>：把调度逻辑变成可测试的规则表，每条规则独立，可以 unit test，这在同类工具中罕见</li>
+        <li><strong>成本感知是一等公民</strong>：复杂度分级 + 预算压力降级的组合，让 GSD 在有限预算下可以完成更多工作，不是简单地"永远用最贵的"</li>
+        <li><strong>Rust 原生引擎的务实选择</strong>：没有为了"纯 TS" 而坚持，在性能关键路径引入 Rust 是正确的工程判断</li>
+        <li><strong>扩展架构良好</strong>：24 个扩展相互独立，主引擎不依赖具体扩展，添加新能力无需修改核心代码</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4 id="section-5-2">5.2 局限分析</h4>
+      <ul>
+        <li><strong>依赖闭源 Pi SDK</strong>：核心 Agent 运行时（会话管理、工具执行、LLM 路由）封装在 <code>@gsd/pi-coding-agent</code> 里，这是一个闭源包，限制了社区贡献和问题排查深度</li>
+        <li><strong>初始学习曲线陡峭</strong>：Milestone / Slice / Task 三层结构对于"只想快速执行一个命令"的用户来说过重；onboarding 文档对新用户不够友好</li>
+        <li><strong>启发式分级的天花板</strong>：复杂度分级器无法感知代码库的全局状态，"修改一个被 50 个地方引用的核心接口"和"新增一个独立工具函数"可能被分到同一级别</li>
+        <li><strong>SUMMARY 质量的链式风险</strong>：每个 Slice 的 SUMMARY 由 Agent 自己生成并作为下个 Slice 的上下文，一次质量差的 SUMMARY 会影响后续所有 Slice 的执行质量</li>
+        <li><strong>Git worktree 的操作复杂性</strong>：每个 Milestone 一个 worktree 对不熟悉 git worktree 的用户来说是心智负担，worktree 冲突处理不够自动化</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: {
+      diagramMarginX: 20,
+      diagramMarginY: 20,
+      actorMargin: 60,
+      mirrorActors: false,
+      messageAlign: 'center'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20
+    }
+  });
+
+  hljs.highlightAll();
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenSpec 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px; height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px; z-index: 100;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle {
+    width: 26px; height: 26px; border: none; background: transparent;
+    cursor: pointer; color: var(--text-secondary); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; flex-shrink: 0; transition: all 0.15s;
+  }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Main Content --- */
+  .content {
+    margin-left: 260px;
+    max-width: 860px;
+    padding: 48px 40px 120px;
+    transition: margin-left 0.25s ease;
+  }
+  .content.toc-collapsed { margin-left: 42px; }
+
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead {
+    font-size: 16px; color: var(--text-secondary); line-height: 1.8;
+    padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0; margin-bottom: 16px;
+  }
+  .header .conclusion {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+  }
+  .conclusion-card {
+    padding: 14px 16px; background: var(--accent-light); border-radius: 8px;
+    border: 1px solid #bfdbfe; font-size: 14px;
+  }
+  .conclusion-card strong { color: var(--accent); display: block; margin-bottom: 4px; }
+
+  /* --- Sections --- */
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; color: var(--text); padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin: 32px 0 12px; color: var(--text); }
+  h4 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; color: var(--text-secondary); }
+  p { margin-bottom: 16px; }
+  ul, ol { padding-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 4px; }
+  strong { color: var(--text); }
+
+  /* --- Sidebar TOC --- */
+  .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Mermaid Diagrams --- */
+  .diagram-container {
+    margin: 24px 0; padding: 24px;
+    background: var(--bg-alt); border: 1px solid var(--border);
+    border-radius: 12px; overflow-x: auto;
+    position: relative; cursor: zoom-in;
+  }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .diagram-zoom-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border: 1px solid var(--border);
+    background: white; border-radius: 6px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5;
+  }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,.75);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .diagram-lightbox-inner {
+    background: white; border-radius: 12px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 24px 64px rgba(0,0,0,.4);
+    max-width: 92vw; max-height: 90vh;
+  }
+
+  /* --- Code Blocks --- */
+  pre { margin: 16px 0; border-radius: 8px; overflow: hidden; }
+  pre code { font-size: 13px; padding: 16px !important; display: block; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+
+  /* --- Cast Table --- */
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #fff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+
+  /* --- Dir Table --- */
+  .dir-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .dir-table th { background: #374151; color: #fff; text-align: left; padding: 8px 12px; font-size: 12px; text-transform: uppercase; }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .dir-table td:first-child { font-family: monospace; font-size: 13px; color: var(--accent); font-weight: 500; }
+
+  /* --- Dir Tree --- */
+  .dir-tree {
+    background: var(--code-bg); border-radius: 10px; padding: 20px 24px;
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.9;
+    margin: 16px 0 24px; overflow-x: auto;
+  }
+  .tree-root { color: #cba6f7; font-weight: 700; }
+  .tree-branch { color: #6c7086; }
+  .tree-dir { color: #89dceb; }
+  .tree-entry { color: #a6e3a1; font-weight: 600; }
+  .tree-comment { color: #6c7086; }
+
+  /* --- Dir Rationale --- */
+  .dir-rationale { font-size: 13px; color: var(--text-secondary); background: var(--bg-alt); border-left: 3px solid var(--accent); padding: 8px 12px; border-radius: 0 6px 6px 0; margin: -12px 0 16px; }
+
+  /* --- Fit Grid --- */
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0 24px; }
+  .fit-card { padding: 16px; border-radius: 10px; font-size: 14px; }
+  .fit-card.good { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit-card.bad { background: #fff7ed; border: 1px solid #fdba74; }
+  .fit-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .fit-card.good h4 { color: var(--success); }
+  .fit-card.bad h4 { color: var(--warning); }
+  .fit-card ul { padding-left: 18px; }
+  .fit-card li { font-size: 13px; margin-bottom: 3px; }
+
+  /* --- Usage Grid --- */
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0 24px; }
+  .usage-card { padding: 16px 18px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px; }
+  .usage-card .mode-name { font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+  .usage-card .mode-when { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .usage-card .mode-desc { font-size: 13px; }
+
+  /* --- Timeline --- */
+  .timeline { position: relative; padding-left: 28px; margin: 16px 0 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -24px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid white; box-shadow: 0 0 0 2px var(--accent);
+  }
+  .timeline-label { font-size: 12px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .timeline-content { font-size: 14px; }
+  .timeline-code { font-family: monospace; background: var(--bg-alt); padding: 2px 8px; border-radius: 4px; font-size: 13px; border: 1px solid var(--border); display: inline-block; margin: 2px 0; }
+
+  /* --- Cmd Flow --- */
+  .cmd-flow { background: var(--code-bg); border-radius: 10px; padding: 20px 24px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.9; margin: 16px 0 24px; }
+  .cmd-flow .cmd { color: #a6e3a1; }
+  .cmd-flow .comment { color: #6c7086; }
+  .cmd-flow .output { color: #cdd6f4; }
+
+  /* --- Module Card --- */
+  .module-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .module-header { padding: 16px 20px; background: var(--bg-alt); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .module-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--accent-light); color: var(--accent); }
+  .module-header h4 { font-size: 16px; font-weight: 700; margin: 0; }
+  .module-meta { font-size: 13px; color: var(--text-secondary); margin-left: auto; font-family: monospace; }
+  .module-body { padding: 20px; }
+  .module-section { margin-bottom: 16px; }
+  .module-section h5 { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+  /* --- Eval Grid --- */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .eval-card { padding: 16px; border-radius: 10px; }
+  .eval-card.pro { background: #f0fdf4; border: 1px solid #86efac; }
+  .eval-card.con { background: #fef2f2; border: 1px solid #fca5a5; }
+  .eval-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .eval-card.pro h4 { color: var(--success); }
+  .eval-card.con h4 { color: var(--danger); }
+  .eval-item { font-size: 13px; margin-bottom: 10px; padding-left: 14px; position: relative; }
+  .eval-item::before { content: ''; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; }
+  .eval-card.pro .eval-item::before { background: var(--success); }
+  .eval-card.con .eval-item::before { background: var(--danger); }
+  .eval-item strong { display: block; margin-bottom: 2px; }
+
+  /* --- Compare Table --- */
+  .compare-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .compare-table th { background: #374151; color: #fff; text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; }
+  .compare-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .compare-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .compare-table td:first-child { font-weight: 600; color: var(--text); }
+  .win { color: var(--success); font-weight: 600; }
+  .lose { color: var(--danger); }
+
+  /* --- Inline Panel System --- */
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; background:none; border:none; font:inherit; padding:0; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .term-link:hover { color:#6d28d9; }
+
+  /* --- Slide-in Panel CSS --- */
+  .code-backdrop {
+    display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,.25);
+  }
+  .code-backdrop.open { display:block; }
+  .code-panel {
+    position:fixed; top:0; right:0; height:100vh;
+    width:min(860px,68vw); background:#fff;
+    box-shadow:-4px 0 24px rgba(0,0,0,.15);
+    transform:translateX(100%); transition:transform .3s ease;
+    z-index:201; display:flex; flex-direction:column;
+    border-left:1px solid var(--border);
+  }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip {
+    position:absolute; left:0; top:0; width:5px; height:100%;
+    cursor:ew-resize; z-index:10;
+    background:transparent;
+  }
+  .panel-resize-grip:hover { background:rgba(37,99,235,.2); }
+  .panel-header {
+    display:flex; align-items:center; gap:8px; padding:12px 16px;
+    border-bottom:1px solid var(--border); background:var(--bg-alt);
+    flex-shrink:0; min-height:50px;
+  }
+  .panel-badge {
+    font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px;
+    background:var(--accent-light); color:var(--accent); white-space:nowrap;
+  }
+  .panel-title { font-size:13px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .panel-close {
+    width:28px; height:28px; border:none; background:transparent; cursor:pointer;
+    font-size:18px; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; border-radius:4px;
+    flex-shrink:0;
+  }
+  .panel-close:hover { background:var(--border); }
+  #panelGhLink { font-size:12px; color:var(--accent); text-decoration:none; white-space:nowrap; flex-shrink:0; }
+  #panelGhLink:hover { text-decoration:underline; }
+  #iframePanelBody { flex:1; display:none; flex-direction:column; overflow:hidden; position:relative; }
+  #iframePanelBody.visible { display:flex; }
+  .iframe-loading {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:12px;
+    background:#fff; z-index:2;
+  }
+  .iframe-spin {
+    width:32px; height:32px; border:3px solid var(--border);
+    border-top-color:var(--accent); border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #iframePanelBody iframe { flex:1; border:none; }
+  #termPanelBody { flex:1; overflow-y:auto; padding:20px; display:none; }
+  #termPanelBody.visible { display:block; }
+  .term-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .term-tag { font-size:11px; padding:2px 8px; border-radius:10px; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; }
+  .term-def { font-size:14px; line-height:1.8; margin-bottom:16px; color:var(--text); }
+  .term-section-title { font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.5px; margin:16px 0 8px; }
+  .term-mechanics { list-style:none; padding:0; }
+  .term-mechanics li { font-size:13px; line-height:1.7; padding:4px 0 4px 20px; position:relative; border-bottom:1px solid var(--border); }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-mechanics li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .term-related { display:flex; flex-wrap:wrap; gap:6px; }
+  .term-rel-btn { font-size:12px; padding:3px 10px; border:1px solid var(--accent); background:transparent; color:var(--accent); border-radius:12px; cursor:pointer; }
+  .term-rel-btn:hover { background:var(--accent-light); }
+  .term-files { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .term-file-btn { font-size:12px; padding:3px 10px; border:1px solid #10b981; background:transparent; color:#10b981; border-radius:4px; cursor:pointer; font-family:monospace; }
+  .term-file-btn:hover { background:#ecfdf5; }
+
+  @media (max-width: 768px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 20px 80px; }
+    .fit-grid, .eval-grid { grid-template-columns: 1fr; }
+    .code-panel { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar TOC -->
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起/展开目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-2" class="toc-h2">2 设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 Artifact 驱动工作流</a>
+  <a href="#section-2-2" class="toc-h3">2.2 Schema-as-YAML</a>
+  <a href="#section-2-3" class="toc-h3">2.3 工具无关适配器</a>
+  <a href="#section-2-4" class="toc-h3">2.4 文件系统即状态</a>
+  <a href="#section-2-5" class="toc-h3">2.5 竞品横向对比</a>
+  <a href="#section-3" class="toc-h2">3 使用方式与执行链路</a>
+  <a href="#section-3-1" class="toc-h3">3.1 适合解决什么问题</a>
+  <a href="#section-3-2" class="toc-h3">3.2 最小可运行路径</a>
+  <a href="#section-3-3" class="toc-h3">3.3 核心使用模式</a>
+  <a href="#section-3-4" class="toc-h3">3.4 完整链路示例</a>
+  <a href="#section-4" class="toc-h2">4 系统详细设计</a>
+  <a href="#section-4-1" class="toc-h3">4.1 系统架构设计</a>
+  <a href="#section-4-1-1" class="toc-h4">4.1.1 架构图</a>
+  <a href="#section-4-1-2" class="toc-h4">4.1.2 目录与核心文件</a>
+  <a href="#section-4-2" class="toc-h3">4.2 关键模块实现细节</a>
+  <a href="#section-4-2-1" class="toc-h4">4.2.1 ArtifactGraph — DAG 工作流引擎</a>
+  <a href="#section-4-2-2" class="toc-h4">4.2.2 SchemaResolver — 三层解析机制</a>
+  <a href="#section-4-2-3" class="toc-h4">4.2.3 Validator — 规格质量门禁</a>
+  <a href="#section-4-2-4" class="toc-h4">4.2.4 CommandGeneration — 多工具适配引擎</a>
+  <a href="#section-4-2-5" class="toc-h4">4.2.5 ArchiveCommand — Delta Spec 合并器</a>
+  <a href="#section-5" class="toc-h2">5 方案评价</a>
+  <a href="#section-5-1" class="toc-h3">5.1 优势分析</a>
+  <a href="#section-5-2" class="toc-h3">5.2 局限分析</a>
+  </div><!-- .toc-links -->
+</nav>
+
+<!-- Main Content -->
+<main class="content">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>OpenSpec 深度解读</h1>
+    <div class="subtitle">AI 时代的规格驱动开发框架 — 让人类与 AI 在写代码之前先对齐</div>
+    <div class="lead">
+      OpenSpec 是一个为 AI 编程助手设计的<strong>规格驱动开发（SDD）框架</strong>，通过在代码实现前建立轻量的 Artifact 层（proposal → specs → design → tasks），解决了"AI 凭着聊天记录写代码"的根本性不可预期问题。它在 39.5k Star 的高人气背后，有一套极为精妙的架构设计：<strong>DAG 工作流引擎 + YAML 可定制 Schema + 30 种工具适配器 + 文件系统即状态</strong>。
+    </div>
+    <div class="conclusion">
+      <div class="conclusion-card">
+        <strong>核心创新</strong>
+        将 AI 工作流建模为带依赖的有向无环图（DAG），通过文件存在性检测状态
+      </div>
+      <div class="conclusion-card">
+        <strong>最值得学习</strong>
+        3 层 Schema 解析机制 + 30+ 工具适配器的扩展性设计
+      </div>
+      <div class="conclusion-card">
+        <strong>关键取舍</strong>
+        轻量文件系统状态 vs. 无法支持并发/云端工作流
+      </div>
+      <div class="conclusion-card">
+        <strong>适用人群</strong>
+        使用 AI 编程助手开发中大型功能的个人开发者和团队
+      </div>
+    </div>
+  </header>
+
+  <!-- Section 1: 摘要 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>2025 年 AI 编程助手全面爆发，Cursor、Claude Code、GitHub Copilot、Windsurf 等工具让开发者可以用自然语言驱动代码生成。但这带来了一个新问题：<strong>AI 太听话了</strong>。用户一句"帮我加个黑暗模式"，AI 就开始大量修改代码——但双方根本没有对齐"黑暗模式"的边界、影响范围和实现方式。</p>
+  <p>OpenSpec 诞生于 2025 年 8 月，由 Fission-AI 团队开发，核心观点是：<strong>AI 编码失控的根本原因不是模型不够聪明，而是没有规格约束</strong>。传统软件工程的 PRD/设计文档虽然解决了这个问题，但对 AI 时代的节奏来说太重了。OpenSpec 选择了一条中间路线：<strong>轻量 Markdown 规格 + 可执行的工作流自动化</strong>。</p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+  <p>OpenSpec 给用户带来的核心价值是：</p>
+  <ul>
+    <li><strong>对齐优先</strong>：每个功能变更在写任何代码前，先产出 proposal.md（为什么要做）→ spec.md（做什么）→ design.md（怎么做）→ tasks.md（分几步做）</li>
+    <li><strong>AI 指令结构化</strong>：通过 <code>/opsx:propose</code>、<code>/opsx:apply</code>、<code>/opsx:archive</code> 等斜线命令，让 AI 在结构化的工作流中行动而非随意发挥</li>
+    <li><strong>增量规格管理</strong>：变更不重写全量规格，通过 Delta Spec（ADDED/MODIFIED/REMOVED/RENAMED）增量叠加，归档时自动合并</li>
+    <li><strong>全工具通用</strong>：支持 25+ AI 编程工具，一次 <code>openspec init</code> 自动适配用户选择的工具</li>
+  </ul>
+
+  <!-- Section 2: 设计理念 -->
+  <h2 id="section-2">2 设计理念</h2>
+
+  <h3 id="section-2-1">2.1 Artifact 驱动工作流（核心创新）</h3>
+  <p>OpenSpec 最关键的设计决策是：<strong>把一次功能变更建模为一组有依赖关系的 Artifact</strong>。每个 Artifact（proposal、specs、design、tasks）是一个 Markdown 文件，它们之间的依赖关系构成一个有向无环图（DAG）。</p>
+  <p>这个设计的价值在于：AI 永远知道自己在整个开发流程中的哪一步，接下来应该生成什么，需要先读哪些上下文。这把"AI 按需生成文档"变成了"AI 按图执行有序工作流"。</p>
+
+  <h3 id="section-2-2">2.2 Schema-as-YAML（工作流可编程）</h3>
+  <p>工作流本身被定义在 YAML 文件中（默认是 <code>schemas/spec-driven/schema.yaml</code>），而不是硬编码在程序里。这意味着用户可以创建自己的工作流 Schema：比如"只需要 proposal + tasks"的极简模式，或"加入 RFC 评审步骤"的企业模式。</p>
+  <p>Schema 支持三层解析：项目本地（最高优先级）→ 用户全局（<code>~/.local/share/openspec/</code>）→ 内置包（最低）。这套机制让 OpenSpec 既有开箱即用的默认行为，又具备完全可定制的扩展能力。</p>
+
+  <h3 id="section-2-3">2.3 工具无关适配器（生态宽度优先）</h3>
+  <p>OpenSpec 没有选择绑定单一 AI 工具，而是为每种工具实现了一个适配器（Adapter），将工具无关的斜线命令内容（CommandContent）转换为工具特定的文件格式。目前支持 30+ 适配器，覆盖 Cursor、Claude、Copilot、Windsurf、Cline、Codex 等几乎所有主流工具。</p>
+  <p>这套适配器架构的代价是：每次 AI 工具更新其命令格式，OpenSpec 就需要更新对应适配器。但换来的是极宽的用户覆盖面——这正是 39.5k Star 背后的核心原因之一。</p>
+
+  <h3 id="section-2-4">2.4 文件系统即状态（零依赖追踪）</h3>
+  <p>OpenSpec 有一个非常简洁的状态管理原则：<strong>一个 Artifact 是否完成，通过其对应文件是否存在来判断</strong>。不需要数据库，不需要锁文件，一切状态都在 <code>openspec/changes/&lt;name&gt;/</code> 目录结构中。</p>
+  <p>这让 OpenSpec 的可靠性极高（没有状态同步问题），但也限制了它——无法支持分布式/云端工作流，也不支持同一变更的并发操作。对于个人开发者和小团队场景，这是完全合理的取舍。</p>
+
+  <h3 id="section-2-5">2.5 竞品横向对比</h3>
+  <table class="compare-table">
+    <tr><th>工具</th><th>定位</th><th>优势</th><th>劣势</th></tr>
+    <tr>
+      <td>OpenSpec</td>
+      <td>AI 时代轻量 SDD 框架，工具无关</td>
+      <td class="win">30+ 工具适配；YAML 可定制 Schema；低摩擦安装；39.5k 社区</td>
+      <td class="lose">文件系统状态不支持云端；AI 输出质量依赖用户引导</td>
+    </tr>
+    <tr>
+      <td>Kiro (AWS)</td>
+      <td>AWS 官方 IDE 内置 SDD，深度集成</td>
+      <td class="win">IDE 级深度集成；自动触发 hooks；企业级支持</td>
+      <td class="lose">锁定 AWS IDE；仅限 Claude 模型；无法迁移</td>
+    </tr>
+    <tr>
+      <td>Spec Kit (GitHub)</td>
+      <td>GitHub 官方规格驱动工具，严格 PRD 流程</td>
+      <td class="win">与 GitHub Issues/PR 深度联动；规格格式标准化</td>
+      <td class="lose">Python 依赖安装复杂；刚性阶段门控；不适合快速迭代</td>
+    </tr>
+    <tr>
+      <td>无规格直接 AI 编码</td>
+      <td>最低摩擦，随问随答</td>
+      <td class="win">启动最快，无需学习曲线</td>
+      <td class="lose">需求漂移；代码范围失控；无可追溯记录</td>
+    </tr>
+  </table>
+  <p><strong>OpenSpec 赢在哪里：</strong>生态宽度（工具无关）+ 轻量门槛（npm install 即可）+ 可定制性（YAML Schema）。<strong>OpenSpec 输在哪里：</strong>企业级团队协作（无 PR 集成）、离线/云端工作流、多人并发同一 Change。</p>
+
+  <!-- Section 3: 使用方式 -->
+  <h2 id="section-3">3 使用方式与执行链路</h2>
+
+  <h3 id="section-3-1">3.1 适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card good">
+      <h4>✓ 适合的场景</h4>
+      <ul>
+        <li>中等规模新功能（超过 3 个文件）</li>
+        <li>需要在团队中对齐 AI 生成意图</li>
+        <li>希望 AI 按步骤有节奏地实现，而不是一次性乱改</li>
+        <li>需要可追溯的决策记录（design.md 存档原因）</li>
+        <li>跨多个 AI 工具/模型切换使用的开发者</li>
+        <li>现有项目（brownfield）的增量改造</li>
+      </ul>
+    </div>
+    <div class="fit-card bad">
+      <h4>✗ 不适合的场景</h4>
+      <ul>
+        <li>一行代码 bug 修复——完全没必要写 proposal</li>
+        <li>纯探索性实验代码（还不知道要做什么）</li>
+        <li>高频小改动（每天 10+ 次 trivial change）</li>
+        <li>需要多人实时协作同一 Change 的团队</li>
+        <li>严格要求 CI/CD 与规格绑定的企业流程</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="section-3-2">3.2 最小可运行路径</h3>
+  <div class="cmd-flow">
+    <span class="comment"># 1. 全局安装</span><br>
+    <span class="cmd">npm install -g @fission-ai/openspec@latest</span><br><br>
+    <span class="comment"># 2. 进入项目并初始化（选择你使用的 AI 工具）</span><br>
+    <span class="cmd">cd your-project && openspec init</span><br><br>
+    <span class="comment"># 3. 告诉 AI 你要做什么（slash 命令）</span><br>
+    <span class="output">/opsx:propose add-dark-mode</span><br><br>
+    <span class="comment"># AI 自动创建 openspec/changes/add-dark-mode/</span><br>
+    <span class="output">✓ proposal.md  ✓ specs/  ✓ design.md  ✓ tasks.md</span><br><br>
+    <span class="comment"># 4. 让 AI 开始实现</span><br>
+    <span class="output">/opsx:apply</span><br><br>
+    <span class="comment"># 5. 完成后归档，Delta Spec 合并进主规格库</span><br>
+    <span class="output">/opsx:archive</span>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+%% 主链路: propose → artifacts ready → apply → archive
+graph LR
+  A["用户\n/opsx:propose"] --> B["ArtifactGraph\n确定构建顺序"]
+  B --> C["proposal.md\n首个 Artifact"]
+  C --> D["specs/ & design.md\n依赖 proposal"]
+  D --> E["tasks.md\n依赖 specs+design"]
+  E --> F["/opsx:apply\n实现任务"]
+  F --> G["/opsx:archive\n合并 Delta Spec"]
+    </div>
+    <div class="caption">图 3.2 — 最小可运行路径</div>
+  </div>
+
+  <h3 id="section-3-3">3.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <div class="mode-name">🚀 快速提案模式（Propose）</div>
+      <div class="mode-when">当：有明确功能需求，想一步到位</div>
+      <div class="mode-desc">运行 <code>/opsx:propose &lt;name&gt;</code>，AI 按 DAG 顺序依次生成 proposal → specs → design → tasks，全程无需人工干预，完成后进入 apply-ready 状态。</div>
+    </div>
+    <div class="usage-card">
+      <div class="mode-name">📝 分步对齐模式（New + Continue）</div>
+      <div class="mode-when">当：需求复杂，想逐步审阅每个 Artifact</div>
+      <div class="mode-desc">先 <code>/opsx:new &lt;name&gt;</code> 创建 Change，AI 生成 proposal 后停下等人审阅，确认后 <code>/opsx:continue</code> 继续下一步。适合需要对规格有完全掌控的场景。</div>
+    </div>
+    <div class="usage-card">
+      <div class="mode-name">⚡ 快进模式（FF）</div>
+      <div class="mode-when">当：已有部分 Artifact，需要补全剩余</div>
+      <div class="mode-desc"><code>/opsx:ff</code> 检查当前 Change 的完成状态，快速补全缺失的 Artifact 直到 apply-ready，跳过已有文件不重复生成。</div>
+    </div>
+    <div class="usage-card">
+      <div class="mode-name">🔄 验证同步模式（Verify + Sync）</div>
+      <div class="mode-when">当：实现完成需要验收，或规格与代码需同步</div>
+      <div class="mode-desc"><code>/opsx:verify</code> 运行 UAT 检查列表，<code>/opsx:sync</code> 将代码中的实际变更反向同步到规格文档，保持 specs 与代码一致。</div>
+    </div>
+  </div>
+
+  <h3 id="section-3-4">3.4 完整链路示例</h3>
+  <p>以"为电商 App 添加收藏夹功能"为完整示例，展示从需求到归档的全链路：</p>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-label">Step 1 — 提案</div>
+      <div class="timeline-content">
+        用户在 Cursor 中输入 <span class="timeline-code">/opsx:propose add-favorites</span>。AI 首先调用 <code>openspec new change "add-favorites"</code> 创建目录，再调用 <code>openspec status --json</code> 获取 DAG 构建顺序。
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-label">Step 2 — 生成 proposal.md</div>
+      <div class="timeline-content">
+        AI 调用 <code>openspec instructions proposal --change add-favorites --json</code>，获取 context（项目背景）、template（文档结构）和 instruction（写作规则）。按模板写出 proposal.md：为什么做、改什么、影响范围。
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-label">Step 3 — 生成 specs/ & design.md</div>
+      <div class="timeline-content">
+        proposal 完成后，ArtifactGraph 解锁 specs 和 design（它们都只依赖 proposal）。AI 并行创建 <code>specs/favorites/spec.md</code>（需求 + WHEN/THEN 场景）和 <code>design.md</code>（API 设计、数据结构）。Validator 检查规格是否包含 SHALL/MUST 和至少一个场景。
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-label">Step 4 — 生成 tasks.md</div>
+      <div class="timeline-content">
+        specs + design 完成后，AI 创建 tasks.md，包含勾选框格式的任务列表（<code>- [ ] 1.1 Add favorites model</code>）。ArtifactGraph 判断 apply.requires: [tasks] 已满足，状态变为 apply-ready。
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-label">Step 5 — 实现</div>
+      <div class="timeline-content">
+        <span class="timeline-code">/opsx:apply</span> → AI 读取所有 context 文件，逐一完成 tasks.md 中的任务，每完成一个将 <code>- [ ]</code> 改为 <code>- [x]</code>，遇到问题暂停等待指导。
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-label">Step 6 — 归档</div>
+      <div class="timeline-content">
+        <span class="timeline-code">/opsx:archive</span> → ArchiveCommand 将 <code>specs/favorites/spec.md</code>（Delta）中的 ADDED Requirements 合并进 <code>openspec/specs/favorites/spec.md</code>（主规格），整个 Change 目录移入 <code>archive/2026-04-12-add-favorites/</code>。
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: 系统设计 -->
+  <h2 id="section-4">4 系统详细设计</h2>
+
+  <h3 id="section-4-1">4.1 系统架构设计</h3>
+
+  <h4 id="section-4-1-1">4.1.1 架构图</h4>
+
+  <div class="dir-tree">
+<span class="tree-root">openspec/</span> <span class="tree-comment">← 项目自身用 OpenSpec 管理开发</span><br>
+<span class="tree-branch">├── </span><span class="tree-dir">bin/</span>           <span class="tree-comment">← CLI 入口，Node 可执行文件</span><br>
+<span class="tree-branch">├── </span><span class="tree-dir">src/</span><br>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">cli/</span>         <span class="tree-comment">← Commander.js 程序注册</span><br>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">commands/</span>    <span class="tree-comment">← 各 CLI 子命令实现</span><br>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">core/</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry">★ artifact-graph/</span> <span class="tree-comment">← 核心: DAG 工作流引擎</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">validation/</span>  <span class="tree-comment">← Spec/Change 格式校验</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">command-generation/</span> <span class="tree-comment">← 30+ 工具适配器</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">templates/</span>   <span class="tree-comment">← AI Skill/斜线命令模板</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">parsers/</span>     <span class="tree-comment">← Markdown / Delta Spec 解析</span><br>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry">★ init.ts</span>    <span class="tree-comment">← openspec init 主流程</span><br>
+<span class="tree-branch">│   │   └── </span><span class="tree-dir">archive.ts</span>   <span class="tree-comment">← Delta Spec 归档合并</span><br>
+<span class="tree-branch">│   └── </span><span class="tree-dir">utils/</span>       <span class="tree-comment">← 文件系统、变更元数据工具</span><br>
+<span class="tree-branch">└── </span><span class="tree-dir">schemas/</span>          <span class="tree-comment">← 内置工作流 Schema (YAML)</span>
+  </div>
+
+  <table class="cast-table">
+    <tr><th>角色</th><th>文件</th><th>职责</th></tr>
+    <tr>
+      <td>★ CLI 入口</td>
+      <td>bin/openspec.js · src/cli/index.ts</td>
+      <td>注册所有子命令（init/change/spec/validate/workflow），分发到对应 Command 类</td>
+    </tr>
+    <tr>
+      <td>★ ArtifactGraph</td>
+      <td>src/core/artifact-graph/graph.ts</td>
+      <td>DAG 引擎：用 Kahn 算法计算拓扑构建顺序，检测 ready/blocked/complete 状态</td>
+    </tr>
+    <tr>
+      <td>SchemaResolver</td>
+      <td>src/core/artifact-graph/resolver.ts</td>
+      <td>三层 Schema 解析（项目本地 &gt; 用户全局 &gt; 内置包），支持用户自定义工作流</td>
+    </tr>
+    <tr>
+      <td>InstructionLoader</td>
+      <td>src/core/artifact-graph/instruction-loader.ts</td>
+      <td>为 AI 注入上下文：template + instruction + context + rules + 已完成依赖路径</td>
+    </tr>
+    <tr>
+      <td>Validator</td>
+      <td>src/core/validation/validator.ts</td>
+      <td>Spec/Change 格式门禁：Zod 结构验证 + SHALL/MUST 强制 + 场景数检查</td>
+    </tr>
+    <tr>
+      <td>CommandGeneration</td>
+      <td>src/core/command-generation/</td>
+      <td>将通用 CommandContent 转换为 30+ 工具特定的斜线命令文件格式</td>
+    </tr>
+    <tr>
+      <td>SkillTemplates</td>
+      <td>src/core/templates/workflows/</td>
+      <td>为每个 AI 工具生成 Skill 定义（/opsx:propose、/opsx:apply 等详细指令文本）</td>
+    </tr>
+    <tr>
+      <td>Init</td>
+      <td>src/core/init.ts</td>
+      <td>openspec init 全流程编排：探测工具 → 生成 Skills → 生成命令文件 → 清理历史版本</td>
+    </tr>
+    <tr>
+      <td>Archive</td>
+      <td>src/core/archive.ts</td>
+      <td>Delta Spec 合并器：将 change/specs/ 中的增量规格 patch 进 openspec/specs/ 主库</td>
+    </tr>
+    <tr>
+      <td>Profiles</td>
+      <td>src/core/profiles.ts</td>
+      <td>管理 core（propose/explore/apply/archive）和 extended（全套 11 个工作流）两种工作流配置</td>
+    </tr>
+  </table>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+%% 主链路: CLI → ArtifactGraph → InstructionLoader → AI 执行 → Archive
+graph TD
+  subgraph CLI["CLI 入口层"]
+    BIN["bin/openspec.js\nCLI 启动"]
+    CMD["src/cli/index.ts\nCommander 路由"]
+    CMDS["src/commands/\n子命令处理"]
+  end
+
+  subgraph WORKFLOW["工作流引擎层"]
+    AG["ArtifactGraph\nDAG 拓扑引擎"]
+    SR["SchemaResolver\n三层 Schema 解析"]
+    IL["InstructionLoader\nAI 上下文注入"]
+    ST["State Detector\n文件系统状态检测"]
+  end
+
+  subgraph SPEC["规格管理层"]
+    VAL["Validator\n格式门禁"]
+    PARSE["Parsers\nMarkdown/Delta 解析"]
+    ARC["Archive\nDelta 合并归档"]
+  end
+
+  subgraph ADAPTER["多工具适配层"]
+    CG["CommandGeneration\n命令生成引擎"]
+    ADPS["30+ Adapters\nCursor/Claude/Copilot..."]
+    TPL["SkillTemplates\nAI 指令模板"]
+    INIT["Init\n安装编排"]
+  end
+
+  subgraph STORE["数据存储层"]
+    SCHEMA["schemas/\n内置 YAML 工作流"]
+    OSPEC["openspec/changes/\nArtifact 文件"]
+    MAINSPEC["openspec/specs/\n主规格库"]
+  end
+
+  BIN --> CMD --> CMDS
+  CMDS --> AG
+  SR --> AG
+  AG --> IL
+  AG --> ST
+  ST -.->|读文件存在性| OSPEC
+  IL -.->|读模板+指令| SCHEMA
+  IL --> CMDS
+  CMDS --> VAL
+  VAL --> PARSE
+  CMDS --> ARC
+  ARC -->|merge delta| MAINSPEC
+  CMDS --> INIT
+  INIT --> CG
+  CG --> ADPS
+  INIT --> TPL
+    </div>
+    <div class="caption">图 4.1.1 — OpenSpec 系统架构图</div>
+  </div>
+
+  <p><strong>如何读这张图：</strong>用户运行 <code>openspec init</code> 或斜线命令时，请求从 <strong>CLI 入口层</strong> 的 <code>bin/openspec.js</code> 进入，经 Commander 路由到对应子命令。工作流命令（如 status、instructions）触发 <strong>工作流引擎层</strong>：<code>SchemaResolver</code> 确定使用哪个 YAML 工作流，<code>ArtifactGraph</code> 用 Kahn 算法计算 DAG 构建顺序，<code>State Detector</code> 通过文件是否存在判断每个 Artifact 的完成状态，<code>InstructionLoader</code> 将模板+指令+上下文打包成 JSON 返回给 AI。AI 生成文件后，<strong>规格管理层</strong> 的 <code>Validator</code> 做格式门禁，<code>Archive</code> 在归档时将 Delta Spec 合并进主规格库。<code>openspec init</code> 则触发 <strong>多工具适配层</strong>，为每种 AI 工具生成专属的 Skill 文件和斜线命令文件。</p>
+
+  <h4 id="section-4-1-2">4.1.2 目录与核心文件</h4>
+
+  <h4>工作流引擎层 — artifact-graph/</h4>
+  <div class="dir-rationale">DAG 是 OpenSpec 的核心创新。这个目录把"AI 应该按什么顺序创建什么文件"这个问题，转化为一个图论问题来精确求解。</div>
+  <table class="dir-table">
+    <tr><th>文件</th><th>职责</th></tr>
+    <tr><td>★ graph.ts</td><td>ArtifactGraph 类：Kahn 拓扑排序、getNextArtifacts、isComplete、getBlocked</td></tr>
+    <tr><td>resolver.ts</td><td>三层 Schema 路径解析，project &gt; user &gt; package 优先级</td></tr>
+    <tr><td>instruction-loader.ts</td><td>loadChangeContext + getArtifactInstructions，为 AI 准备完整上下文 JSON</td></tr>
+    <tr><td>state.ts</td><td>detectCompleted：扫描 changeDir 下文件，返回已完成 Artifact 的 Set</td></tr>
+    <tr><td>schema.ts</td><td>YAML 解析 + Zod 验证 + 循环依赖检测（DFS）</td></tr>
+    <tr><td>types.ts</td><td>Zod Schema 定义（ArtifactSchema, SchemaYamlSchema, ChangeMetadataSchema）</td></tr>
+    <tr><td>outputs.ts</td><td>glob 匹配 generates 字段，判断 Artifact 的输出文件是否存在</td></tr>
+  </table>
+
+  <h4>规格管理层 — validation/ + parsers/</h4>
+  <div class="dir-rationale">保证 AI 生成的规格质量。不是所有 Markdown 都是合格的规格——这里做结构强制检查。</div>
+  <table class="dir-table">
+    <tr><th>文件</th><th>职责</th></tr>
+    <tr><td>validator.ts</td><td>validateSpec/validateChange/validateChangeDeltaSpecs，三级严格校验</td></tr>
+    <tr><td>markdown-parser.ts</td><td>将 Markdown 解析为 Spec/Change 结构化对象，感知代码围栏</td></tr>
+    <tr><td>requirement-blocks.ts</td><td>解析 Delta Spec 的 ADDED/MODIFIED/REMOVED/RENAMED 区块</td></tr>
+    <tr><td>spec-structure.ts</td><td>检查主规格的 Purpose/Requirements 章节结构</td></tr>
+  </table>
+
+  <h4>多工具适配层 — command-generation/</h4>
+  <div class="dir-rationale">一套命令内容，自动生成 30+ 种 AI 工具各自需要的文件格式，这是 OpenSpec 生态宽度的技术基础。</div>
+  <table class="dir-table">
+    <tr><th>文件</th><th>职责</th></tr>
+    <tr><td>registry.ts</td><td>CommandAdapterRegistry，集中注册所有工具适配器</td></tr>
+    <tr><td>generator.ts</td><td>generateCommand(content, adapter) 单一职责转换函数</td></tr>
+    <tr><td>adapters/cursor.ts</td><td>生成 .cursor/commands/opsx-*.md（YAML frontmatter 格式）</td></tr>
+    <tr><td>adapters/claude.ts</td><td>生成 .claude/commands/opsx/*.md（含 tags 数组格式）</td></tr>
+    <tr><td>adapters/factory.ts</td><td>…其余 27 种适配器遵循同一接口 ToolCommandAdapter</td></tr>
+  </table>
+
+  <h4>数据层 — schemas/ + openspec/</h4>
+  <div class="dir-rationale">YAML 定义工作流（可替换），openspec/ 目录存储运行时 Artifact（项目自身也在用）。</div>
+  <table class="dir-table">
+    <tr><th>目录</th><th>职责</th></tr>
+    <tr><td>schemas/spec-driven/</td><td>默认工作流：proposal → {specs, design} → tasks，含 apply 配置</td></tr>
+    <tr><td>openspec/changes/</td><td>活跃 Change 目录，每个 Change 一个子目录，含 .openspec.yaml 元数据</td></tr>
+    <tr><td>openspec/changes/archive/</td><td>已完成 Change 的历史存档，按日期命名</td></tr>
+    <tr><td>openspec/specs/</td><td>主规格库，归档时 Delta Spec 合并进来</td></tr>
+  </table>
+
+  <!-- Section 4.2: 关键模块 -->
+  <h3 id="section-4-2">4.2 关键模块实现细节</h3>
+
+  <h4 id="section-4-2-1">4.2.1 ArtifactGraph — DAG 工作流引擎</h4>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge">核心模块</span>
+      <h4>ArtifactGraph — Kahn 算法驱动的工作流调度</h4>
+      <span class="module-meta">graph.ts · schema.ts · state.ts</span>
+    </div>
+    <div class="module-body">
+      <div class="module-section">
+        <h5>要解决的问题</h5>
+        <p>AI 要按正确顺序生成多个相互依赖的文档（proposal 必须先于 specs，specs 和 design 完成后才能写 tasks）。如何精确表达这种依赖关系，并在运行时判断"接下来应该做什么"？</p>
+      </div>
+      <div class="module-section">
+        <h5>选择了什么 · 为什么</h5>
+        <p>使用有向无环图（DAG）建模 Artifact 依赖，用 <strong>Kahn 算法</strong>（入度为零的节点队列）计算拓扑排序，获得确定性的构建顺序。状态检测通过<strong>文件系统检查</strong>（不用数据库），每次查询都重新扫描文件是否存在。</p>
+        <pre><code class="language-typescript">// Kahn 算法核心：确定下一步可以构建的 Artifacts
+getNextArtifacts(completed: CompletedSet): string[] {
+  const ready: string[] = [];
+  for (const artifact of this.artifacts.values()) {
+    if (completed.has(artifact.id)) continue;
+    const allDepsCompleted = artifact.requires.every(req => completed.has(req));
+    if (allDepsCompleted) ready.push(artifact.id);
+  }
+  return ready.sort(); // 排序保证确定性
+}</code></pre>
+        <p>Schema 加载时还会做三重验证：重复 ID 检测 + 引用合法性检查 + DFS 循环依赖检测，确保工作流定义本身的完整性。</p>
+      </div>
+      <div class="module-section">
+        <h5>代价与局限</h5>
+        <p>文件系统状态检测让 OpenSpec 在并发场景下完全不可靠——两个 AI 会话同时操作同一 Change 会导致状态错乱。Kahn 算法的确定性排序需要所有 Artifact ID 都已知，无法支持动态生成的 Artifact 数量（如"根据需求多少生成对应数量的 spec 文件"）。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant AI as AI 助手
+  participant CLI as openspec CLI
+  participant AG as ArtifactGraph
+  participant FS as 文件系统
+
+  AI->>CLI: openspec status --change add-feat --json
+  CLI->>AG: ArtifactGraph.fromYaml(schema.yaml)
+  CLI->>FS: detectCompleted(graph, changeDir)
+  FS-->>CLI: completed = {proposal}
+  CLI->>AG: graph.getNextArtifacts(completed)
+  AG-->>CLI: ["design", "specs"] (按字典序)
+  CLI-->>AI: JSON {artifacts, applyRequires, ...}
+
+  AI->>CLI: openspec instructions specs --change add-feat --json
+  CLI->>AG: getArtifactInstructions("specs", ctx)
+  AG-->>CLI: {template, instruction, context, dependencies}
+  CLI-->>AI: 完整上下文 JSON
+
+  AI->>FS: 写入 specs/feature/spec.md
+  FS-->>AI: 文件创建成功
+    </div>
+    <div class="caption">图 4.2.1 — ArtifactGraph 状态查询时序</div>
+  </div>
+
+  <h4 id="section-4-2-2">4.2.2 SchemaResolver — 三层解析机制</h4>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge">扩展性</span>
+      <h4>SchemaResolver — 优先级驱动的工作流配置解析</h4>
+      <span class="module-meta">resolver.ts · types.ts</span>
+    </div>
+    <div class="module-body">
+      <div class="module-section">
+        <h5>要解决的问题</h5>
+        <p>不同项目、不同团队、不同用户需要不同的工作流（有人需要"极简 proposal+tasks"，企业用户需要"加入安全评审步骤"），但内置的默认工作流也需要对大多数用户开箱即用。如何既不破坏简单用户体验，又保留完全的可定制性？</p>
+      </div>
+      <div class="module-section">
+        <h5>选择了什么 · 为什么</h5>
+        <p>三层优先级解析（类似 Git config 的 system/global/local 模式）：</p>
+        <ol>
+          <li><strong>项目本地</strong>：<code>&lt;projectRoot&gt;/openspec/schemas/&lt;name&gt;/schema.yaml</code></li>
+          <li><strong>用户全局</strong>：<code>$XDG_DATA_HOME/openspec/schemas/&lt;name&gt;/schema.yaml</code></li>
+          <li><strong>内置包</strong>：<code>dist/schemas/&lt;name&gt;/schema.yaml</code>（最低优先级）</li>
+        </ol>
+        <p>Schema 文件本身是标准 YAML + Zod 验证，包含 Artifact 定义列表和 apply 阶段配置，完全可读可编辑。</p>
+      </div>
+      <div class="module-section">
+        <h5>代价与局限</h5>
+        <p>三层解析让 Schema 来源难以追踪——当行为异常时，用户需要知道"到底用的是哪层的 Schema"。目前没有 <code>openspec schema info</code> 命令来展示当前生效的 Schema 来源，调试体验较差。</p>
+      </div>
+    </div>
+  </div>
+
+  <h4 id="section-4-2-3">4.2.3 Validator — 规格质量门禁</h4>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge">质量保证</span>
+      <h4>Validator — 多层次 Spec 格式强制检查</h4>
+      <span class="module-meta">validator.ts · requirement-blocks.ts</span>
+    </div>
+    <div class="module-body">
+      <div class="module-section">
+        <h5>要解决的问题</h5>
+        <p>AI 生成的"规格"可能只是漂亮的 Markdown，但没有实质性的约束语言。一个写着"用户可以登录"的规格，跟一个写着"系统 SHALL 在 3 秒内完成认证并返回 JWT"的规格，质量天壤之别。</p>
+      </div>
+      <div class="module-section">
+        <h5>选择了什么 · 为什么</h5>
+        <p>三层验证叠加：</p>
+        <ol>
+          <li><strong>Zod 结构验证</strong>：Spec/Change 对象必须符合 TypeScript 类型定义，包含 Purpose/Requirements 等必要章节</li>
+          <li><strong>结构规则检查</strong>：每个 Requirement 必须有至少一个场景（WHEN/THEN）；场景标题必须用 <code>####</code> 而非 <code>###</code></li>
+          <li><strong>语义规则强制</strong>：Requirement 文本必须包含 <code>SHALL</code> 或 <code>MUST</code>（排除 should/may 等弱约束）</li>
+        </ol>
+        <p>Delta Spec 还有额外检查：同一 spec 内 ADDED/MODIFIED/REMOVED 不能有重复 Requirement，不能有跨区块冲突。</p>
+      </div>
+      <div class="module-section">
+        <h5>代价与局限</h5>
+        <p>严格的格式要求（<code>####</code> 场景标题、SHALL/MUST 强制）在实际使用中是最常见的踩坑点——AI 如果没有严格按 template 写，就会验证失败，且错误信息对用户来说不够直观。</p>
+      </div>
+    </div>
+  </div>
+
+  <h4 id="section-4-2-4">4.2.4 CommandGeneration — 多工具适配引擎</h4>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge">生态扩展</span>
+      <h4>CommandGeneration — 适配器模式驱动的斜线命令生成</h4>
+      <span class="module-meta">generator.ts · registry.ts · adapters/</span>
+    </div>
+    <div class="module-body">
+      <div class="module-section">
+        <h5>要解决的问题</h5>
+        <p>Cursor、Claude Code、GitHub Copilot、Windsurf 等 30+ 工具各有不同的斜线命令文件格式（YAML frontmatter 字段不同、目录结构不同）。如何维护一套命令内容，同时支持所有工具？</p>
+      </div>
+      <div class="module-section">
+        <h5>选择了什么 · 为什么</h5>
+        <p>经典的<strong>适配器模式</strong>（Adapter Pattern）：定义 <code>ToolCommandAdapter</code> 接口，每种工具实现两个方法 <code>getFilePath(id)</code> 和 <code>formatFile(content)</code>。命令内容（CommandContent）与格式生成完全解耦。</p>
+        <pre><code class="language-typescript">// 适配器接口 - 每个工具实现这两个方法
+interface ToolCommandAdapter {
+  toolId: string;
+  getFilePath(commandId: string): string;  // 决定写到哪个文件
+  formatFile(content: CommandContent): string; // 决定写什么格式
+}
+
+// Cursor 写到 .cursor/commands/opsx-*.md
+// Claude 写到 .claude/commands/opsx/*.md
+// Windsurf 写到 .windsurf/commands/opsx-*.md</code></pre>
+        <p>CommandAdapterRegistry 用 Map 存储所有注册适配器，支持运行时通过 toolId 查找。</p>
+      </div>
+      <div class="module-section">
+        <h5>代价与局限</h5>
+        <p>适配器数量随工具增长线性增加（目前 30+，还在增加）。每次工具更新命令格式规范，对应适配器就需要更新，维护成本不低。目前没有适配器的自动化测试覆盖，只能靠手工验证。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant USER as openspec init
+  participant INIT as init.ts
+  participant REG as CommandAdapterRegistry
+  participant ADP as Tool Adapter
+  participant FS as 文件系统
+
+  USER->>INIT: 用户选择 Cursor + Claude
+  INIT->>REG: registry.get("cursor")
+  REG-->>INIT: cursorAdapter
+  INIT->>INIT: getCommandContents(workflows)
+  Note over INIT: 生成 propose/apply/archive 等命令内容
+
+  loop 每个命令 × 每个工具
+    INIT->>ADP: generateCommand(content, cursorAdapter)
+    ADP->>ADP: formatFile(content)
+    ADP-->>INIT: {path: ".cursor/commands/opsx-propose.md", fileContent}
+    INIT->>FS: 写入命令文件
+  end
+
+  INIT->>FS: 写入 Skill 文件
+  Note over FS: .cursor/rules/openspec-propose.mdc<br>.claude/commands/opsx/propose.md
+    </div>
+    <div class="caption">图 4.2.4 — CommandGeneration 多工具适配时序</div>
+  </div>
+
+  <h4 id="section-4-2-5">4.2.5 ArchiveCommand — Delta Spec 合并器</h4>
+  <div class="module-card">
+    <div class="module-header">
+      <span class="module-badge">知识积累</span>
+      <h4>ArchiveCommand — 增量规格归档与主库合并</h4>
+      <span class="module-meta">archive.ts · specs-apply.ts · requirement-blocks.ts</span>
+    </div>
+    <div class="module-body">
+      <div class="module-section">
+        <h5>要解决的问题</h5>
+        <p>每次功能变更都会产生 Delta Spec（只写变化部分：ADDED/MODIFIED/REMOVED/RENAMED）。归档时这些增量变化需要精确地 patch 进主规格库（<code>openspec/specs/</code>），就像 Git patch 一样，但操作对象是 Markdown 结构化文档而非代码行。</p>
+      </div>
+      <div class="module-section">
+        <h5>选择了什么 · 为什么</h5>
+        <p>解析 Delta Spec 的四种操作并逐一执行：</p>
+        <ul>
+          <li><strong>ADDED</strong>：将新 Requirement block 追加到主 spec 对应章节末尾</li>
+          <li><strong>MODIFIED</strong>：用 normalizeRequirementName 做名称匹配，找到原 block 后整体替换</li>
+          <li><strong>REMOVED</strong>：按名称找到 block，从主 spec 中删除整个 Requirement</li>
+          <li><strong>RENAMED</strong>：找到 FROM 的 Requirement，将其标题改为 TO 的名称</li>
+        </ul>
+        <p>在正式写入前，会用 Validator 对合并后的结果做一遍验证，防止 patch 导致结构破坏。</p>
+      </div>
+      <div class="module-section">
+        <h5>代价与局限</h5>
+        <p>Delta 合并是基于文本解析的，当主规格库的 Requirement 标题有细微变化（空格、大小写）时可能匹配失败。<code>normalizeRequirementName</code> 做了一些容错，但复杂的重命名链条（A→B 再 B→C）在同一个 Change 中仍可能失败。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: 评价 -->
+  <h2 id="section-5">5 方案评价</h2>
+
+  <h3 id="section-5-1">5.1 优势分析</h3>
+
+  <div class="eval-grid">
+    <div class="eval-card pro">
+      <h4>✓ 核心优势</h4>
+      <div class="eval-item">
+        <strong>工具无关的生态宽度</strong>
+        30+ 适配器覆盖几乎所有主流 AI 工具，这是 39.5k Star 背后的核心竞争力，也是竞品（Kiro 锁定 AWS IDE）无法复制的。
+      </div>
+      <div class="eval-item">
+        <strong>DAG 工作流精确调度</strong>
+        用有向无环图表达 Artifact 依赖比简单的"顺序步骤"更灵活——specs 和 design 可以并行，这对 AI 的效率有实质提升。
+      </div>
+      <div class="eval-item">
+        <strong>YAML Schema 全面可定制</strong>
+        工作流本身作为数据（schema.yaml），三层解析允许项目/用户/默认三级覆盖，扩展性极强。
+      </div>
+      <div class="eval-item">
+        <strong>零依赖状态追踪</strong>
+        文件系统即状态，不需要数据库，不需要守护进程。离线工作、系统崩溃后恢复都没有任何额外成本。
+      </div>
+      <div class="eval-item">
+        <strong>自食其果（Dogfooding）</strong>
+        项目自身的 openspec/ 目录显示它在用自己管理自己的开发，这是设计合理性的最强证明。
+      </div>
+    </div>
+    <div class="eval-card con">
+      <h4>✗ 核心局限</h4>
+      <div class="eval-item">
+        <strong>AI 输出质量强依赖</strong>
+        OpenSpec 定义了结构，但具体 Artifact 内容质量完全取决于 AI + 用户提示。Delta Spec 格式复杂，AI 容易写出不符合格式要求（#### 场景标题、SHALL/MUST）的内容。
+      </div>
+      <div class="eval-item">
+        <strong>无法支持云端/团队协作</strong>
+        文件系统状态天然不支持多人并发操作同一 Change，也无法在 CI/CD 管道中自动触发工作流步骤。
+      </div>
+      <div class="eval-item">
+        <strong>适配器维护成本持续增长</strong>
+        每新增一个工具或工具更新命令格式，都需要更新适配器。30+ 适配器已经是不小的维护负担，测试覆盖也不够完整。
+      </div>
+      <div class="eval-item">
+        <strong>Delta Spec 合并脆弱</strong>
+        文本解析的 Requirement 匹配在边界情况下容易失败（标题细微变化、跨 Change 的冲突修改），一旦出错需要手动修复 Markdown。
+      </div>
+      <div class="eval-item">
+        <strong>工作流分裂（propose vs. new/continue）</strong>
+        核心工作流（propose 一步到位）和扩展工作流（new + continue + ff + verify + sync）并存，用户需要学习成本来判断使用哪套。
+      </div>
+    </div>
+  </div>
+
+</main><!-- .content -->
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { fontSize: '14px' }, flowchart: { diagramMarginX: 20, diagramMarginY: 20, nodeSpacing: 50, rankSpacing: 50 } });
+  document.addEventListener('DOMContentLoaded', () => {
+    hljs.highlightAll();
+    const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+    const tocLinks = document.querySelectorAll('.toc a[href^="#"]');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -85% 0px' });
+    sections.forEach(s => observer.observe(s));
+  });
+</script>
+
+<!-- Slide-in Panel -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="panel-header">
+    <span class="panel-badge" id="panelBadge">FILE</span>
+    <span class="panel-title" id="panelTitle"></span>
+    <a id="panelGhLink" href="#" target="_blank" rel="noopener" style="display:none">在新标签页中打开 ↗</a>
+    <button class="panel-close" id="panelClose">✕</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoading">
+      <div class="iframe-spin"></div>
+      <span style="font-size:13px;color:#888;">加载中…</span>
+    </div>
+    <iframe id="panelIframe" sandbox="allow-scripts allow-same-origin allow-forms" title="GitHub 文件预览"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const GH_REPO   = 'Fission-AI/OpenSpec';
+const GH_BRANCH = 'main';
+
+// ── FILE_MAP ─────────────────────────────────────────────────────────────────
+const FILE_MAP = {
+  'bin/openspec.js':                             'bin/openspec.js',
+  '★ bin/openspec.js':                           'bin/openspec.js',
+  'src/cli/index.ts':                            'src/cli/index.ts',
+  'src/core/init.ts':                            'src/core/init.ts',
+  '★ src/core/init.ts':                          'src/core/init.ts',
+  'src/core/archive.ts':                         'src/core/archive.ts',
+  'src/core/profiles.ts':                        'src/core/profiles.ts',
+  'src/core/specs-apply.ts':                     'src/core/specs-apply.ts',
+  'src/core/artifact-graph/graph.ts':            'src/core/artifact-graph/graph.ts',
+  'src/core/artifact-graph/resolver.ts':         'src/core/artifact-graph/resolver.ts',
+  'src/core/artifact-graph/instruction-loader.ts':'src/core/artifact-graph/instruction-loader.ts',
+  'src/core/artifact-graph/state.ts':            'src/core/artifact-graph/state.ts',
+  'src/core/artifact-graph/schema.ts':           'src/core/artifact-graph/schema.ts',
+  'src/core/artifact-graph/types.ts':            'src/core/artifact-graph/types.ts',
+  'src/core/artifact-graph/outputs.ts':          'src/core/artifact-graph/outputs.ts',
+  'src/core/validation/validator.ts':            'src/core/validation/validator.ts',
+  'src/core/command-generation/generator.ts':    'src/core/command-generation/generator.ts',
+  'src/core/command-generation/registry.ts':     'src/core/command-generation/registry.ts',
+  'src/core/command-generation/adapters/cursor.ts': 'src/core/command-generation/adapters/cursor.ts',
+  'src/core/command-generation/adapters/claude.ts': 'src/core/command-generation/adapters/claude.ts',
+  'src/core/parsers/markdown-parser.ts':         'src/core/parsers/markdown-parser.ts',
+  'src/core/parsers/requirement-blocks.ts':      'src/core/parsers/requirement-blocks.ts',
+  'src/core/templates/workflows/propose.ts':     'src/core/templates/workflows/propose.ts',
+  'src/core/templates/workflows/apply-change.ts':'src/core/templates/workflows/apply-change.ts',
+  'src/core/templates/workflows/archive-change.ts':'src/core/templates/workflows/archive-change.ts',
+  'schemas/spec-driven/schema.yaml':             'schemas/spec-driven/schema.yaml',
+  // shorthand keys used in tables
+  'graph.ts':                'src/core/artifact-graph/graph.ts',
+  '★ graph.ts':              'src/core/artifact-graph/graph.ts',
+  'resolver.ts':             'src/core/artifact-graph/resolver.ts',
+  'instruction-loader.ts':   'src/core/artifact-graph/instruction-loader.ts',
+  'state.ts':                'src/core/artifact-graph/state.ts',
+  'schema.ts':               'src/core/artifact-graph/schema.ts',
+  'types.ts':                'src/core/artifact-graph/types.ts',
+  'outputs.ts':              'src/core/artifact-graph/outputs.ts',
+  'validator.ts':            'src/core/validation/validator.ts',
+  'generator.ts':            'src/core/command-generation/generator.ts',
+  'registry.ts':             'src/core/command-generation/registry.ts',
+  'markdown-parser.ts':      'src/core/parsers/markdown-parser.ts',
+  'requirement-blocks.ts':   'src/core/parsers/requirement-blocks.ts',
+  'spec-structure.ts':       'src/core/parsers/spec-structure.ts',
+  'archive.ts':              'src/core/archive.ts',
+  'profiles.ts':             'src/core/profiles.ts',
+  'specs-apply.ts':          'src/core/specs-apply.ts',
+  '★ artifact-graph/':       'src/core/artifact-graph',
+  '★ init.ts':               'src/core/init.ts',
+};
+
+// ── PROJECT_TERMS ─────────────────────────────────────────────────────────────
+const PROJECT_TERMS = {
+  'Artifact Graph': {
+    tags: ['核心创新', 'DAG', '工作流引擎'],
+    def: 'OpenSpec 的核心调度引擎，将一次功能变更中的所有文档（proposal、specs、design、tasks）建模为带依赖关系的有向无环图（DAG）。通过 Kahn 算法计算拓扑排序，精确告知 AI 接下来应该创建哪个 Artifact。',
+    mechanics: [
+      '节点 = Artifact（如 proposal、specs、design、tasks）',
+      '边 = requires 字段定义的依赖（proposal 必须在 specs 之前）',
+      '状态检测：扫描 changeDir 文件是否存在（无数据库）',
+      'getNextArtifacts(completed) 返回所有依赖已满足的待做 Artifact',
+      'getBlocked(completed) 返回哪些 Artifact 还缺少哪些依赖',
+    ],
+    related: ['Delta Spec', 'Schema Resolution'],
+    files: ['graph.ts', 'state.ts', 'types.ts'],
+    patterns: ['ArtifactGraph', 'Artifact Graph', 'artifact-graph', 'DAG 工作流引擎', 'Kahn 算法'],
+  },
+  'Delta Spec': {
+    tags: ['规格管理', '增量更新', '归档机制'],
+    def: '变更级别的增量规格文件（<code>openspec/changes/&lt;name&gt;/specs/&lt;capability&gt;/spec.md</code>），只记录相对于主规格库的变化部分，使用 ADDED/MODIFIED/REMOVED/RENAMED 四种操作区块描述变更内容。归档时自动 patch 进主规格库。',
+    mechanics: [
+      '## ADDED Requirements：新增需求，需要 SHALL/MUST + 至少一个 #### Scenario',
+      '## MODIFIED Requirements：修改已有需求，必须包含完整新内容（不能只写 diff）',
+      '## REMOVED Requirements：删除需求，需写明 Reason 和 Migration',
+      '## RENAMED Requirements：重命名，使用 FROM:/TO: 格式',
+      'Validator 在归档前检查跨区块冲突（同名 Requirement 不能同时在 ADDED 和 REMOVED）',
+    ],
+    related: ['Artifact Graph', 'Schema Resolution'],
+    files: ['requirement-blocks.ts', 'validator.ts', 'archive.ts'],
+    patterns: ['Delta Spec', 'delta spec', 'ADDED Requirements', 'MODIFIED Requirements', 'REMOVED Requirements', 'RENAMED Requirements'],
+  },
+  'Schema Resolution': {
+    tags: ['可定制性', '三层优先级', '工作流配置'],
+    def: '三层优先级的工作流 Schema 查找机制：<strong>项目本地</strong>（&lt;projectRoot&gt;/openspec/schemas/）→ <strong>用户全局</strong>（$XDG_DATA_HOME/openspec/schemas/）→ <strong>内置包</strong>（dist/schemas/）。允许用户在任何层级创建自定义工作流，不影响其他项目或全局默认。',
+    mechanics: [
+      '每层检查 &lt;name&gt;/schema.yaml 是否存在，找到即使用',
+      'Schema YAML 包含 name、version、description、artifacts 列表和可选的 apply 配置',
+      'Zod 验证 Schema 结构，加载时检测循环依赖和引用合法性',
+      'resolveSchema(name, projectRoot) 是核心 API，返回 SchemaYaml 对象',
+    ],
+    related: ['Artifact Graph'],
+    files: ['resolver.ts', 'schemas/spec-driven/schema.yaml'],
+    patterns: ['Schema Resolution', 'Schema 解析', '三层解析', 'spec-driven'],
+  },
+  'Tool Adapter': {
+    tags: ['多工具支持', '适配器模式', '生态宽度'],
+    def: '将工具无关的斜线命令内容（CommandContent）转换为特定 AI 工具格式的适配器。每个适配器实现 ToolCommandAdapter 接口，定义文件路径规则和内容格式。目前支持 Cursor、Claude、GitHub Copilot、Windsurf、Cline、Codex 等 30+ 工具。',
+    mechanics: [
+      'getFilePath(commandId): 决定命令文件写到哪里（如 .cursor/commands/opsx-propose.md）',
+      'formatFile(content): 决定文件内容格式（YAML frontmatter 字段因工具而异）',
+      'CommandAdapterRegistry 用 Map<toolId, adapter> 统一管理所有适配器',
+      'generateCommands(contents, adapter) 批量生成一个工具的所有命令文件',
+    ],
+    related: ['Artifact Graph'],
+    files: ['registry.ts', 'generator.ts', 'src/core/command-generation/adapters/cursor.ts', 'src/core/command-generation/adapters/claude.ts'],
+    patterns: ['Tool Adapter', 'ToolCommandAdapter', '适配器', 'CommandAdapterRegistry'],
+  },
+  'Spec-Driven Development': {
+    tags: ['方法论', 'SDD', '核心理念'],
+    def: 'OpenSpec 推广的开发方法论：在写任何代码之前，先让人和 AI 就"做什么"（specs）、"为什么做"（proposal）、"怎么做"（design）达成书面共识，再进入实现阶段（apply）。规格文件存储在项目 <code>openspec/</code> 目录，构成可追溯的决策历史。',
+    mechanics: [
+      'proposal.md → specs/ → design.md 构成"为什么/什么/如何"的完整上下文',
+      'tasks.md 把设计决策拆解为 AI 可逐一执行的勾选任务列表',
+      '规格文件是项目知识库，归档后长期保存在 openspec/specs/ 目录',
+      '每次 Change 的 Delta Spec 确保知识增量积累而不是全量覆写',
+    ],
+    related: ['Artifact Graph', 'Delta Spec'],
+    files: ['schemas/spec-driven/schema.yaml', 'src/core/templates/workflows/propose.ts'],
+    patterns: ['Spec-Driven Development', '规格驱动开发', 'SDD', 'spec-driven'],
+  },
+  'InstructionLoader': {
+    tags: ['AI 上下文', '指令注入', '工作流执行'],
+    def: '为 AI 准备完整执行上下文的组件。在每次 AI 创建 Artifact 前，InstructionLoader 汇总：Schema 中的 template（文件结构模板）、instruction（写作规则）、项目级 context（背景约束，不写入输出）、依赖的已完成 Artifact 路径列表，打包成结构化 JSON 返回给 AI。',
+    mechanics: [
+      'loadChangeContext(name, projectRoot) 加载 Schema + 完成状态 + 元数据',
+      'getArtifactInstructions(id, ctx) 返回 ArtifactInstructions 完整对象',
+      'context 和 rules 是对 AI 的约束提示，不应被 AI 复制到输出文件中',
+      'dependencies 字段列出依赖的已完成 Artifact 路径，AI 需要先读这些文件',
+    ],
+    related: ['Artifact Graph', 'Schema Resolution'],
+    files: ['instruction-loader.ts'],
+    patterns: ['InstructionLoader', 'Instruction Loader', 'openspec instructions', 'ArtifactInstructions'],
+  },
+  'Profile': {
+    tags: ['工作流配置', '核心/扩展模式'],
+    def: '控制安装哪些斜线命令工作流的配置项。<strong>core profile</strong>（默认）：只安装 propose、explore、apply、archive 四个核心命令，适合新用户。<strong>custom profile</strong>：可安装全套 11 个工作流（new、continue、ff、sync、bulk-archive、verify、onboard 等），适合高阶用户。',
+    mechanics: [
+      'CORE_WORKFLOWS = [propose, explore, apply, archive]',
+      'ALL_WORKFLOWS 包含 11 个工作流（含 new, continue, ff, sync 等高级工作流）',
+      '通过 openspec config profile 命令切换，openspec update 重新生成命令文件',
+      'getProfileWorkflows(profile, customWorkflows) 返回当前应激活的工作流列表',
+    ],
+    related: ['Tool Adapter', 'Spec-Driven Development'],
+    files: ['profiles.ts', 'src/core/init.ts'],
+    patterns: ['Profile', 'core profile', 'CORE_WORKFLOWS', '工作流配置'],
+  },
+};
+
+// ── Panel Logic ───────────────────────────────────────────────────────────────
+const backdrop = document.getElementById('codeBackdrop');
+const panel    = document.getElementById('codePanel');
+const badge    = document.getElementById('panelBadge');
+const title    = document.getElementById('panelTitle');
+const ghLink   = document.getElementById('panelGhLink');
+const closeBtn = document.getElementById('panelClose');
+const iframeBody = document.getElementById('iframePanelBody');
+const termBody   = document.getElementById('termPanelBody');
+const iframeEl   = document.getElementById('panelIframe');
+const loading    = document.getElementById('iframeLoading');
+
+function openPanel() {
+  backdrop.classList.add('open');
+  panel.classList.add('open');
+}
+function closePanel() {
+  backdrop.classList.remove('open');
+  panel.classList.remove('open');
+  iframeBody.classList.remove('visible');
+  termBody.classList.remove('visible');
+  if (iframeEl) { iframeEl.src = 'about:blank'; }
+  if (loading) loading.style.display = 'flex';
+  if (ghLink) ghLink.style.display = 'none';
+}
+
+closeBtn.addEventListener('click', closePanel);
+backdrop.addEventListener('click', closePanel);
+
+// ── Resize Logic ─────────────────────────────────────────────────────────────
+const resizeGrip = document.getElementById('panelResizeGrip');
+let resizing = false, rsX = 0, rsW = 0, rsOverlay = null;
+
+resizeGrip.addEventListener('mousedown', e => {
+  resizing = true;
+  rsX = e.clientX;
+  rsW = panel.offsetWidth;
+  document.body.style.cursor = 'ew-resize';
+  rsOverlay = document.createElement('div');
+  rsOverlay.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:ew-resize;';
+  panel.appendChild(rsOverlay);
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!resizing) return;
+  const delta = rsX - e.clientX;
+  const newW  = Math.min(Math.max(rsW + delta, 320), window.innerWidth * 0.9);
+  panel.style.width = newW + 'px';
+});
+document.addEventListener('mouseup', () => {
+  if (!resizing) return;
+  resizing = false;
+  document.body.style.cursor = '';
+  if (rsOverlay) { rsOverlay.remove(); rsOverlay = null; }
+});
+
+// ── GitHub iframe Panel ───────────────────────────────────────────────────────
+function openGitHubPanel(filePath, label) {
+  const url = `https://github1s.com/${GH_REPO}/blob/${GH_BRANCH}/${filePath}`;
+  badge.textContent = 'FILE';
+  badge.style.background = '#dbeafe';
+  badge.style.color = '#2563eb';
+  title.textContent = label || filePath;
+  ghLink.href = `https://github.com/${GH_REPO}/blob/${GH_BRANCH}/${filePath}`;
+  ghLink.style.display = 'inline';
+
+  iframeBody.classList.add('visible');
+  termBody.classList.remove('visible');
+  loading.style.display = 'flex';
+  iframeEl.src = 'about:blank';
+
+  openPanel();
+
+  let loaded = false;
+  iframeEl.onload = () => {
+    if (iframeEl.src !== 'about:blank') {
+      loaded = true;
+      loading.style.display = 'none';
+    }
+  };
+  setTimeout(() => {
+    if (!loaded) {
+      loading.innerHTML = `<span style="font-size:13px;color:#888;text-align:center;padding:20px">加载超时，请<br><a href="${ghLink.href}" target="_blank" rel="noopener" style="color:#2563eb">在新标签页中打开 ↗</a></span>`;
+    }
+  }, 10000);
+  iframeEl.src = url;
+}
+
+// ── Term Panel ───────────────────────────────────────────────────────────────
+function renderTermHTML(key) {
+  const t = PROJECT_TERMS[key]; if (!t) return '';
+  const tags  = (t.tags  || []).map(g => `<span class="term-tag">${g}</span>`).join('');
+  const mechs = (t.mechanics || []).map(m => `<li>${m}</li>`).join('');
+  const rels  = (t.related || []).map(r =>
+    `<button class="term-rel-btn" data-term="${r}">${r}</button>`).join('');
+  const files = (t.files || []).filter(f => FILE_MAP[f]).map(f =>
+    `<button class="term-file-btn" data-file="${FILE_MAP[f]}">${f}</button>`).join('');
+  return `
+    <div class="term-tags">${tags}</div>
+    <p class="term-def">${t.def}</p>
+    ${mechs ? `<div class="term-section-title">实现机制</div><ul class="term-mechanics">${mechs}</ul>` : ''}
+    ${rels ? `<div class="term-section-title">相关概念</div><div class="term-related">${rels}</div>` : ''}
+    ${files ? `<div class="term-section-title">关键文件</div><div class="term-files">${files}</div>` : ''}
+  `;
+}
+
+function openTermPanel(key) {
+  if (!PROJECT_TERMS[key]) return;
+  badge.textContent = 'TERM';
+  badge.style.background = '#ede9fe';
+  badge.style.color = '#7c3aed';
+  title.textContent = key;
+  ghLink.style.display = 'none';
+  iframeBody.classList.remove('visible');
+  termBody.classList.add('visible');
+  termBody.innerHTML = renderTermHTML(key);
+  openPanel();
+}
+
+// ── Unified click handler ─────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const fileEl = e.target.closest('[data-file]');
+  const termEl = e.target.closest('.term-link[data-term]');
+  if (fileEl) {
+    e.preventDefault();
+    const fp = fileEl.dataset.file;
+    openGitHubPanel(fp, fileEl.dataset.label || fp);
+  } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+    e.preventDefault();
+    openTermPanel(termEl.dataset.term);
+  }
+});
+
+// ── AUTO-TAG FILE LINKS (inline <code>) ──────────────────────────────────────
+document.querySelectorAll('code:not(pre code)').forEach(el => {
+  if (el.dataset.file || el.classList.contains('file-link')) return;
+  const raw = el.textContent.trim();
+  const ghPath = FILE_MAP[raw];
+  if (ghPath) {
+    el.classList.add('file-link');
+    el.dataset.file  = ghPath;
+    el.dataset.label = raw.replace(/^★\s*/, '');
+    el.title = '在 GitHub 中查看';
+  }
+});
+
+// ── AUTO-TAG FILE LINKS (table first-cell) ───────────────────────────────────
+document.querySelectorAll('.cast-table td:first-child, .dir-table td:first-child').forEach(td => {
+  if (td.querySelector('.file-link')) return;
+  const raw    = td.textContent.trim();
+  const ghPath = FILE_MAP[raw];
+  if (!ghPath) return;
+  const label  = raw.replace(/^★\s*/, '');
+  const btn    = document.createElement('span');
+  btn.className    = 'file-link';
+  btn.dataset.file  = ghPath;
+  btn.dataset.label = label;
+  btn.title         = '在 GitHub 中查看';
+  btn.textContent   = raw;
+  btn.style.cursor  = 'pointer';
+  td.innerHTML = '';
+  td.appendChild(btn);
+});
+
+// ── AUTO-TAG TERM LINKS (TreeWalker) ─────────────────────────────────────────
+const termPatterns = [];
+for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+  for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+}
+termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+if (termPatterns.length > 0) {
+  const TERM_RE = new RegExp(
+    termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+  const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+    'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+  const content = document.querySelector('.content');
+  if (content) {
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p = node.parentNode;
+        while (p && p !== content) {
+          if (SKIP_TAGS.has(p.tagName) ||
+              p.classList.contains('term-link') ||
+              p.classList.contains('file-link')) return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = []; let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(textNode => {
+      const text = textNode.textContent;
+      TERM_RE.lastIndex = 0;
+      if (!TERM_RE.test(text)) return;
+      TERM_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = TERM_RE.exec(text)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const key = PAT_KEY[m[0]];
+        if (key) {
+          const sp = document.createElement('span');
+          sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+          frag.appendChild(sp);
+        } else {
+          frag.appendChild(document.createTextNode(m[0]));
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+}
+
+// ── TOC collapse / expand ─────────────────────────────────────────────────────
+(function () {
+  const toc     = document.getElementById('tocNav');
+  const btn     = document.getElementById('tocToggle');
+  const content = document.querySelector('.content');
+  if (!toc || !btn) return;
+  let collapsed = false;
+  btn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    toc.classList.toggle('collapsed', collapsed);
+    content.classList.toggle('toc-collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.title       = collapsed ? '展开目录' : '收起目录';
+  });
+})();
+
+// ── Diagram zoom (lightbox) ───────────────────────────────────────────────────
+(function () {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className   = 'diagram-zoom-btn';
+    zoomBtn.title       = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+
+    function openLightbox() {
+      const svg = container.querySelector('.mermaid svg');
+      if (!svg) return;
+
+      const rect = svg.getBoundingClientRect();
+      const w = rect.width  * 1.5;
+      const h = rect.height * 1.5;
+
+      const lightbox = document.createElement('div');
+      lightbox.className = 'diagram-lightbox';
+
+      const inner = document.createElement('div');
+      inner.className   = 'diagram-lightbox-inner';
+      inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+      inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+      inner.style.overflow = 'auto';
+      inner.style.padding  = '20px';
+
+      const cloneSvg = svg.cloneNode(true);
+      cloneSvg.setAttribute('width',  w);
+      cloneSvg.setAttribute('height', h);
+      cloneSvg.style.display = 'block';
+
+      function close() { lightbox.remove(); }
+      lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+      });
+
+      inner.appendChild(cloneSvg);
+      lightbox.appendChild(inner);
+      document.body.appendChild(lightbox);
+    }
+
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+})();
+</script>
+</body>
+</html>

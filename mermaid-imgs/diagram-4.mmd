@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Router as 模型路由器
+    participant Classifier as complexity-classifier.ts
+    participant Meta as TASK.md 元数据
+    participant History as routing-history.ts 失败率
+
+    Router->>Classifier: classifyUnit(unitType, unitId, budgetPct)
+    Classifier->>Classifier: 查 UNIT_TYPE_TIERS 表得默认 tier
+    alt unitType == "execute-task"
+      Classifier->>Meta: extractTaskMetadata(unitId)
+      Meta-->>Classifier: fileCount, depCount, keywords...
+      Classifier->>Classifier: analyzeTaskComplexity() 上调 tier
+    end
+    Classifier->>History: getAdaptiveTierAdjustment(unitType, tier)
+    History-->>Classifier: 历史高失败率 → 上调
+    Classifier->>Classifier: applyBudgetPressure(budgetPct) 强制降级
+    Classifier-->>Router: {tier: "standard", reason: "...", downgraded: false}

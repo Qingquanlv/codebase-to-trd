@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Auto as auto.ts 主循环
+    participant State as state.ts 状态读取
+    participant Dispatch as auto-dispatch.ts 规则表
+    participant Rule1 as check-crash-recovery
+    participant Rule2 as check-budget-ceiling
+    participant RuleN as execute-next-task
+    participant Prompt as auto-prompts.ts
+
+    Auto->>State: deriveState(basePath)
+    State-->>Auto: GSDState
+    Auto->>Dispatch: evaluateRules(ctx)
+    Dispatch->>Rule1: match(ctx)
+    Rule1-->>Dispatch: null（无崩溃）
+    Dispatch->>Rule2: match(ctx)
+    Rule2-->>Dispatch: null（预算正常）
+    Dispatch->>RuleN: match(ctx)
+    RuleN-->>Dispatch: {action:"dispatch", unitType:"execute-task"}
+    Dispatch-->>Auto: DispatchAction
+    Auto->>Prompt: buildExecuteTaskPrompt(...)
+    Prompt-->>Auto: 构建好的 Prompt

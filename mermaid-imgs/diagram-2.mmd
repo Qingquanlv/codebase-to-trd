@@ -1,0 +1,24 @@
+graph TD
+    %% 主链路: CLI → Loader → Auto.ts → Dispatch → Prompt → Pi SDK → 磁盘
+    subgraph 启动层
+      CLI["gsd 命令\nCLI 入口"] --> Loader["loader.ts\n环境变量预设"]
+      Loader --> CLIMain["cli.ts\n模式分发 & 扩展加载"]
+    end
+    subgraph 执行层
+      CLIMain --> Auto["auto.ts\n状态机主循环"]
+      Auto --> Dispatch["auto-dispatch.ts\n声明式规则调度"]
+      Auto --> Classifier["complexity-classifier.ts\n任务复杂度评级"]
+      Dispatch --> Prompt["auto-prompts.ts\n分层上下文注入"]
+      Classifier --> Router["auto-model-selection.ts\n动态模型路由"]
+    end
+    subgraph 存储层
+      Dispatch --> Disk[("磁盘 .gsd/\nMD + SQLite 唯一状态")]
+      Auto --> Crash["crash-recovery.ts\n锁文件 + JSONL 取证"]
+      Crash --> Disk
+    end
+    subgraph 扩展层
+      Auto --> PiSDK["Pi SDK\nLLM Session Factory"]
+      PiSDK --> LLM["20+ LLM Providers\nOpus / Sonnet / Haiku / …"]
+      CLIMain --> Extensions["24 个扩展模块\n浏览器/LSP/内存/工作树…"]
+      Prompt --> Native["native/ Rust 引擎\ngrep/glob/AST/git"]
+    end
