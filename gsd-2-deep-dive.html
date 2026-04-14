@@ -196,6 +196,7 @@
   .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
   .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 70px; }
   .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .module-item { display: block; padding: 2px 0; white-space: nowrap; }
 
   /* --- Directory Group Rationale --- */
   .dir-rationale { font-size: 13px !important; color: var(--text-secondary) !important; font-style: italic; margin: 4px 0 8px !important; padding: 8px 12px; background: var(--bg-alt); border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; }
@@ -303,12 +304,15 @@
   <a href="#section-4" class="toc-h2">4 系统详细设计</a>
   <a href="#section-4-1" class="toc-h3">4.1 系统架构设计</a>
   <a href="#section-4-1-1" class="toc-h4">4.1.1 架构图</a>
-  <a href="#section-4-1-2" class="toc-h4">4.1.2 核心使用模式调用链</a>
-  <a href="#section-4-2" class="toc-h3">4.2 关键模块实现细节</a>
-  <a href="#section-4-2-1" class="toc-h4">4.2.1 声明式调度管道</a>
-  <a href="#section-4-2-2" class="toc-h4">4.2.2 复杂度分级器</a>
-  <a href="#section-4-2-3" class="toc-h4">4.2.3 崩溃恢复机制</a>
-  <a href="#section-4-2-4" class="toc-h4">4.2.4 分层上下文注入</a>
+  <a href="#section-4-2" class="toc-h3">4.2 核心使用模式调用链</a>
+  <a href="#section-4-2-1" class="toc-h4">4.2.1 Step 模式（交互逐步）</a>
+  <a href="#section-4-2-2" class="toc-h4">4.2.2 Auto 模式（无人值守）</a>
+  <a href="#section-4-2-3" class="toc-h4">4.2.3 Headless 模式（CI/CD）</a>
+  <a href="#section-4-3" class="toc-h3">4.3 关键模块实现细节</a>
+  <a href="#section-4-3-1" class="toc-h4">4.3.1 声明式调度管道</a>
+  <a href="#section-4-3-2" class="toc-h4">4.3.2 复杂度分级器</a>
+  <a href="#section-4-3-3" class="toc-h4">4.3.3 崩溃恢复机制</a>
+  <a href="#section-4-3-4" class="toc-h4">4.3.4 分层上下文注入</a>
   <a href="#section-5" class="toc-h2">5 方案评价</a>
   <a href="#section-5-1" class="toc-h3">5.1 优势分析</a>
   <a href="#section-5-2" class="toc-h3">5.2 局限分析</a>
@@ -584,68 +588,119 @@ graph TD
     <tbody>
       <tr>
         <td>启动层</td>
-        <td><code>loader.ts</code> → <code>cli.ts</code></td>
+        <td>
+          <span class="module-item"><code>loader.ts</code></span>
+          <span class="module-item"><code>cli.ts</code></span>
+        </td>
         <td>在 Pi SDK 任何代码求值前完成环境变量注入（品牌名、版本号、工具路径）；解析 argv，检测运行模式，初始化扩展注册器</td>
         <td>→ 执行层</td>
       </tr>
       <tr>
         <td>执行层</td>
-        <td><code>auto.ts</code> + <code>auto-dispatch.ts</code> + <code>complexity-classifier.ts</code> + <code>auto-model-selection.ts</code> + <code>auto-prompts.ts</code></td>
+        <td>
+          <span class="module-item"><code>auto.ts</code></span>
+          <span class="module-item"><code>auto-dispatch.ts</code></span>
+          <span class="module-item"><code>complexity-classifier.ts</code></span>
+          <span class="module-item"><code>auto-model-selection.ts</code></span>
+          <span class="module-item"><code>auto-prompts.ts</code></span>
+        </td>
         <td>状态机主循环：每轮读磁盘状态 → 声明式调度器按规则表选定下一 Unit → 复杂度分级器评级 → 动态模型路由 → 分层上下文注入 → 开新 Pi 会话执行</td>
         <td>↕ 存储层、↕ 扩展层</td>
       </tr>
       <tr>
         <td>存储层</td>
-        <td><code>.gsd/</code>（MD + SQLite）+ <code>crash-recovery.ts</code></td>
+        <td>
+          <span class="module-item"><code>state.ts</code></span>
+          <span class="module-item"><code>gsd-db.ts</code></span>
+          <span class="module-item"><code>crash-recovery.ts</code></span>
+        </td>
         <td>系统唯一状态真相来源；每次 Unit 开始写锁文件，崩溃后下次启动检测残锁从 JSONL 取证恢复现场</td>
         <td>↕ 执行层</td>
       </tr>
       <tr>
         <td>扩展层</td>
-        <td>Pi SDK + 20+ LLM Providers + 24 扩展模块 + <code>native/</code> Rust 引擎</td>
+        <td>
+          <span class="module-item">Pi SDK</span>
+          <span class="module-item">20+ LLM Providers</span>
+          <span class="module-item">24 扩展模块</span>
+          <span class="module-item"><code>native-parser-bridge.ts</code></span>
+        </td>
         <td>LLM 会话工厂（屏蔽 provider 差异）；24 个可插拔扩展（浏览器/LSP/内存/worktree…）；Rust N-API 将 grep/glob/AST/git 高频操作提速 10-50×</td>
         <td>↕ 执行层</td>
       </tr>
     </tbody>
   </table>
 
-  <h4 id="section-4-1-2">4.1.2 核心使用模式调用链</h4>
-  <p>下表呼应 <a href="#section-3-3">3.3 核心使用模式</a>，完整追踪 <code>/gsd auto</code> 从命令注册到循环结束的每一个关键函数跳转，含入参说明与作用摘要。</p>
+  <h3 id="section-4-2">4.2 核心使用模式调用链</h3>
+  <p>呼应 <a href="#section-3-3">3.3 核心使用模式</a>，按三种模式分别追踪从命令入口到循环结束的完整函数跳转链，<strong>所在模块</strong>列点击可在右侧面板查看源文件。</p>
 
+  <h4 id="section-4-2-1">4.2.1 🪜 Step 模式（交互逐步）</h4>
+  <p>用户通过 <code>/gsd step</code> 每次推进一个 Unit，执行完毕后系统暂停等待下次触发，适合首次使用或需要审查每步输出的场景。</p>
   <table class="chain-table">
     <thead>
       <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
     </thead>
     <tbody>
-      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td><code>args</code>：用户输入的 /gsd 后参数字符串；<code>ctx</code>：ExtensionCommandContext（含 UI、会话等）</td><td>把 /gsd 交给 GSD 处理</td></tr>
-      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td><code>args</code>：原始参数；<code>ctx</code>：扩展命令上下文；<code>pi</code>：ExtensionAPI（注册能力、发消息等）</td><td>按顺序尝试各子处理器</td></tr>
-      <tr><td>3</td><td>Auto 子命令</td><td><code>handleAutoCommand</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>trimmed</code>：已 trim 的参数字符串（如 auto、auto M001 --verbose）；<code>ctx</code>、<code>pi</code> 同上</td><td>解析 auto 变体后调用 startAuto 等</td></tr>
-      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>milestoneId</code>：目标里程碑 ID；<code>fn</code>：无参异步函数（体内调用 startAuto）</td><td>临时设置 GSD_MILESTONE_LOCK，限定派生状态范围</td></tr>
-      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td><code>ctx</code>：命令上下文（需含 newSession 等）；<code>pi</code>；<code>base</code>：项目根路径；<code>verboseMode</code>：是否详细输出；<code>options?.step</code>：单步模式</td><td>恢复或新起会话，最后进入 autoLoop</td></tr>
-      <tr><td>6</td><td>新起引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td><code>s</code>：模块级 AutoSession 可变状态；<code>ctx</code>、<code>pi</code>；<code>base</code>、<code>verboseMode</code>、<code>requestedStepMode</code>；<code>deps</code>：BootstrapDeps（worktree 策略、锁路径、buildResolver 等）</td><td>锁、git、迁移、crash、worktree、DB；返回 false 则中止</td></tr>
-      <tr><td>7</td><td>主循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>ctx</code>：ExtensionContext；<code>pi</code>；<code>s</code>：AutoSession；<code>deps</code>：LoopDeps（deriveState、resolveDispatch、stopAuto、postUnitPreVerification 等注入）</td><td><code>while (s.active)</code> 驱动迭代</td></tr>
-      <tr><td>8</td><td>阶段 1</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：IterationContext（ctx、pi、s、deps、prefs、iteration、flowId、nextSeq）；<code>loopState</code>：卡死窗口、finalize 超时计数等</td><td>健康/资源、deriveState、并行 slice、里程碑终端逻辑</td></tr>
-      <tr><td>9</td><td>阶段 2</td><td><code>runGuards</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：同上；<code>mid</code>：当前里程碑 ID（来自 PreDispatchData）</td><td>stop/backtrack 等派发前守卫</td></tr>
-      <tr><td>10</td><td>阶段 3</td><td><code>runDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>；<code>preData</code>：PreDispatchData（state、mid、midTitle）；<code>loopState</code></td><td>调用 resolveDispatch、卡死检测、预派发钩子</td></tr>
-      <tr><td>11</td><td>派发解析</td><td><code>resolveDispatch</code></td><td><code>auto-dispatch.ts</code></td><td><code>ctx</code>：DispatchContext：basePath、mid、midTitle、state（GSDState）、prefs、session?</td><td>规则/registry 匹配下一单元或 stop/skip</td></tr>
-      <tr><td>12</td><td>阶段 4</td><td><code>runUnitPhase</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>；<code>iterData</code>：IterationData（unitType、unitId、prompt/finalPrompt、state、mid 等）；<code>loopState</code>；<code>sidecarItem?</code>：插队单元描述</td><td>模型、监督、runUnit、closeout、零工具防护等</td></tr>
-      <tr><td>13</td><td>单轮执行</td><td><code>runUnit</code></td><td><code>auto/run-unit.ts</code></td><td><code>ctx</code>、<code>pi</code>、<code>s</code>；<code>unitType</code>、<code>unitId</code>：单元类型与 ID；<code>prompt</code>：本回合发给模型的正文</td><td>newSession → sendMessage → 等待 agent_end 解析</td></tr>
-      <tr><td>14</td><td>Pi 事件</td><td><code>pi.on("agent_end", …)</code></td><td><code>bootstrap/register-hooks.ts</code></td><td>回调：<code>event</code>（含 messages 等）；<code>ctx</code>：ExtensionContext</td><td>回合结束入口</td></tr>
-      <tr><td>15</td><td>恢复/分类</td><td><code>handleAgentEnd</code></td><td><code>bootstrap/agent-end-recovery.ts</code></td><td><code>pi</code>；<code>event</code>：与 Pi 的 agent_end 载荷一致；<code>ctx</code></td><td>abort/error/成功分支，决定是否 resolveAgentEnd / pause</td></tr>
-      <tr><td>16</td><td>解开等待</td><td><code>resolveAgentEnd</code></td><td><code>auto/resolve.ts</code></td><td><code>event</code>：AgentEndEvent（至少 messages: unknown[]）</td><td>解析 runUnit 内挂起的 Promise，status: "completed"</td></tr>
-      <tr><td>17</td><td>阶段 5</td><td><code>runFinalize</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>；<code>iterData</code>；<code>loopState</code>；<code>sidecarItem?</code></td><td>超时包装下的 pre/post 验证、UAT 暂停等</td></tr>
-      <tr><td>18</td><td>预验证+提交</td><td><code>postUnitPreVerification</code></td><td><code>auto-post-unit.ts</code></td><td><code>pctx</code>：PostUnitContext（s、ctx、pi、buildSnapshotOpts、lockBase、stopAuto、pauseAuto、updateProgressWidget）；<code>opts?</code>：PreVerificationOpts（如 skipSettleDelay、skipWorktreeSync）</td><td>缓存失效、可选延迟、autoCommitCurrentBranch 等</td></tr>
-      <tr><td>19</td><td>验证门</td><td><code>runPostUnitVerification</code></td><td><code>auto-verification.ts</code></td><td><code>vctx</code>：VerificationContext（s、ctx、pi）；<code>pauseAuto</code>：暂停回调（验证失败耗尽重试时调用）</td><td>execute-task 等单元的验证门</td></tr>
-      <tr><td>20</td><td>后处理</td><td><code>postUnitPostVerification</code></td><td><code>auto-post-unit.ts</code></td><td><code>pctx</code>：PostUnitContext（同上，无 opts）</td><td>DB 双写、钩子等</td></tr>
-      <tr><td>21</td><td>循环结束</td><td><code>cleanupAfterLoopExit</code></td><td><code>auto.ts</code></td><td><code>ctx</code>：ExtensionContext</td><td>清 currentUnit、active、锁与 UI 状态等</td></tr>
-      <tr><td>—</td><td>工具（非主线程串调）</td><td><code>complete_slice / complete_milestone</code> 等</td><td><code>tools/*.ts</code></td><td>由 LLM 工具调用传入（各工具自有 schema）</td><td>写 SUMMARY、改 DB/勾选等；状态再由 deriveState 消费</td></tr>
+      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td><code>args</code>："/gsd step" 后的参数字符串；<code>ctx</code>：ExtensionCommandContext</td><td>注册 /gsd 命令并路由到分发器</td></tr>
+      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td><code>args</code>；<code>ctx</code>；<code>pi</code>：ExtensionAPI</td><td>按优先级尝试各子处理器，匹配到 step</td></tr>
+      <tr><td>3</td><td>Step 子命令</td><td><code>handleStepCommand</code></td><td><code>commands/handlers/step.ts</code></td><td><code>trimmed</code>：已 trim 参数（如 step、step M001）；<code>ctx</code>、<code>pi</code></td><td>携带 <code>options.step = true</code> 调用 startAuto</td></tr>
+      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/step.ts</code></td><td><code>milestoneId?</code>：目标 Milestone ID；<code>fn</code>：包裹 startAuto 的异步函数</td><td>限定 GSD_MILESTONE_LOCK，隔离单 Milestone 派生范围</td></tr>
+      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td><code>ctx</code>；<code>pi</code>；<code>base</code>；<code>options.step = true</code>：单步模式标记</td><td>恢复或新起会话，以 stepMode 进入 autoLoop</td></tr>
+      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td><code>s</code>：AutoSession；<code>ctx</code>、<code>pi</code>；<code>requestedStepMode = true</code>；<code>deps</code>：BootstrapDeps</td><td>初始化锁 / git / DB / worktree，设置 s.stepMode</td></tr>
+      <tr><td>7</td><td>单步循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>ctx</code>；<code>s</code>（s.stepMode=true）；<code>deps</code>：LoopDeps</td><td><code>while (s.active)</code>，每次迭代后遇 stepMode 将 s.active=false 挂起</td></tr>
+      <tr><td>8</td><td>预派发</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：IterationContext；<code>loopState</code></td><td>deriveState + 健康检查；单步模式下不做并行 slice 预取</td></tr>
+      <tr><td>9</td><td>派发 + 执行</td><td><code>runDispatch → runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td>同 Auto 模式</td><td>执行单个 Unit，向 LLM 发送 Prompt 并等待 agent_end</td></tr>
+      <tr><td>10</td><td>步骤暂停</td><td><code>pauseAuto</code></td><td><code>auto.ts</code></td><td><code>reason: "step_complete"</code>；<code>s</code>：AutoSession</td><td>设 s.active = false，挂起循环；等待用户下次 /gsd step 重新激活</td></tr>
     </tbody>
   </table>
 
-  <h3 id="section-4-2">4.2 关键模块实现细节</h3>
+  <h4 id="section-4-2-2">4.2.2 🤖 Auto 模式（无人值守）</h4>
+  <p>用户通过 <code>/gsd auto</code> 启动，Agent 自动循环推进所有 Unit 直至 Milestone 完成或遇到阻塞，是 GSD 最核心的使用路径。</p>
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td><code>args</code>："/gsd auto" 后的参数字符串；<code>ctx</code>：ExtensionCommandContext</td><td>把 /gsd 交给分发器处理</td></tr>
+      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td><code>args</code>；<code>ctx</code>；<code>pi</code>：ExtensionAPI</td><td>按顺序尝试各子处理器</td></tr>
+      <tr><td>3</td><td>Auto 子命令</td><td><code>handleAutoCommand</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>trimmed</code>：已 trim 参数（如 auto M001 --verbose）；<code>ctx</code>、<code>pi</code></td><td>解析 auto 变体后调用 startAuto</td></tr>
+      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>milestoneId?</code>：目标 Milestone ID；<code>fn</code>：包裹 startAuto 的异步函数</td><td>设置 GSD_MILESTONE_LOCK，限定派生状态范围</td></tr>
+      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td><code>ctx</code>；<code>pi</code>；<code>base</code>：项目根路径；<code>verboseMode</code>；<code>options?.step = false</code></td><td>恢复或新起会话，进入 autoLoop（持续模式）</td></tr>
+      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td><code>s</code>：AutoSession；<code>ctx</code>、<code>pi</code>；<code>deps</code>：BootstrapDeps（锁路径、worktree 策略等）</td><td>初始化锁 / git / 迁移 / crash 检测 / worktree / DB</td></tr>
+      <tr><td>7</td><td>主循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>ctx</code>；<code>s</code>（s.stepMode=false）；<code>deps</code>：LoopDeps</td><td><code>while (s.active)</code> 持续驱动迭代，不主动挂起</td></tr>
+      <tr><td>8</td><td>阶段 1</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：IterationContext；<code>loopState</code></td><td>健康/资源检查、deriveState、并行 slice 预取、里程碑终端逻辑</td></tr>
+      <tr><td>9</td><td>阶段 2–3</td><td><code>runGuards → runDispatch → resolveDispatch</code></td><td><code>auto/phases.ts</code> / <code>auto-dispatch.ts</code></td><td><code>ic</code>；<code>preData</code>：mid、state；<code>loopState</code></td><td>守卫检查 → 规则表匹配 → 确定下一 unitType</td></tr>
+      <tr><td>10</td><td>阶段 4</td><td><code>runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td><code>ic</code>；<code>iterData</code>：unitType、unitId、prompt 等</td><td>构建 Prompt → 新起 Pi 会话 → 发送消息 → 等待 agent_end</td></tr>
+      <tr><td>11</td><td>Pi 事件</td><td><code>pi.on("agent_end") → handleAgentEnd → resolveAgentEnd</code></td><td><code>bootstrap/register-hooks.ts</code> / <code>bootstrap/agent-end-recovery.ts</code> / <code>auto/resolve.ts</code></td><td><code>event</code>：AgentEndEvent（messages、status）</td><td>分类 abort/error/成功，解开 runUnit 挂起的 Promise</td></tr>
+      <tr><td>12</td><td>阶段 5</td><td><code>runFinalize → postUnitPreVerification → runPostUnitVerification</code></td><td><code>auto/phases.ts</code> / <code>auto-post-unit.ts</code> / <code>auto-verification.ts</code></td><td><code>ic</code>；<code>pctx</code>：PostUnitContext</td><td>缓存失效、可选延迟、提交、UAT 验证门</td></tr>
+      <tr><td>13</td><td>后处理</td><td><code>postUnitPostVerification</code></td><td><code>auto-post-unit.ts</code></td><td><code>pctx</code>：PostUnitContext</td><td>DB 双写、完成钩子等；回到步骤 8 继续循环</td></tr>
+      <tr><td>14</td><td>循环结束</td><td><code>cleanupAfterLoopExit</code></td><td><code>auto.ts</code></td><td><code>ctx</code>：ExtensionContext</td><td>清 currentUnit / active / 锁 / UI 状态</td></tr>
+      <tr><td>—</td><td>LLM 工具（旁路）</td><td><code>complete_slice / complete_milestone</code> 等</td><td><code>auto-dispatch.ts</code></td><td>LLM 工具调用（各工具自有 schema）</td><td>写 SUMMARY / 改 DB；状态由下轮 deriveState 消费</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-4-2-3">4.2.3 🔧 Headless 模式（CI/CD）</h4>
+  <p>通过 <code>gsd --headless auto</code> 在无 TTY 环境（GitHub Actions / 定时脚本）中运行，所有交互问题由 stdin JSON 预置答案自动回答，输出结构化 JSON 事件流。</p>
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>CLI 启动</td><td><code>loader.ts</code> → <code>cli.ts</code>（<code>--headless</code> 检测）</td><td><code>loader.ts</code> / <code>cli.ts</code></td><td><code>process.argv</code>：含 --headless 标志</td><td>环境变量预注入；检测 --headless 标志，跳过 TUI 初始化</td></tr>
+      <tr><td>2</td><td>无头模式分支</td><td><code>runHeadlessMode</code></td><td><code>headless.ts</code></td><td><code>ctx</code>：HeadlessContext（含 stdinData、outputStream）</td><td>绕过 TUI 组件，建立无头执行上下文；注册事件序列化器</td></tr>
+      <tr><td>3</td><td>答案预加载</td><td><code>loadHeadlessAnswers</code></td><td><code>headless-answers.ts</code></td><td><code>stdinJson</code>：从 stdin 读取的 JSON 字符串（问题 → 答案映射）</td><td>解析并缓存预置答案；后续交互问题从缓存自动回答</td></tr>
+      <tr><td>4</td><td>事件序列化</td><td><code>setupHeadlessEvents</code></td><td><code>headless-events.ts</code></td><td><code>ctx</code>：HeadlessContext；<code>outputStream</code>：目标输出流（默认 stdout）</td><td>注册所有 TUI 事件监听器，将事件转为结构化 JSON 输出</td></tr>
+      <tr><td>5</td><td>Auto 主循环</td><td><code>startAuto</code> → <code>autoLoop</code></td><td><code>auto.ts</code> / <code>auto/loop.ts</code></td><td>同 Auto 模式；额外标记 <code>headless = true</code> 禁用所有 TUI 提示</td><td>与 Auto 模式完全相同的执行路径，I/O 已重定向到无头上下文</td></tr>
+      <tr><td>6</td><td>交互拦截</td><td><code>HeadlessAnswerProvider.answer()</code></td><td><code>headless-answers.ts</code></td><td><code>question</code>：交互问题文本；<code>options</code>：可选选项列表</td><td>从预置缓存查找匹配答案；未命中时抛出错误并输出 JSON 错误事件</td></tr>
+      <tr><td>7</td><td>JSON 事件输出</td><td><code>emitHeadlessEvent</code></td><td><code>headless-events.ts</code></td><td><code>event</code>：HeadlessEvent（含 type、payload、timestamp）</td><td>序列化 JSON 写入 stdout；每行一个事件，可被 CI 系统逐行消费</td></tr>
+      <tr><td>8</td><td>退出码</td><td><code>handleHeadlessExit</code></td><td><code>headless.ts</code></td><td><code>exitCode</code>：0（全部完成）/ 1（失败或阻塞）</td><td>调用 <code>process.exit(code)</code>；CI 系统通过退出码判断 pass/fail</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-4-3">4.3 关键模块实现细节</h3>
 
   <!-- Module 1: 声明式调度管道 -->
-  <h4 id="section-4-2-1">4.2.1 关键模块一：声明式调度管道（auto-dispatch.ts）</h4>
+  <h4 id="section-4-3-1">4.3.1 关键模块一：声明式调度管道（auto-dispatch.ts）</h4>
   <div class="module-card">
     <div class="module-meta">
       <span>📁 src/resources/extensions/gsd/auto-dispatch.ts</span>
@@ -685,7 +740,7 @@ sequenceDiagram
   </div>
 
   <!-- Module 2: 复杂度分级器 -->
-  <h4 id="section-4-2-2">4.2.2 关键模块二：复杂度分级器（complexity-classifier.ts）</h4>
+  <h4 id="section-4-3-2">4.3.2 关键模块二：复杂度分级器（complexity-classifier.ts）</h4>
   <div class="module-card">
     <div class="module-meta">
       <span>📁 src/resources/extensions/gsd/complexity-classifier.ts</span>
@@ -721,7 +776,7 @@ sequenceDiagram
   </div>
 
   <!-- Module 3: 崩溃恢复机制 -->
-  <h4 id="section-4-2-3">4.2.3 关键模块三：崩溃恢复机制（crash-recovery.ts）</h4>
+  <h4 id="section-4-3-3">4.3.3 关键模块三：崩溃恢复机制（crash-recovery.ts）</h4>
   <div class="module-card">
     <div class="module-meta">
       <span>📁 src/resources/extensions/gsd/crash-recovery.ts + session-forensics.ts</span>
@@ -761,7 +816,7 @@ sequenceDiagram
   </div>
 
   <!-- Module 4: 分层上下文注入 -->
-  <h4 id="section-4-2-4">4.2.4 关键模块四：分层上下文注入（auto-prompts.ts）</h4>
+  <h4 id="section-4-3-4">4.3.4 关键模块四：分层上下文注入（auto-prompts.ts）</h4>
   <div class="module-card">
     <div class="module-meta">
       <span>📁 src/resources/extensions/gsd/auto-prompts.ts</span>
@@ -1010,6 +1065,23 @@ sequenceDiagram
     'interrupted-session.ts':         'src/resources/extensions/gsd/interrupted-session.ts',
     'gsd/auto-budget.ts':             'src/resources/extensions/gsd/auto-budget.ts',
     'auto-budget.ts':                 'src/resources/extensions/gsd/auto-budget.ts',
+    // call-chain modules
+    'commands/index.ts':              'src/resources/extensions/gsd/commands/index.ts',
+    'commands/dispatcher.ts':         'src/resources/extensions/gsd/commands/dispatcher.ts',
+    'commands/handlers/auto.ts':      'src/resources/extensions/gsd/commands/handlers/auto.ts',
+    'commands/handlers/step.ts':      'src/resources/extensions/gsd/commands/handlers/step.ts',
+    'auto-start.ts':                  'src/resources/extensions/gsd/auto-start.ts',
+    'auto/loop.ts':                   'src/resources/extensions/gsd/auto/loop.ts',
+    'auto/phases.ts':                 'src/resources/extensions/gsd/auto/phases.ts',
+    'auto/run-unit.ts':               'src/resources/extensions/gsd/auto/run-unit.ts',
+    'auto/resolve.ts':                'src/resources/extensions/gsd/auto/resolve.ts',
+    'bootstrap/register-hooks.ts':    'src/resources/extensions/gsd/bootstrap/register-hooks.ts',
+    'bootstrap/agent-end-recovery.ts':'src/resources/extensions/gsd/bootstrap/agent-end-recovery.ts',
+    'auto-post-unit.ts':              'src/resources/extensions/gsd/auto-post-unit.ts',
+    'headless.ts':                    'src/headless.ts',
+    'headless-context.ts':            'src/headless-context.ts',
+    'headless-answers.ts':            'src/headless-answers.ts',
+    'headless-events.ts':             'src/headless-events.ts',
   };
 
   // ─── TERMS ───────────────────────────────────────────────────────────────
