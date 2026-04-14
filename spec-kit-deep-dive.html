@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Kit 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+  .toc {
+    position: fixed; top: 0; left: 0;
+    width: 260px; height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px; z-index: 100;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 6px; }
+  .diagram-container { margin: 24px 0; padding: 24px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; position: relative; }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: white; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,.4); max-width: 92vw; max-height: 90vh; }
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+  .dir-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 14px; }
+  .dir-table th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 220px; }
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #ffffff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #bbf7d0; }
+  .eval-card.weakness { background: #fffbeb; border-color: #fde68a; }
+  .eval-card h4 { margin: 0 0 12px; font-size: 16px; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid var(--border); }
+  td { padding: 10px 12px; border: 1px solid var(--border); }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+  /* ─── Interactive Panel System ─────────────────────────────────────────── */
+  .code-backdrop { position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s; }
+  .code-backdrop.open { opacity:1;pointer-events:auto; }
+  .code-panel { position:fixed;top:0;right:0;height:100vh;width:min(820px,65vw);min-width:300px;max-width:96vw;background:#1e1e2e;color:#cdd6f4;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);z-index:201;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;z-index:10;background:transparent;border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex;align-items:center;gap:8px;padding:0 14px 0 18px;height:48px;border-bottom:1px solid #313244;flex-shrink:0;background:#181825;overflow:hidden; }
+  .code-panel-path { font-size:13px;font-family:'JetBrains Mono',Consolas,monospace;color:#cdd6f4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0; }
+  .code-panel-badge { font-size:11px;padding:2px 8px;border-radius:4px;background:#313244;color:#89b4fa;white-space:nowrap;flex-shrink:0; }
+  .panel-gh-link { font-size:12px;color:#89b4fa;text-decoration:none;white-space:nowrap;border:1px solid #89b4fa44;padding:2px 9px;border-radius:4px;flex-shrink:0;transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px;height:28px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .code-panel-close:hover { background:#313244;color:#cdd6f4; }
+  #iframePanelBody { display:none;flex:1;flex-direction:column;overflow:hidden; }
+  #iframePanelBody iframe { width:100%;flex:1;border:none;display:none; }
+  .iframe-loading { display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:#6c7086;gap:12px;font-size:14px; }
+  .iframe-spin { width:32px;height:32px;border:3px solid #313244;border-top-color:#89b4fa;border-radius:50%;animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  #termPanelBody { display:none;flex:1;overflow-y:auto;padding:20px 22px 32px; }
+  .term-tags { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px; }
+  .term-tag { font-size:11px;padding:2px 8px;border-radius:12px;background:#313244;color:#89b4fa; }
+  .term-title-h { font-size:18px;font-weight:700;color:#cdd6f4;margin-bottom:12px; }
+  .term-def { font-size:14px;line-height:1.75;color:#bac2de;margin-bottom:16px;padding:12px 14px;background:#181825;border-left:3px solid #89b4fa;border-radius:0 6px 6px 0; }
+  .term-def code,.term-mechanics code { background:#313244;color:#f38ba8;padding:1px 5px;border-radius:3px;font-size:12px; }
+  .term-sec { font-size:11px;font-weight:700;color:#89b4fa;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px; }
+  .term-mechanics { list-style:none;padding:0;margin:0; }
+  .term-mechanics li { font-size:13px;color:#bac2de;padding:6px 0 6px 18px;position:relative;border-bottom:1px solid #313244;line-height:1.6; }
+  .term-mechanics li::before { content:"·";position:absolute;left:4px;color:#6c7086;font-size:18px;line-height:1.4; }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-related-list { display:flex;gap:8px;flex-wrap:wrap; }
+  .term-rel-btn { font-size:12px;padding:3px 10px;border-radius:4px;background:#313244;color:#a6e3a1;border:1px solid #45475a;cursor:pointer;transition:all .15s; }
+  .term-rel-btn:hover { background:#45475a; }
+  .term-files-list { display:flex;flex-direction:column;gap:4px;margin-top:4px; }
+  .term-file-btn { font-size:12px;font-family:'JetBrains Mono',Consolas,monospace;padding:5px 10px;background:#181825;color:#89b4fa;border:1px solid #313244;border-radius:4px;cursor:pointer;text-align:left;transition:all .15s; }
+  .term-file-btn:hover { background:#313244; }
+  .file-link { color:#2563eb !important;text-decoration:underline;text-decoration-style:dotted;cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed;text-decoration:underline;text-decoration-style:dotted;cursor:pointer; }
+  .term-link:hover { color:#6d28d9; }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar TOC ─────────────────────────────────────────────────────── -->
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="折叠/展开目录">‹</button>
+  </div>
+  <div class="toc-links">
+    <a href="#section-1" class="toc-h2">1 摘要</a>
+    <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+    <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+    <a href="#section-2" class="toc-h2">2 设计理念</a>
+    <a href="#section-2-1" class="toc-h3">2.1 规格即源代码</a>
+    <a href="#section-2-2" class="toc-h3">2.2 提示词即产品</a>
+    <a href="#section-2-3" class="toc-h3">2.3 开放生态优先</a>
+    <a href="#section-2-4" class="toc-h3">2.4 Agent 无关性</a>
+    <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+    <a href="#section-3-1" class="toc-h3">3.1 系统架构</a>
+    <a href="#section-3-2" class="toc-h3">3.2 关键模块</a>
+    <a href="#section-3-2-1" class="toc-h4">3.2.1 specify init 初始化</a>
+    <a href="#section-3-2-2" class="toc-h4">3.2.2 集成适配系统</a>
+    <a href="#section-3-2-3" class="toc-h4">3.2.3 扩展管理器</a>
+    <a href="#section-3-2-4" class="toc-h4">3.2.4 speckit.specify 命令</a>
+    <a href="#section-4" class="toc-h2">4 方案评价</a>
+    <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+    <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+  </div>
+</nav>
+
+<!-- ─── Main Content ───────────────────────────────────────────────────── -->
+<main class="content" id="mainContent">
+
+  <div class="header">
+    <h1>🌱 Spec Kit 深度解读</h1>
+    <div class="subtitle">GitHub 出品的规格驱动开发工具包 — "让规格成为真正的源代码"</div>
+    <div class="lead">
+      Spec Kit 是 GitHub 官方开源的 AI 辅助开发工作流框架，87.7k Star，核心理念是
+      <strong>规格驱动开发（SDD）</strong>：把 AI 的输入（规格文档）提升为第一公民，让代码成为规格的派生物。
+      项目本体是一个 Python CLI（<code>specify-cli</code>），其真正的产品价值在于内置的
+      Markdown 提示词模板和遍布 25+ 主流 AI Agent 的集成适配器。
+      读完本文，你将理解：它的核心工程决策（提示词即产品）、集成架构（抽象基类+注册表）、
+      可扩展生态（Extension Hook 系统），以及它巧妙规避的和尚未解决的挑战。
+    </div>
+  </div>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>Spec Kit 的本质是"提示词包管理器"——Python CLI 只是安装器，真正的产品是 Markdown 命令文件。</li>
+      <li>集成系统用单一抽象基类 <code>IntegrationBase</code> + 注册表支持 25+ AI Agent，新增 Agent 只需一个子类文件。</li>
+      <li>Extension Hook 系统让社区无需 Fork 核心就能在 before/after 每个开发阶段插入自定义逻辑，已孵化 40+ 扩展。</li>
+      <li>v0.6 将所有模板打包进 wheel（air-gapped 可用），并通过原子写入 + 保守深度合并保护用户已有配置。</li>
+      <li>最大局限：命令提示词本身无法被版本约束强制检查，社区扩展质量参差不齐，大型团队协作规格漂移检测仍依赖外部扩展。</li>
+    </ul>
+  </div>
+
+  <!-- Section 1 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>
+    AI 编程工具浪潮中出现了一个新的反模式：<strong>Vibe Coding</strong>——开发者把模糊的想法直接扔给 AI，让它"随便生成点什么"。
+    这种方式产生的代码缺乏规格约束，难以维护，更无法在团队间传递意图。与此同时，传统项目中"规格写完就扔"的问题从未解决——
+    PRD、设计文档与最终代码之间的漂移是行业痼疾。
+  </p>
+  <p>
+    GitHub 工程团队将这些痛点提炼成<strong>规格驱动开发（SDD）</strong>方法论，并于 2025 年以 Spec Kit 开源：
+    一套让 AI Agent 能够结构化地从"想法"走到"代码"的工具链。项目发布后迅速积累 87.7k Star、7.5k Fork，
+    社区贡献了 40+ 扩展和 8 个预设，成为 AI 辅助开发领域最活跃的工作流框架之一。
+  </p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+
+  <h4 id="section-1-2-1">1.2.1 预期一：用规格文档取代随意的 Vibe Coding</h4>
+  <p>
+    通过 <code>/speckit.specify</code> 命令强制 AI Agent 在写代码前先生成结构化 PRD（含用户场景、功能需求、验收标准），
+    通过 <code>/speckit.plan</code> 生成技术实施方案，通过 <code>/speckit.tasks</code> 拆分为可追踪的任务列表，
+    最后才由 <code>/speckit.implement</code> 驱动代码生成。每个阶段输出标准 Markdown 文件，版本控制友好。
+  </p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：让同一套工作流覆盖所有主流 AI Agent</h4>
+  <p>
+    开发者使用的 AI Agent 各异（Claude Code、Copilot、Cursor、Gemini CLI……），Spec Kit 通过
+    集成适配系统将同一套命令模板部署到各 Agent 的专属命令目录，实现"一次学习，随处使用"。
+    目前支持 25+ Agent，未来新增只需一个子类文件。
+  </p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：通过生态扩展满足差异化需求</h4>
+  <p>
+    内置的 Extension Hook 系统和 Preset 机制允许社区在不修改核心代码的情况下：
+    插入自定义工作流步骤（如 CI Gate、Jira 同步、自动 Review）、替换核心命令为更精简或更复杂的变体（如 Lean 预设）。
+    40+ 社区扩展覆盖了安全审计、多 Agent 并行、Spec 漂移检测等高级场景。
+  </p>
+
+  <!-- Section 2 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 规格即源代码</h3>
+  <p>
+    Spec Kit 的核心哲学引用自 <code>spec-driven.md</code>："<em>Code becomes its expression in a particular language and framework.
+    Maintaining software means evolving specifications.</em>"——规格是一等公民，代码是派生物。
+    这在工程上体现为：所有核心命令（<code>/speckit.specify</code>、<code>/speckit.plan</code> 等）都会在项目根目录创建
+    版本控制友好的 Markdown 文件（<code>specs/001-feature/spec.md</code>），这些文件和代码一起提交、一起 Review、一起演进。
+  </p>
+
+  <h3 id="section-2-2">2.2 提示词即产品</h3>
+  <p>
+    Python CLI（<code>src/specify_cli/</code>）只有约 9,000 行代码，职责极为单一：把打包在 wheel 里的
+    Markdown 提示词文件复制到正确的位置。真正的产品价值在那些 Markdown 文件本身——它们精心设计了 AI 的推理路径、
+    引导结构、质量校验逻辑。这个决策的好处是：更新提示词不需要改 Python，也不需要重装工具；
+    代价是：提示词逻辑无法被类型系统或 linter 保障正确性。
+  </p>
+
+  <h3 id="section-2-3">2.3 开放生态优先</h3>
+  <p>
+    Spec Kit 刻意将自身定位为"工具套件"（Kit）而非"平台"。
+    Extension 系统允许任何人发布独立仓库并通过 PR 提交到社区目录；
+    Preset 系统允许完全替换核心命令（如 Lean 预设用 50 行替换 300 行的完整版命令）；
+    <code>--ai generic --ai-commands-dir</code> 选项允许任何未被官方支持的 Agent 接入。
+    这种设计让社区在 6 个月内贡献了 40+ 扩展，远超核心团队能维护的范围。
+  </p>
+
+  <h3 id="section-2-4">2.4 Agent 无关性（Integration Neutrality）</h3>
+  <p>
+    支持 25+ Agent 的核心设计是：每个 Agent 只是对同一套命令模板的不同"部署方式"——
+    Copilot 部署到 <code>.github/copilot/</code>，Claude Code 部署到 <code>.claude/commands/</code>，
+    Gemini CLI 用 TOML 格式而非 Markdown。
+    抽象基类 <code>IntegrationBase</code> 定义了统一接口，具体 Agent 的差异被封装在各自的子类里，
+    主流程代码完全不感知 Agent 差异。
+  </p>
+
+  <!-- Section 3 -->
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>
+    Spec Kit 的架构分为五层：CLI 入口层、调度层（集成注册表 + 扩展/预设管理器）、
+    资产层（打包在 wheel 内的 Markdown 模板）、部署输出层（写入用户项目目录）、
+    以及 AI 运行时层（Agent 读取命令并执行 SDD 工作流）。
+  </p>
+
+  <div class="diagram-container">
+    <button class="diagram-zoom-btn" title="放大">⤢</button>
+    <div class="mermaid">
+graph TD
+    subgraph cli["CLI 入口层"]
+      Entry["specify main()\n__init__.py"]
+    end
+    subgraph dispatch["调度层"]
+      InitCmd["specify init\n项目初始化"]
+      ExtCmd["specify extension\n扩展管理"]
+      PreCmd["specify preset\n预设管理"]
+      Registry["INTEGRATION_REGISTRY\n25+ Agent 适配器"]
+    end
+    subgraph assets["资产层 (wheel 打包)"]
+      CoreCmds["core_pack/commands/\n核心 Slash 命令 MD"]
+      CoreTpls["core_pack/templates/\n文档骨架模板"]
+      BundleExt["core_pack/extensions/git\n内置 Git 扩展"]
+      BundlePre["core_pack/presets/lean\n内置 Lean 预设"]
+    end
+    subgraph output["部署输出层 (用户项目)"]
+      AgentDir["agent-specific 命令目录\n.claude/.github/等"]
+      SpecsDir["specs/ 规格目录\nspec.md plan.md tasks.md"]
+      SpecifyDir[".specify/\n扩展注册 feature.json"]
+    end
+    subgraph runtime["AI 运行时"]
+      Agent["AI Agent\nClaude Copilot Cursor..."]
+      SpecifyCmd["/speckit.specify 创建规格"]
+      PlanCmd["/speckit.plan 技术规划"]
+      ImplCmd["/speckit.implement 执行实现"]
+    end
+
+    Entry --> InitCmd
+    Entry --> ExtCmd
+    Entry --> PreCmd
+    InitCmd --> Registry
+    Registry --> CoreCmds
+    Registry --> CoreTpls
+    CoreCmds --> AgentDir
+    CoreTpls --> SpecsDir
+    ExtCmd --> BundleExt
+    PreCmd --> BundlePre
+    BundleExt --> SpecifyDir
+    BundlePre --> AgentDir
+    Agent --> AgentDir
+    Agent --> SpecifyCmd
+    Agent --> PlanCmd
+    Agent --> ImplCmd
+    SpecifyCmd --> SpecsDir
+    PlanCmd --> SpecsDir
+    ImplCmd --> SpecsDir
+    </div>
+    <div class="caption">图 3.1 — Spec Kit 整体架构（CLI 安装器 → 模板部署 → AI 运行时执行）</div>
+  </div>
+
+  <p><strong>各层职责：</strong></p>
+  <table>
+    <thead><tr><th>层</th><th>核心文件</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td>CLI 入口层</td><td><code>src/specify_cli/__init__.py</code></td><td>Typer + Rich 构建的 CLI，入口函数 <code>main()</code>，4143 行</td></tr>
+      <tr><td>调度层</td><td><code>integrations/</code>, <code>extensions.py</code>, <code>presets.py</code></td><td>Agent 注册表、Extension/Preset 管理、StepTracker 进度展示</td></tr>
+      <tr><td>资产层</td><td><code>templates/commands/*.md</code></td><td>核心 Slash 命令提示词，wheel 打包后变为 <code>core_pack/</code></td></tr>
+      <tr><td>部署输出层</td><td>用户项目目录</td><td>命令文件写入 Agent 专属目录，规格文件写入 <code>specs/</code></td></tr>
+      <tr><td>AI 运行时层</td><td>无代码（Agent 执行）</td><td>AI Agent 读取 Slash 命令并按 SDD 流程引导用户</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <h4 id="section-3-2-1">3.2.1 specify init —— 项目初始化流程</h4>
+
+  <p>
+    <strong>要解决的问题：</strong>一条命令完成工具检测、Agent 选择、模板部署、Git 初始化，
+    且需在 25+ Agent 下行为一致，同时支持全新项目和存量项目（<code>--here</code> 模式）两种场景。
+  </p>
+  <p>
+    <strong>核心决策：</strong>使用 <code>StepTracker</code>（Rich Tree 实时渲染）展示安装进度；
+    所有模板资产打包进 wheel（<code>pyproject.toml</code> 的 <code>force-include</code>），安装后无需网络；
+    VSCode settings.json 使用"礼貌合并"——只添加新 key，不覆盖用户已有值。
+  </p>
+
+  <div class="diagram-container">
+    <button class="diagram-zoom-btn" title="放大">⤢</button>
+    <div class="mermaid">
+sequenceDiagram
+    participant User as 用户
+    participant CLI as specify init
+    participant Reg as INTEGRATION_REGISTRY
+    participant Integ as Integration.setup()
+    participant FS as 文件系统
+
+    User->>CLI: specify init my-project --ai claude
+    CLI->>CLI: 解析参数 / 校验 --ai 与 --integration 互斥
+    CLI->>Reg: get_integration("claude")
+    Reg-->>CLI: ClaudeIntegration 实例
+    CLI->>CLI: check_tool("claude") 检测 Agent 是否安装
+    CLI->>FS: 创建项目目录 / --here 检测非空提示确认
+    CLI->>Integ: integration.setup(project_root, tracker)
+    Integ->>FS: 从 core_pack/commands/ 复制 MD 命令
+    Integ->>FS: 写入 .claude/commands/speckit.*.md
+    Integ->>FS: 复制 templates/ 骨架到 specs/
+    Integ->>FS: 写入 AGENTS.md / constitution.md 占位
+    Integ->>FS: 合并 vscode-settings.json (礼貌合并)
+    CLI->>FS: git init + initial commit (unless --no-git)
+    CLI-->>User: 显示 StepTracker 树形进度 + 后续命令提示
+    </div>
+    <div class="caption">图 3.2.1 — specify init 完整流程时序图</div>
+  </div>
+
+  <pre><code class="language-python"># 文件: src/specify_cli/__init__.py (line 503-575)
+def merge_json_files(existing_path: Path, new_content: Any, verbose: bool = False):
+    """礼貌深度合并：只添加新 key，保留用户已有的所有值"""
+
+    # 现有文件不存在时直接返回新内容
+    if not exists:
+        return new_content
+
+    def deep_merge_polite(base: dict, update: dict) -> dict:
+        result = base.copy()
+        for key, value in update.items():
+            if key not in result:
+                # 只添加缺失的 key
+                result[key] = value
+            elif isinstance(result[key], dict) and isinstance(value, dict):
+                # 嵌套 dict 递归合并
+                result[key] = deep_merge_polite(result[key], value)
+            else:
+                # key 已存在且不是 dict → 保留用户值，忽略模板值
+                pass
+        return result
+
+    merged = deep_merge_polite(existing_content, new_content)
+    # 内容无变化时返回 None，调用方跳过写入（保护用户注释/格式）
+    if merged == existing_content:
+        return None
+    return merged
+</code></pre>
+  <p>
+    这段代码体现了"礼貌性"的工程哲学：Spec Kit 是访客，用户的 settings.json 是主人。
+    合并时只贡献缺失的配置，绝不覆盖用户已有设置，且当内容无变化时直接跳过写入（保留用户的注释和格式化）。
+    原子写入（先写临时文件再 <code>os.replace</code>）防止写入中断导致文件损坏。
+  </p>
+
+  <h4 id="section-3-2-2">3.2.2 集成适配系统 —— 支持 25+ AI Agent 的架构</h4>
+
+  <p>
+    <strong>要解决的问题：</strong>不同 AI Agent 的命令文件格式、目标目录、命名规则各不相同：
+    Claude Code 用 <code>.claude/commands/speckit.specify.md</code>，
+    Gemini CLI 用 TOML 格式写入 <code>.gemini/commands/</code>，
+    Codex 用 <code>.agents/skills/speckit-specify/SKILL.md</code>。
+    如何在不写大量 if-else 的情况下支持全部？
+  </p>
+  <p>
+    <strong>方案：</strong>三层继承 + 注册表。<code>IntegrationBase</code> 定义接口，
+    <code>MarkdownIntegration</code> / <code>TomlIntegration</code> / <code>SkillsIntegration</code>
+    分别实现三种格式变体，每个 Agent 的子类只需设置 3 个类属性（<code>key</code>、<code>config</code>、<code>registrar_config</code>）。
+    <code>INTEGRATION_REGISTRY</code> 在 <code>integrations/__init__.py</code> 中通过扫描所有子类自动构建。
+  </p>
+
+  <div class="diagram-container">
+    <button class="diagram-zoom-btn" title="放大">⤢</button>
+    <div class="mermaid">
+sequenceDiagram
+    participant Caller as specify init
+    participant Registry as INTEGRATION_REGISTRY
+    participant Base as IntegrationBase
+    participant Concrete as MarkdownIntegration subclass
+    participant FS as 文件系统
+
+    Caller->>Registry: get_integration("copilot")
+    Registry-->>Caller: CopilotIntegration 实例
+    Caller->>Base: integration.setup(project_root, tracker)
+    Base->>Concrete: list_command_templates()
+    Concrete-->>Base: core_pack/commands/*.md 路径列表
+    loop 每个命令模板
+        Base->>Concrete: command_filename(template_name)
+        Concrete-->>Base: "speckit.specify.md"
+        Base->>Concrete: commands_dest(project_root)
+        Concrete-->>Base: ".github/copilot/commands/"
+        Base->>FS: copy_command_to_directory(src, dest, filename)
+        Base->>FS: record_file_in_manifest(file_path)
+    end
+    Base->>FS: 复制文档骨架模板到项目根目录
+    Base-->>Caller: setup 完成
+    </div>
+    <div class="caption">图 3.2.2 — IntegrationBase.setup() 调用链（以 Copilot 为例）</div>
+  </div>
+
+  <pre><code class="language-python"># 文件: src/specify_cli/integrations/base.py (line 56-165)
+class IntegrationBase(ABC):
+    """所有 Agent 集成的抽象基类"""
+
+    # 每个子类必须设置这 3 个类属性
+    key: str = ""               # Agent 唯一 ID（e.g. "claude"）
+    config: dict | None = None  # 目录配置（folder、commands_subdir 等）
+    registrar_config: dict | None = None  # 命令注册配置
+
+    def commands_dest(self, project_root: Path) -> Path:
+        """从 config 推算命令文件部署路径，子类无需覆写"""
+        folder = self.config.get("folder")
+        subdir = self.config.get("commands_subdir", "commands")
+        return project_root / folder / subdir
+
+    def command_filename(self, template_name: str) -> str:
+        """默认文件名格式，TOML/Skills 子类会覆写"""
+        return f"speckit.{template_name}.md"
+
+    # 具体部署逻辑由 MarkdownIntegration/TomlIntegration 等实现
+</code></pre>
+  <p>
+    关键设计：<code>commands_dest</code> 和 <code>command_filename</code> 提供合理默认值，
+    子类只在需要偏离默认行为时才覆写（<code>TomlIntegration</code> 覆写 <code>command_filename</code>
+    返回 <code>.toml</code> 后缀；<code>SkillsIntegration</code> 覆写 <code>commands_dest</code>
+    返回 skill 子目录路径）。新增 Agent 通常只需创建一个 5~20 行的子类文件。
+  </p>
+
+  <h4 id="section-3-2-3">3.2.3 扩展管理器 —— Extension Hook 系统</h4>
+
+  <p>
+    <strong>要解决的问题：</strong>核心 SDD 流程（specify → plan → tasks → implement）对于 90% 的项目已足够，
+    但剩下 10% 需要：Jira 同步、自动 commit、多 Agent 并行、CI Gate……
+    如果把所有这些都加入核心，核心将失控膨胀。
+  </p>
+  <p>
+    <strong>方案：</strong>Hook 系统。扩展通过 <code>extension.yml</code> 声明自己的命令，
+    安装后会在 <code>.specify/extensions.yml</code> 注册钩子（<code>before_specify</code>、<code>after_plan</code> 等）。
+    核心命令（如 <code>/speckit.specify</code>）在执行前后读取这个文件，
+    按 optional/mandatory 标志决定是提示用户还是自动执行对应扩展命令。
+  </p>
+
+  <div class="diagram-container">
+    <button class="diagram-zoom-btn" title="放大">⤢</button>
+    <div class="mermaid">
+sequenceDiagram
+    participant Dev as 开发者
+    participant CLI as specify extension add git
+    participant EM as ExtensionManager
+    participant Catalog as extensions/catalog.json
+    participant FS as 项目文件系统
+
+    Dev->>CLI: specify extension add git
+    CLI->>Catalog: 查找 git 扩展条目（URL、版本）
+    Catalog-->>CLI: git extension entry
+    CLI->>EM: install_extension("git", project_root)
+    EM->>EM: 下载 / 解压 extension zip
+    EM->>EM: 验证 extension.yml (schema_version, id, semver)
+    EM->>EM: 检查命令名冲突 (EXTENSION_COMMAND_NAME_PATTERN)
+    EM->>FS: 写入 .specify/extensions/ 目录
+    EM->>FS: 注册钩子到 .specify/extensions.yml
+    EM->>FS: 更新 .specify/installed.json (manifest)
+    EM-->>Dev: 安装成功，显示新增命令列表
+
+    Note over Dev,FS: 运行时
+    Dev->>FS: /speckit.specify 触发
+    FS-->>Dev: AI 读取 .specify/extensions.yml
+    FS-->>Dev: 发现 before_specify 钩子 → 执行 speckit.git.feature
+    </div>
+    <div class="caption">图 3.2.3 — Extension 安装与 Hook 触发流程</div>
+  </div>
+
+  <pre><code class="language-python"># 文件: src/specify_cli/extensions.py (line 39, 119-173)
+
+# 命令名强制遵循 speckit.{extension}.{command} 格式
+EXTENSION_COMMAND_NAME_PATTERN = re.compile(r"^speckit\.([a-z0-9-]+)\.([a-z0-9-]+)$")
+
+class ExtensionManifest:
+    """加载并验证 extension.yml"""
+    REQUIRED_FIELDS = ["schema_version", "extension", "requires", "provides"]
+
+    def _validate(self):
+        # 强制 schema_version == "1.0"
+        if self.data["schema_version"] != self.SCHEMA_VERSION:
+            raise ValidationError(...)
+
+        # 扩展 ID 只允许小写字母数字+连字符
+        if not re.match(r'^[a-z0-9-]+$', ext["id"]):
+            raise ValidationError(...)
+
+        # 语义化版本验证（使用 packaging 库）
+        try:
+            pkg_version.Version(ext["version"])
+        except pkg_version.InvalidVersion:
+            raise ValidationError(...)
+</code></pre>
+  <p>
+    <strong>设计代价：</strong>Hook 的执行逻辑实际上在 AI Agent 侧（读取并解释 <code>extensions.yml</code>），
+    而不是在 Python 代码里。这意味着 Hook 的行为完全依赖 AI 的理解能力，
+    无法用单元测试验证"某个 Hook 在什么情况下被触发"——测试文件
+    <code>tests/test_extensions.py</code> 只能测试安装逻辑，不能测试运行时语义。
+  </p>
+
+  <h4 id="section-3-2-4">3.2.4 /speckit.specify —— SDD 工作流的心脏</h4>
+
+  <p>
+    <strong>要解决的问题：</strong>如何让 AI Agent 从一段随意的功能描述生成高质量、可测试、与技术无关的规格文档？
+    如何防止 AI 在规格里偷偷写下"用 React 实现"这类实现细节？如何在 AI 不确定时提问但又不让提问过多打断用户？
+  </p>
+  <p>
+    <strong>方案：</strong>命令文件本身是一套精密的 AI 引导脚本，包含：
+    ① 前置 Hook 检查（执行前寻找 before_specify 钩子）；
+    ② 自动生成特性短名（2-4 词，用于目录命名）；
+    ③ 顺序编号策略（sequential 或 timestamp）；
+    ④ 分层验证清单（Success Criteria 必须技术无关、需求必须可测）；
+    ⑤ 最多 3 个 [NEEDS CLARIFICATION] 标记的上限约束；
+    ⑥ 后置 Hook 检查。
+  </p>
+
+  <div class="diagram-container">
+    <button class="diagram-zoom-btn" title="放大">⤢</button>
+    <div class="mermaid">
+sequenceDiagram
+    participant User as 用户
+    participant Agent as AI Agent
+    participant Hook as Extension Hook
+    participant FS as 文件系统
+
+    User->>Agent: /speckit.specify 构建照片相册应用
+    Agent->>FS: 检查 .specify/extensions.yml before_specify 钩子
+    FS-->>Agent: 发现 git 扩展 before_specify 钩子（可选）
+    Agent->>User: 可选：执行 /speckit.git.feature 创建功能分支？
+    Agent->>Agent: 生成短名 "photo-album-app"
+    Agent->>Agent: 扫描 specs/ 确定下一个编号 (003-)
+    Agent->>FS: mkdir specs/003-photo-album-app
+    Agent->>FS: 复制 spec-template.md → spec.md
+    Agent->>Agent: 解析用户描述：提取 actors、actions、数据、约束
+    Agent->>Agent: 填充 spec.md（用户场景、功能需求、验收标准）
+    Agent->>Agent: 生成 checklists/requirements.md
+    Agent->>Agent: 验证：Success Criteria 是否技术无关？
+    alt 发现 NEEDS CLARIFICATION 标记超过 3 个
+        Agent->>User: 呈现最多 3 个关键问题（表格格式）
+        User->>Agent: Q1: A, Q2: Custom...
+        Agent->>FS: 更新 spec.md 替换 NEEDS CLARIFICATION
+    end
+    Agent->>FS: 写入 .specify/feature.json (feature_directory 路径)
+    Agent->>FS: 更新 checklists/requirements.md 为全部通过
+    Agent->>User: 完成报告：spec.md 路径、checklist 结果、下一步
+    Agent->>FS: 检查 after_specify 钩子并执行
+    </div>
+    <div class="caption">图 3.2.4 — /speckit.specify 完整执行时序图</div>
+  </div>
+
+  <pre><code class="language-markdown"><!-- 文件: templates/commands/specify.md (关键约束片段) -->
+
+## 验收标准设计原则
+
+**好的例子**（技术无关、用户视角）：
+- "用户可以在 3 分钟内完成结账"
+- "系统支持 1 万并发用户"
+
+**坏的例子**（泄露实现细节）：
+- "API 响应时间低于 200ms"    ← 太技术化，改为"用户立即看到结果"
+- "React 组件高效渲染"        ← 框架细节不属于规格
+- "Redis 命中率高于 80%"      ← 技术指标不属于规格
+
+## 澄清限制
+- 最多 3 个 [NEEDS CLARIFICATION] 标记
+- 优先级：功能范围 > 安全/隐私 > 用户体验 > 技术细节
+- 常见可以使用合理默认的情况（不要提问）：
+  - 数据保留：使用行业标准
+  - 认证方式：Web 应用使用 session 或 OAuth2
+</code></pre>
+  <p>
+    这段提示词的精妙之处在于它用"反例教学"训练 AI 识别规格文档中的不良模式——
+    这比说"不要写技术细节"更有效，因为 AI 能从具体案例中归纳出判断规则。
+    "最多 3 个澄清"的硬限制防止 AI 陷入无休止的问答，强迫它在信息不完整时做出合理假设。
+  </p>
+
+  <!-- Section 4 -->
+  <h2 id="section-4">4 方案评价</h2>
+
+  <h3 id="section-4-1">4.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>架构简洁，扩展成本极低</h4>
+      <ul>
+        <li>新增 Agent 集成：一个 5-20 行子类，无需修改主流程</li>
+        <li>新增扩展：独立仓库 + 一个 <code>extension.yml</code>，无需 PR 核心代码</li>
+        <li>新增预设：只需覆写命令 MD 文件，无 Python 代码</li>
+        <li>抽象层次清晰：CLI 层 / 集成层 / 模板资产层 / 运行时层 职责不重叠</li>
+      </ul>
+    </div>
+    <div class="eval-card strength">
+      <h4>工程细节周到</h4>
+      <ul>
+        <li>原子写入防止配置文件损坏</li>
+        <li>礼貌深度合并保护用户已有设置</li>
+        <li>wheel 打包 air-gapped 可用（v0.6+）</li>
+        <li>语义化版本约束（<code>speckit_version: ">=0.6.0"</code>）</li>
+        <li>Claude Code 非标准安装路径专项处理</li>
+      </ul>
+    </div>
+    <div class="eval-card strength">
+      <h4>社区飞轮效应明显</h4>
+      <ul>
+        <li>6 个月内 40+ 社区扩展，覆盖 Jira/Azure/Linear 等主流集成</li>
+        <li>8 个社区预设，包括"小说写作模式"等创意应用</li>
+        <li>87.7k Star 带来持续的外部贡献</li>
+        <li>Extension 目录网站、VSCode 可视化插件等生态已自发形成</li>
+      </ul>
+    </div>
+    <div class="eval-card strength">
+      <h4>方法论与工具一体化</h4>
+      <ul>
+        <li><code>spec-driven.md</code> 提供完整的 SDD 理论框架</li>
+        <li>提示词文件是方法论的可执行版本，两者始终保持一致</li>
+        <li>Newsletter 月刊维持社区方向感</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 id="section-4-2">4.2 局限分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card weakness">
+      <h4>提示词质量无法被工具链保障</h4>
+      <ul>
+        <li>命令文件是 Markdown 纯文本，无类型检查、无 lint</li>
+        <li>提示词语义正确性只能靠人工测试，CI 无法自动回归</li>
+        <li>不同 AI 模型对同一提示词的理解差异可能导致输出不一致</li>
+        <li>提示词迭代需要大量人工 LLM 测试，成本高</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>规格漂移问题未内置解决</h4>
+      <ul>
+        <li>代码实现后 spec.md 与代码的一致性无内置检测机制</li>
+        <li>Spec Sync 扩展依赖 AI 理解代码变更，可靠性有限</li>
+        <li>大型团队多分支并行时，规格冲突的合并策略缺失</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>扩展生态质量参差不齐</h4>
+      <ul>
+        <li>官方不审核扩展代码本身，安全责任由用户承担</li>
+        <li>40+ 扩展中许多缺乏测试和维护承诺</li>
+        <li>扩展间依赖关系（<code>requires</code>）复杂时的解析逻辑尚弱</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>运行时行为不可预测</h4>
+      <ul>
+        <li>Hook 执行由 AI Agent 解释，不是 Python 代码，无法单测</li>
+        <li>不同 Agent 对 EXECUTE_COMMAND 指令的响应方式不同</li>
+        <li>命令执行失败时没有统一的回滚机制</li>
+        <li>feature.json 状态文件在并行 Agent 场景下可能产生竞争</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── Interactive Panel System ─────────────────────────────────────────── -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
+    <span class="code-panel-path" id="codePanelPath"></span>
+    <span class="code-panel-badge" id="codePanelBadge"></span>
+    <a id="panelGhLink" class="panel-gh-link" href="#" target="_blank" rel="noopener" style="display:none">⤢ 在浏览器中打开</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose" title="关闭 (Esc)">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader">
+      <div class="iframe-spin"></div>
+      <span>正在加载 GitHub 页面…</span>
+    </div>
+    <iframe id="githubIframe" src="" title="GitHub"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: { diagramMarginX: 20, diagramMarginY: 20, actorMargin: 60, mirrorActors: false, messageAlign: 'center' },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+
+  hljs.highlightAll();
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+    tocLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+  });
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const FILE_MAP = {
+    'src/specify_cli/__init__.py': 'src/specify_cli/__init__.py',
+    'src/specify_cli/extensions.py': 'src/specify_cli/extensions.py',
+    'src/specify_cli/presets.py': 'src/specify_cli/presets.py',
+    'src/specify_cli/integrations/base.py': 'src/specify_cli/integrations/base.py',
+    'src/specify_cli/agents.py': 'src/specify_cli/agents.py',
+    'src/specify_cli/integrations/manifest.py': 'src/specify_cli/integrations/manifest.py',
+    'templates/commands/specify.md': 'templates/commands/specify.md',
+    'templates/commands/plan.md': 'templates/commands/plan.md',
+    'templates/commands/implement.md': 'templates/commands/implement.md',
+    'templates/commands/tasks.md': 'templates/commands/tasks.md',
+    'presets/lean/preset.yml': 'presets/lean/preset.yml',
+    'extensions/git/extension.yml': 'extensions/git/extension.yml',
+    'pyproject.toml': 'pyproject.toml',
+    'spec-driven.md': 'spec-driven.md',
+    'AGENTS.md': 'AGENTS.md',
+  };
+
+  const PROJECT_TERMS = {
+    'SDD': {
+      tags: ['方法论', '核心理念', '规格驱动'],
+      def: '<b>规格驱动开发（Spec-Driven Development）</b>是 Spec Kit 的核心方法论：将规格文档（PRD）提升为第一公民，让代码成为规格的派生物。与传统开发相反，SDD 中"维护软件"意味着"演进规格"，规格是真正的源代码，AI 从规格生成代码。',
+      mechanics: [
+        'constitution → specify → clarify → plan → tasks → implement 六阶段流程',
+        '每个阶段输出版本控制友好的 Markdown 文件（spec.md、plan.md、tasks.md）',
+        'specs/ 目录按功能编号（001-feature-name）组织，与 git 分支解耦',
+        '规格文件禁止出现技术实现细节（不允许写"用 React"、"用 PostgreSQL"）',
+        'feature.json 记录当前活跃功能路径，让后续命令无需重复寻址',
+      ],
+      related: ['IntegrationBase', 'ExtensionHook', 'Preset'],
+      files: ['spec-driven.md', 'templates/commands/specify.md'],
+      patterns: ['SDD', '规格驱动', 'Spec-Driven', '规格文档'],
+    },
+    'IntegrationBase': {
+      tags: ['集成系统', '抽象基类', '多 Agent 支持'],
+      def: '<b>IntegrationBase</b> 是 Spec Kit 支持 25+ AI Agent 的核心抽象。每个 Agent 的集成类继承自它，只需声明 <code>key</code>、<code>config</code>、<code>registrar_config</code> 三个类属性。基类提供命令文件复制、模板目录解析、manifest 记录等通用实现；子类只需覆写在格式/路径上有差异的方法。',
+      mechanics: [
+        'INTEGRATION_REGISTRY 字典自动从所有子类构建（integrations/__init__.py 扫描）',
+        'MarkdownIntegration：通用 MD 格式（Copilot、Claude、Cursor 等）',
+        'TomlIntegration：Gemini CLI、Tabnine 使用 TOML 格式',
+        'SkillsIntegration：Codex CLI、Claude Code 的 skills 模式（SKILL.md 布局）',
+        'context_file 属性：集成可声明 Agent 的上下文文件路径（如 CLAUDE.md）',
+      ],
+      related: ['SDD', 'ExtensionHook'],
+      files: ['src/specify_cli/integrations/base.py'],
+      patterns: ['IntegrationBase', '集成适配', 'INTEGRATION_REGISTRY'],
+    },
+    'ExtensionHook': {
+      tags: ['扩展系统', 'Hook', '生命周期'],
+      def: '<b>Extension Hook 系统</b>允许社区扩展在核心 SDD 流程的每个阶段前后插入自定义逻辑。扩展安装后，其钩子被注册到 <code>.specify/extensions.yml</code>；核心命令在执行前后读取此文件，按 optional/mandatory 标志决定是提示用户还是自动执行扩展命令。Hook 逻辑在 AI 侧执行，无需修改核心 Python 代码。',
+      mechanics: [
+        '钩子类型：before_specify、after_specify、before_plan、after_plan 等（每个核心命令前后各一个）',
+        'optional: true → AI 提示用户，等待确认；optional: false → AI 自动触发',
+        'condition 字段：条件表达式（AI 判断是否执行，核心代码不解析）',
+        '命令名规范：必须符合 speckit.{extension}.{command} 格式',
+        'ExtensionManifest 验证：schema_version、id（只允许小写字母数字连字符）、语义化版本',
+      ],
+      related: ['SDD', 'Preset'],
+      files: ['src/specify_cli/extensions.py', 'extensions/git/extension.yml'],
+      patterns: ['ExtensionHook', 'Extension Hook', 'before_specify', 'after_plan', '扩展钩子'],
+    },
+    'Preset': {
+      tags: ['预设系统', '命令覆写', '定制化'],
+      def: '<b>Preset</b> 是 Spec Kit 的命令模板覆写机制。预设可以完全替换核心命令（如 <code>speckit.specify</code>）为不同风格的变体，而不需要修改或 Fork 核心代码。内置 Lean 预设提供精简版命令（去除大量校验逻辑）；社区预设甚至支持"海盗语气"、"小说写作模式"等创意应用。',
+      mechanics: [
+        'preset.yml 通过 replaces 字段声明要覆写的核心命令名',
+        '安装后 specify init 会优先使用预设中的命令文件而非 core_pack',
+        '预设可以提供 templates（命令 MD）和新的文档骨架',
+        'speckit_version 约束确保预设与 CLI 版本兼容',
+        'PresetManager 的 install/remove/list 与 ExtensionManager 接口一致',
+      ],
+      related: ['SDD', 'ExtensionHook', 'IntegrationBase'],
+      files: ['presets/lean/preset.yml', 'src/specify_cli/presets.py'],
+      patterns: ['Preset', '预设', 'lean', 'replaces'],
+    },
+  };
+
+  const GH_REPO   = 'github/spec-kit';
+  const GH_BRANCH = 'main';
+  const GH1S_BASE = 'https://github1s.com/' + GH_REPO;
+  const GH_BASE   = 'https://github.com/'   + GH_REPO;
+
+  const backdrop     = document.getElementById('codeBackdrop');
+  const panel        = document.getElementById('codePanel');
+  const closeBtn     = document.getElementById('codePanelClose');
+  const pathEl       = document.getElementById('codePanelPath');
+  const badgeEl      = document.getElementById('codePanelBadge');
+  const ghLink       = document.getElementById('panelGhLink');
+  const iframeBody   = document.getElementById('iframePanelBody');
+  const iframeLoader = document.getElementById('iframeLoader');
+  const iframeEl     = document.getElementById('githubIframe');
+  const termBody     = document.getElementById('termPanelBody');
+  const resizeGrip   = document.getElementById('panelResizeGrip');
+  const navBack      = document.getElementById('panelNavBack');
+  const navFwd       = document.getElementById('panelNavFwd');
+  const pinBtn       = document.getElementById('panelPin');
+
+  // ── Navigation history ──────────────────────────────────────────────────
+  const navHistory = [];
+  let navIndex = -1;
+  function updateNavBtns() {
+    navBack.disabled = navIndex <= 0;
+    navFwd.disabled  = navIndex >= navHistory.length - 1;
+  }
+  function pushNav(entry) {
+    navHistory.splice(navIndex + 1);
+    navHistory.push(entry);
+    navIndex = navHistory.length - 1;
+    updateNavBtns();
+  }
+  navBack.addEventListener('click', () => {
+    if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  navFwd.addEventListener('click', () => {
+    if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  function _loadEntry(e) {
+    if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanel(e.key);
+  }
+
+  // ── Pin state ───────────────────────────────────────────────────────────
+  let pinned = false;
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    pinBtn.title = pinned ? '取消固定' : '固定面板';
+    panel.classList.toggle('pinned', pinned);
+    if (pinned) {
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    } else if (panel.classList.contains('open')) {
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  // ── Panel open / close ──────────────────────────────────────────────────
+  function openPanel() {
+    panel.classList.add('open');
+    if (!pinned) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  }
+  function _doClose() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'none';
+    navHistory.length = 0; navIndex = -1; updateNavBtns();
+  }
+  function closePanel() { if (!pinned) _doClose(); }
+  function forceClose()  {
+    pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板';
+    panel.classList.remove('pinned'); _doClose();
+  }
+  closeBtn.addEventListener('click', forceClose);
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
+
+  // ── Resize ──────────────────────────────────────────────────────────────
+  let resizing = false, rsX = 0, rsW = 0, rsOverlay = null;
+  resizeGrip.addEventListener('mousedown', e => {
+    resizing = true; rsX = e.clientX; rsW = panel.offsetWidth;
+    resizeGrip.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ew-resize';
+    rsOverlay = document.createElement('div');
+    rsOverlay.style.cssText = 'position:absolute;inset:0;z-index:9999;cursor:ew-resize;';
+    panel.appendChild(rsOverlay);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const newW = Math.max(300, Math.min(window.innerWidth * 0.96, rsW + (rsX - e.clientX)));
+    panel.style.width = newW + 'px';
+    panel.style.transition = 'none';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizing) return;
+    resizing = false;
+    resizeGrip.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    panel.style.transition = '';
+    if (rsOverlay) { rsOverlay.remove(); rsOverlay = null; }
+  });
+
+  // ── Open github1s iframe ─────────────────────────────────────────────────
+  function _openGitHubPanel(ghPath, label) {
+    panel.dataset.type   = 'github';
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'github1s';
+    ghLink.href          = GH_BASE + '/blob/' + GH_BRANCH + '/' + ghPath;
+    ghLink.style.display = '';
+    iframeBody.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;';
+    termBody.style.display   = 'none';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>正在加载 GitHub 页面…</span>';
+    iframeEl.style.display = 'none';
+    iframeEl.src = '';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML =
+          '<div style="text-align:center;padding:24px">' +
+          '<p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + ghLink.href + '" target="_blank" rel="noopener" ' +
+          'style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">' +
+          '在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => {
+        clearTimeout(tid);
+        iframeLoader.style.display = 'none';
+        iframeEl.style.flex = '1';
+        iframeEl.style.display = 'block';
+      };
+      iframeEl.src = GH1S_BASE + '/blob/' + GH_BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) {
+    pushNav({ type: 'github', path: ghPath, label: label || ghPath });
+    _openGitHubPanel(ghPath, label);
+  }
+
+  // ── Term panel ───────────────────────────────────────────────────────────
+  function renderTermHTML(key) {
+    const t = PROJECT_TERMS[key]; if (!t) return '';
+    const tags  = (t.tags  || []).map(g => '<span class="term-tag">' + g + '</span>').join('');
+    const mech  = (t.mechanics || []).map(m => '<li>' + m + '</li>').join('');
+    const rels  = (t.related || []).map(r => '<button class="term-rel-btn" data-term="' + r + '">' + r + '</button>').join('');
+    const files = (t.files  || []).filter(f => FILE_MAP[f]).map(f =>
+      '<button class="term-file-btn" data-file="' + FILE_MAP[f] + '">' + f + '</button>').join('');
+    return '<div class="term-tags">' + tags + '</div>' +
+      '<div class="term-title-h">' + key + '</div>' +
+      '<div class="term-def">'  + t.def + '</div>' +
+      (mech  ? '<div class="term-sec">实现机制</div><ul class="term-mechanics">' + mech + '</ul>' : '') +
+      (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
+      (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
+  }
+  function _openTermPanel(key) {
+    panel.dataset.type   = 'term';
+    pathEl.textContent   = key;
+    badgeEl.textContent  = '术语解释';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    termBody.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow-y:auto;padding:20px 22px 32px;';
+    termBody.innerHTML = renderTermHTML(key);
+    termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+      btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+    termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+      btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+    openPanel();
+  }
+  function openTermPanel(key) {
+    if (!PROJECT_TERMS[key]) return;
+    pushNav({ type: 'term', key });
+    _openTermPanel(key);
+  }
+
+  // ── Click handler ────────────────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+    const termEl = e.target.closest('.term-link[data-term]');
+    if (fileEl && fileEl.dataset.file) {
+      e.preventDefault();
+      openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+      e.preventDefault();
+      openTermPanel(termEl.dataset.term);
+    }
+  });
+
+  // ── Auto-tag file links (inline <code>) ──────────────────────────────────
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.classList.contains('file-link')) return;
+    const raw = el.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (ghPath) {
+      el.classList.add('file-link');
+      el.dataset.file  = ghPath;
+      el.dataset.label = raw;
+      el.title = '在 GitHub 中查看';
+    }
+  });
+
+  // ── Auto-tag term links ──────────────────────────────────────────────────
+  const TERM_PATTERNS = {};
+  Object.keys(PROJECT_TERMS).forEach(key => {
+    (PROJECT_TERMS[key].patterns || [key]).forEach(pat => {
+      TERM_PATTERNS[pat] = key;
+    });
+  });
+  const sortedPats = Object.keys(TERM_PATTERNS).sort((a, b) => b.length - a.length);
+
+  function autoTagTerms(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const p = node.parentNode;
+        if (!p) return NodeFilter.FILTER_REJECT;
+        const tag = p.tagName;
+        if (tag === 'A' || tag === 'CODE' || tag === 'PRE' || tag === 'SCRIPT' || tag === 'STYLE') return NodeFilter.FILTER_REJECT;
+        if (p.classList && (p.classList.contains('term-link') || p.classList.contains('file-link'))) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      let text = node.nodeValue;
+      let matched = false;
+      for (const pat of sortedPats) {
+        if (!text.includes(pat)) continue;
+        const idx = text.indexOf(pat);
+        if (idx === -1) continue;
+        const key = TERM_PATTERNS[pat];
+        const frag = document.createDocumentFragment();
+        if (idx > 0) frag.appendChild(document.createTextNode(text.slice(0, idx)));
+        const span = document.createElement('span');
+        span.className = 'term-link';
+        span.dataset.term = key;
+        span.textContent = pat;
+        frag.appendChild(span);
+        frag.appendChild(document.createTextNode(text.slice(idx + pat.length)));
+        node.parentNode.replaceChild(frag, node);
+        matched = true;
+        break;
+      }
+    });
+  }
+  autoTagTerms(document.querySelector('.content'));
+
+})();
+</script>
+
+<script>
+// ── TOC Collapse ──────────────────────────────────────────────────────────
+(function() {
+  const toc = document.getElementById('tocNav');
+  const content = document.getElementById('mainContent');
+  const btn = document.getElementById('tocToggle');
+  let collapsed = false;
+  btn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    toc.classList.toggle('collapsed', collapsed);
+    content.classList.toggle('toc-collapsed', collapsed);
+    btn.textContent = collapsed ? '›' : '‹';
+    btn.title = collapsed ? '展开目录' : '折叠目录';
+  });
+})();
+</script>
+
+<script>
+// ── Diagram Zoom ──────────────────────────────────────────────────────────
+(function() {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const btn = container.querySelector('.diagram-zoom-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+      const lb = document.createElement('div');
+      lb.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className = 'diagram-lightbox-inner';
+      const clone = svg.cloneNode(true);
+      clone.style.cssText = 'max-width:88vw;max-height:85vh;display:block;';
+      inner.appendChild(clone);
+      lb.appendChild(inner);
+      lb.addEventListener('click', () => lb.remove());
+      document.body.appendChild(lb);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
