@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superpowers 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Diagram zoom --- */
+  .diagram-container { position: relative; cursor: zoom-in; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: white; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,.4); max-width: 92vw; max-height: 90vh; }
+
+  /* --- Main Content --- */
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+
+  /* --- Core Conclusions Box --- */
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+
+  /* --- Section Headings --- */
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+
+  /* --- Body Text --- */
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Module Card --- */
+  .module-card { margin: 28px 0 40px; padding: 24px 28px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .module-card h4 { margin-top: 0; font-size: 17px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+  .module-meta { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 8px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
+  .module-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* --- Diagram Container --- */
+  .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
+  .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+
+  /* --- Evaluation Grid --- */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card h4 { font-size: 16px; margin-bottom: 12px; }
+  .eval-card.strength { background: #f0fdf4; border-color: #86efac; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness { background: #fff7ed; border-color: #fdba74; }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  /* --- Code Blocks --- */
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+
+  /* --- Command Flow Block --- */
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+
+  /* --- Fit/Unfit Section --- */
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .fit-card { padding: 20px; border-radius: 12px; }
+  .fit-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .fit-card.fit { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit-card.fit h4 { color: var(--success); }
+  .fit-card.unfit { background: #fff7ed; border: 1px solid #fdba74; }
+  .fit-card.unfit h4 { color: var(--warning); }
+
+  /* --- Timeline --- */
+  .section-lead { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 16px; line-height: 1.6; }
+  .timeline { margin: 20px 0; }
+  .timeline-step { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .timeline-step:last-child { border-bottom: none; }
+  .step-title { font-weight: 600; font-size: 14px; min-width: 220px; color: var(--accent); }
+  .step-desc { font-size: 14px; color: var(--text-secondary); }
+
+  /* --- Directory Tree --- */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root   { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir    { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry  { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file   { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+
+  /* --- Cast of Characters Table --- */
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #ffffff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+
+  /* --- Dir Table --- */
+  .dir-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 14px; }
+  .dir-table th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 240px; }
+  .dir-rationale { font-size: 13px !important; color: var(--text-secondary) !important; font-style: italic; margin: 4px 0 8px !important; padding: 8px 12px; background: var(--bg-alt); border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; }
+
+  /* --- Arch / Schema Tables --- */
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 120px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 200px; }
+  .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+
+  .schema-obj-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 24px 0 6px; border-left: 3px solid var(--accent); padding-left: 10px; line-height: 1.5; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 12.5px; }
+  .schema-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 10px; border: 1px solid var(--border); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #374151; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 200px; font-weight: 600; }
+  .schema-table td:nth-child(2) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #6d28d9; white-space: nowrap; width: 140px; }
+  .schema-table tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Iron Law callout --- */
+  .iron-law { margin: 14px 0; padding: 12px 16px; background: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; font-size: 14px; }
+  .iron-law strong { color: #dc2626; }
+
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .fit-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Panel System ──────────────────────────────────────────────────────── */
+  .code-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.38); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .code-backdrop.open { opacity:1; pointer-events:auto; }
+  .code-panel { position:fixed; top:0; right:0; height:100vh; width:min(820px,65vw); min-width:300px; max-width:96vw; background:#1e1e2e; color:#cdd6f4; transform:translateX(100%); transition:transform .26s cubic-bezier(.4,0,.2,1); z-index:201; display:flex; flex-direction:column; box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute; left:0; top:0; width:6px; height:100%; cursor:ew-resize; z-index:10; background:transparent; border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; height:48px; border-bottom:1px solid #313244; flex-shrink:0; background:#181825; overflow:hidden; }
+  .code-panel-path { font-size:13px; font-family:'JetBrains Mono',Consolas,monospace; color:#cdd6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .code-panel-badge { font-size:11px; padding:2px 8px; border-radius:4px; background:#313244; color:#89b4fa; white-space:nowrap; flex-shrink:0; }
+  .panel-gh-link { font-size:12px; color:#89b4fa; text-decoration:none; white-space:nowrap; border:1px solid #89b4fa44; padding:2px 9px; border-radius:4px; flex-shrink:0; transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px; height:28px; border:none; background:transparent; color:#9399b2; cursor:pointer; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all .15s; flex-shrink:0; }
+  .code-panel-close:hover { background:#313244; color:#cdd6f4; }
+  #iframePanelBody { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  #iframePanelBody iframe { width:100%; flex:1; border:none; display:none; }
+  .iframe-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:#6c7086; gap:12px; font-size:14px; }
+  .iframe-spin { width:32px; height:32px; border:3px solid #313244; border-top-color:#89b4fa; border-radius:50%; animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  #termPanelBody { display:none; flex:1; overflow-y:auto; padding:20px 22px 32px; }
+  .term-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .term-tag { font-size:11px; padding:2px 8px; border-radius:12px; background:#313244; color:#89b4fa; }
+  .term-title-h { font-size:18px; font-weight:700; color:#cdd6f4; margin-bottom:12px; }
+  .term-def { font-size:14px; line-height:1.75; color:#bac2de; margin-bottom:16px; padding:12px 14px; background:#181825; border-left:3px solid #89b4fa; border-radius:0 6px 6px 0; }
+  .term-sec { font-size:11px; font-weight:700; color:#89b4fa; text-transform:uppercase; letter-spacing:.5px; margin:14px 0 8px; }
+  .term-mechanics { list-style:none; padding:0; margin:0; }
+  .term-mechanics li { font-size:13px; color:#bac2de; padding:6px 0 6px 18px; position:relative; border-bottom:1px solid #313244; line-height:1.6; }
+  .term-mechanics li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-related-list { display:flex; gap:8px; flex-wrap:wrap; }
+  .term-rel-btn { font-size:12px; padding:3px 10px; border-radius:4px; background:#313244; color:#a6e3a1; border:1px solid #45475a; cursor:pointer; transition:all .15s; }
+  .term-rel-btn:hover { background:#45475a; }
+  .term-files-list { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+  .term-file-btn { font-size:12px; font-family:'JetBrains Mono',Consolas,monospace; padding:5px 10px; background:#181825; color:#89b4fa; border:1px solid #313244; border-radius:4px; cursor:pointer; text-align:left; transition:all .15s; }
+  .term-file-btn:hover { background:#313244; }
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .term-link:hover { color:#6d28d9; }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar TOC -->
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起/展开目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目定位与理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 设计哲学</a>
+  <a href="#section-2-2" class="toc-h3">2.2 与同类方案横向对比</a>
+  <a href="#section-2-3" class="toc-h3">2.3 Superpowers 是什么（一句话）</a>
+  <a href="#section-2-4" class="toc-h3">2.4 当前适合解决什么问题</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 技能状态存储</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的一次完整过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 模块解析</a>
+  <a href="#section-5-1" class="toc-h3">5.1 架构总览</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 关键执行链路</a>
+  <a href="#section-5-3" class="toc-h3">5.3 核心技能模块</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 using-superpowers（元技能）</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 brainstorming + writing-plans（设计层）</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 subagent-driven-development（执行层）</a>
+  <a href="#section-6" class="toc-h2">6 工程设计评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  <a href="#section-7-1" class="toc-h4">7.1 本文观察基线</a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="content">
+
+  <header class="header">
+    <h1>Superpowers 深度解读</h1>
+    <div class="subtitle">让 AI Coding Agent 真正懂得软件工程纪律的行为规范框架</div>
+    <div class="lead">Superpowers 是一套装载在 AI Coding Agent 上的<strong>强制行为规范框架</strong>，通过精心设计的"技能（Skill）"把混乱的 AI 编程行为规范化为有纪律的软件工程流程。它的核心创新在于：<strong>技能即行为程序</strong>——用结构化 Markdown 精确控制 Agent 在每个关键节点的决策，强制暂停、强制思考、强制规范操作，而不是让 Agent 盲目生成代码。目前在 GitHub 拥有 150k+ Star。读完本文，你将理解它与其他 AI 规范工具的本质差异、如何在项目中落地，以及那些让它真正"有纪律"的关键设计。</div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>Skills即强制行为程序</strong> — SKILL.md 不是提示词，而是带 Iron Law（铁律）的行为规范；铁律违反则必须重来，不接受例外</li>
+      <li><strong>1% 规则强制调用</strong> — 只要有 1% 可能性适用某技能，Agent 就必须调用；消除"这个太简单了"的自我欺骗</li>
+      <li><strong>Human Partner 不是 User</strong> — 全部技能统一用"your human partner"，强调协作而非命令执行；Agent 是有纪律的协作者</li>
+      <li><strong>零依赖纯 Markdown</strong> — 没有任何运行时依赖，技能就是 Markdown 文件，原生跨平台（Claude / Cursor / Codex / Gemini CLI）</li>
+      <li><strong>双阶段代码评审</strong> — Spec Compliance（规格合规）→ Code Quality（代码质量），两层质量门缺一不可</li>
+    </ul>
+  </div>
+
+  <!-- Section 1 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>随着 AI Coding Agent 能力提升，一个根本性问题浮出水面：<strong>AI 代码质量不稳定</strong>——它可以很快生成代码，但往往绕过设计思考、跳过测试、在没有充分理解需求时直接动手，最终产出一堆"能跑但难维护"的代码。</p>
+  <p>Superpowers 的作者 Adam Wride 观察到：AI Agent 最强大的形态，是像资深工程师一样遵循严格、协作的工程流程——先澄清需求，再设计，再分解，再用测试保护每一步实现，最后规范地处理分支。技能（Skill）是实现这个目标的机制：用结构化文档向 Agent 注入"下一步应该做什么、不该做什么、违反了就重来"的行为规范。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+
+  <h4>1.2.1 「AI 自作主张、跳过关键步骤」——铁律强制审批点</h4>
+  <p>AI 助手在没有约束时会直接生成代码、跳过需求澄清和测试，等到问题暴露已是返工阶段。Superpowers 的 <strong>Iron Law</strong> 机制把「头脑风暴」「测试先行」「人工审批」等节点变成不可绕过的硬约束——不是建议，是执行路径上的物理屏障，确保每个关键决策点都有人类参与。</p>
+
+  <h4>1.2.2 「每次会话都要重新告诉 AI 怎么工作」——可复用的结构化工作流</h4>
+  <p>团队规范、代码质量标准、发布流程往往只活在 Wiki 或口耳相传中，AI 每次上下文都是空白。Superpowers 将这些流程封装为<strong>技能文件</strong>（SKILL.md），一次编写、随处 invoke，AI 在任意会话中都能加载同一套完整工作流，消除「靠记忆传递规范」的摩擦。</p>
+
+  <h4>1.2.3 「AI 完成实现就宣告完工，验证环节缺失」——内置验证前置门</h4>
+  <p>没有强制验证机制时，AI 常在实现后直接提交，测试、lint、类型检查被跳过。Superpowers 的 <code>verification-before-completion</code> 技能要求在任何「完成声明」之前必须运行验证命令并展示真实输出，把「证据先于断言」作为流程级要求而非个人习惯。</p>
+
+  <h4>1.2.4 「团队无法统一 AI 协作模式，各自为政」——零成本落地与共享扩展</h4>
+  <p>引入新工具往往需要大量配置与培训，阻力大。Superpowers 的接入成本是<strong>复制一个配置文件</strong>，通过 <code>writing-skills</code> 元技能可按标准格式创建团队专属技能并共享，让组织级 AI 协作规范像代码一样版本化、可审查、可演进。</p>
+
+  <!-- Section 2 -->
+  <h2 id="section-2">2 项目定位与理念</h2>
+
+  <h3 id="section-2-1">2.1 设计哲学</h3>
+  <p>Superpowers 的设计哲学可以归纳为三条原则：</p>
+  <ol>
+    <li><strong>纪律高于速度</strong>：宁可多花五分钟澄清需求，也不要在错误方向上快速前进。Brainstorming 技能的铁律就是：未获设计审批前不得写任何实现代码。</li>
+    <li><strong>强制优于建议</strong>：技能中的 Iron Law 不是"建议遵守"，而是"违反就重来"。这是 Superpowers 与普通 Cursor Rules 或 system prompt 的根本区别——后者容易被 Agent 在"效率"名义下悄悄绕过。</li>
+    <li><strong>协作而非执行</strong>：全部技能统一使用"your human partner"（你的人类伙伴）而非"user"（用户），这不是语言游戏，而是明确的设计意图——Agent 的角色是有专业判断力的协作者，而非被动接受指令的执行工具。</li>
+  </ol>
+
+  <h3 id="section-2-2">2.2 与同类方案横向对比</h3>
+  <table>
+    <thead>
+      <tr><th>方案</th><th>核心定位</th><th>落地成本</th><th>落地效果</th><th>适合谁</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Superpowers</strong></td>
+        <td>跨平台强制行为规范框架</td>
+        <td>极低：复制一个配置文件（<code>CLAUDE.md</code> / <code>AGENTS.md</code>），零工具安装，零依赖</td>
+        <td>覆盖完整开发生命周期（头脑风暴 → TDD → 实现 → 验证 → 发布），跨 Claude / Cursor / Gemini 行为一致；效果上限受模型遵从度影响</td>
+        <td>追求工程纪律的开发者；需要跨平台统一 AI 行为的团队</td>
+      </tr>
+      <tr>
+        <td><strong>GitHub Spec Kit</strong></td>
+        <td>SDD 脚手架 + 多 Agent 集成 + 扩展市场</td>
+        <td>低：<code>uv tool install specify-cli</code> + <code>specify init</code>，一次性生成配置文件；团队需学习 slash 命令体系</td>
+        <td>规格→计划→任务→实现链路完整，多工具集成开箱即用，Manifest 管理可安全升级；效果聚焦功能开发阶段，不覆盖调试、发布等环节</td>
+        <td>需在多种 AI 工具间落地 SDD 流程的团队</td>
+      </tr>
+      <tr>
+        <td><strong>OpenSpec</strong></td>
+        <td>工件依赖图驱动的规格迭代系统</td>
+        <td>中：安装 npm 包 + 学习 OPSX schema 格式 + 定义工件依赖图；初期配置成本较高</td>
+        <td>工件依赖自动拓扑排序，变更与规格分目录可追踪；工作流可定制但需主动维护 schema；生态尚早期，社区资源有限</td>
+        <td>有明确工件依赖关系、需可重复迭代规格的项目</td>
+      </tr>
+      <tr>
+        <td><strong>GSD 2</strong></td>
+        <td>磁盘状态机驱动的自主 Agent</td>
+        <td>高：依赖 Pi SDK、需配置状态机与任务格式，初始学习曲线陡峭</td>
+        <td>真正的无人值守执行、崩溃可恢复、支持无限长任务；人类介入节点少，适合确定性强的长周期任务，不适合需要频繁决策的创意工作</td>
+        <td>需长期自主推进复杂功能、可接受低干预的独立开发者</td>
+      </tr>
+      <tr>
+        <td><strong>Cursor Rules (.cursorrules)</strong></td>
+        <td>单一 IDE 的 AI 行为配置文件</td>
+        <td>极低：一个文本文件，无需安装任何工具，语法无学习成本</td>
+        <td>约束范围限于代码风格与简单行为偏好，无阶段化工作流、无组合复用；换工具时规则无法迁移</td>
+        <td>Cursor 重度用户，只需基础代码风格约束</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>Superpowers 的核心赢面</strong>：落地成本与 Cursor Rules 相当（复制一个文件），但覆盖深度远超其他方案——从创意到发布的全链路行为规范，且跨平台可复用。<strong>输面</strong>：不提供任务调度或状态持久化，效果依赖 Agent 模型对技能内容的理解与遵从。</p>
+
+  <h3 id="section-2-3">2.3 Superpowers 是什么（一句话）</h3>
+  <p>一套由 15 个结构化 Markdown 技能文件组成的行为规范库，通过平台配置文件（<code>CLAUDE.md</code> / <code>AGENTS.md</code>）注入 AI Coding Agent，强制 Agent 在创意工作、实现、调试、评审等关键节点遵循有纪律的软件工程流程。</p>
+
+  <h3 id="section-2-4">2.4 当前适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✅ 适合的场景</h4>
+      <ul>
+        <li><strong>中型功能开发</strong> — 需要设计→实现→测试全流程，防止 AI 跳步骤</li>
+        <li><strong>多人/跨平台协作</strong> — 团队统一 AI 行为规范，换平台行为不变</li>
+        <li><strong>测试纪律要求高的项目</strong> — TDD 铁律确保每行生产代码前有失败测试</li>
+        <li><strong>需要设计评审的新功能</strong> — Brainstorming 强制先出设计文档</li>
+        <li><strong>代码质量要求高</strong> — 双阶段评审过滤低质量实现</li>
+        <li><strong>需要 Git 工作区隔离的功能开发</strong> — using-git-worktrees 提供干净隔离</li>
+      </ul>
+    </div>
+    <div class="fit-card unfit">
+      <h4>⚠️ 不太适合的场景</h4>
+      <ul>
+        <li><strong>五分钟内的小修改</strong> — 触发完整设计流程的开销大于任务本身</li>
+        <li><strong>纯探索性代码试验</strong> — 规范框架与随意探索存在摩擦</li>
+        <li><strong>无法理解长指令的弱模型</strong> — SKILL.md 内容较长，弱模型可能遗漏关键铁律</li>
+        <li><strong>需要持久化状态跨会话恢复的任务</strong> — Superpowers 无运行时状态</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <h2 id="section-3">3 核心对象与术语</h2>
+
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <p>统一定义下列词汇；后文各章在相同语义下使用。</p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>术语</th><th>定义</th><th>所在文件</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="file-link" data-file="skills/using-superpowers/SKILL.md" data-label="using-superpowers/SKILL.md" title="在 GitHub 中查看">Skill</span></td>
+        <td>一个 SKILL.md 文件，包含触发条件、铁律（Iron Law）和行为程序。每个技能负责开发生命周期中一个特定阶段的行为规范。</td>
+        <td><code>skills/**/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Iron Law">Iron Law</span></td>
+        <td>技能中不可违反的规则。与普通行为建议不同，Iron Law 是绝对约束——违反则必须重来，不接受任何"只这一次"的例外。</td>
+        <td>各 SKILL.md</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Human Partner">Human Partner</span></td>
+        <td>项目统一用语，指与 Agent 合作的人类。刻意避免使用"User"——强调双方是协作伙伴，Agent 是有判断力的协作者而非执行工具。</td>
+        <td><code>using-superpowers/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="1% Rule">1% Rule</span></td>
+        <td>如果某个技能有 1% 的可能适用于当前情况，Agent 就必须调用它。这是元技能（using-superpowers）的核心原则，消除"这个太简单了"的自我欺骗。</td>
+        <td><code>using-superpowers/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/brainstorming/SKILL.md" data-label="brainstorming/SKILL.md" title="在 GitHub 中查看">Design Doc</span></td>
+        <td>Brainstorming 技能的输出物，是一份结构化设计文档，保存到 <code>docs/superpowers/specs/YYYY-MM-DD-{name}-design.md</code>。必须经 Human Partner 审批后才能开始实现。</td>
+        <td><code>docs/superpowers/specs/</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/writing-plans/SKILL.md" data-label="writing-plans/SKILL.md" title="在 GitHub 中查看">Plan</span></td>
+        <td>writing-plans 技能的输出物，是一份详细的实施计划，保存到 <code>docs/superpowers/plans/YYYY-MM-DD-{name}.md</code>。每步估计 2-5 分钟，含复选框和期望命令输出。</td>
+        <td><code>docs/superpowers/plans/</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Subagent">Subagent</span></td>
+        <td>在 subagent-driven-development 模式中，每个任务被派发给一个独立 context 的执行单元。每个 Subagent 完成自己的任务后经过双阶段评审，避免上下文污染。</td>
+        <td><code>subagent-driven-development/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Two-Stage Review">Two-Stage Review</span></td>
+        <td>双阶段评审：第一阶段 Spec Compliance（检查实现是否符合设计文档）→ 第二阶段 Code Quality（检查代码风格、测试覆盖、边界条件）。两关均通过才算完成。</td>
+        <td><code>subagent-driven-development/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Red-Green-Refactor">Red-Green-Refactor</span></td>
+        <td>TDD 技能的核心循环：Red（写失败测试）→ Green（最少代码让测试通过）→ Refactor（在绿灯下优化）。这个循环是 Iron Law——跳过任何一步都违反铁律。</td>
+        <td><code>test-driven-development/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Harness">Harness</span></td>
+        <td>Superpowers 中称 Claude Code、Cursor、Codex、OpenCode、GitHub Copilot CLI、Gemini CLI 等 AI Agent 运行平台为"Harness"（执行框架）。技能文件对所有 Harness 均适用。</td>
+        <td><code>CLAUDE.md</code> / <code>AGENTS.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="YAGNI">YAGNI</span></td>
+        <td>"You Aren't Gonna Need It"。Brainstorming 技能的重要原则：只设计和实现需求中明确提出的功能，不要预测性添加"以后可能需要"的功能，避免过度工程化。</td>
+        <td><code>brainstorming/SKILL.md</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <p>Superpowers 中的核心对象可以分为两类：<strong>规范文件</strong>（Skill、Iron Law——定义 Agent 行为）和<strong>工件文件</strong>（Design Doc、Plan——开发过程的产出）。它们之间存在明确的生产-消费依赖链。</p>
+
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>对象</th><th>定义</th><th>分属模块</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="file-link" data-file="skills/using-superpowers/SKILL.md" data-label="using-superpowers/SKILL.md" title="查看文件">Skill</span></td>
+        <td>单个行为规范单元，每个 SKILL.md 文件对应一个技能，包含触发描述、Iron Law 和步骤说明</td>
+        <td><code>skills/**/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md" title="查看文件">Bootstrap Config</span></td>
+        <td>平台配置文件（CLAUDE.md / AGENTS.md），在 Agent 启动时把 using-superpowers 注入上下文，是整个框架的引导层</td>
+        <td><code>CLAUDE.md</code> / <code>AGENTS.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/brainstorming/SKILL.md" data-label="brainstorming/SKILL.md" title="查看文件">Design Doc</span></td>
+        <td>Brainstorming 输出的设计文档，是工件层的起点；writing-plans 消费它来生成实施计划</td>
+        <td><code>docs/superpowers/specs/</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/writing-plans/SKILL.md" data-label="writing-plans/SKILL.md" title="查看文件">Plan</span></td>
+        <td>writing-plans 输出的实施计划，是工件层的第二层；subagent-driven-development 消费它来分发任务给各 Subagent</td>
+        <td><code>docs/superpowers/plans/</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/subagent-driven-development/SKILL.md" data-label="subagent-driven-development/SKILL.md" title="查看文件">Subagent</span></td>
+        <td>执行层中独立 context 的任务单元。每个 Subagent 拥有 implementer / spec-reviewer / code-quality-reviewer 三个角色</td>
+        <td><code>subagent-driven-development/SKILL.md</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="skills/using-git-worktrees/SKILL.md" data-label="using-git-worktrees/SKILL.md" title="查看文件">Worktree</span></td>
+        <td>Git 为功能分支提供的隔离工作目录。using-git-worktrees 技能管理 worktree 的创建与回收，防止主分支污染</td>
+        <td><code>skills/using-git-worktrees/</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="skills/brainstorming/SKILL.md" data-label="brainstorming/SKILL.md">Design Doc</span> — Brainstorming 输出的设计文档格式</p>
+  <table class="schema-table">
+    <thead><tr><th>节</th><th>类型</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>stated_problem</td><td>Markdown 段落</td><td>问题的完整陈述，来自与 Human Partner 的澄清对话</td></tr>
+      <tr><td>requirements</td><td>有序列表</td><td>明确的功能与非功能需求，YAGNI 原则剔除范围外内容</td></tr>
+      <tr><td>alternatives_considered</td><td>对比表格</td><td>至少两个架构方案及各自的权衡分析</td></tr>
+      <tr><td>chosen_approach</td><td>Markdown 段落</td><td>选定方案及其选择理由</td></tr>
+      <tr><td>key_components</td><td>文件列表</td><td>受影响的文件与组件，含新建/修改说明</td></tr>
+      <tr><td>open_questions</td><td>列表</td><td>仍需 Human Partner 确认的遗留问题</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="skills/writing-plans/SKILL.md" data-label="writing-plans/SKILL.md">Plan</span> — writing-plans 输出的实施计划格式</p>
+  <table class="schema-table">
+    <thead><tr><th>节</th><th>类型</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>goal</td><td>单句</td><td>本次实施的核心目标（一句话描述）</td></tr>
+      <tr><td>architecture</td><td>2-3 句</td><td>选定的技术方案概述，与 Design Doc chosen_approach 对应</td></tr>
+      <tr><td>tech_stack</td><td>列表</td><td>涉及的技术、库及版本约束</td></tr>
+      <tr><td>tasks[n].files</td><td>文件列表</td><td>该任务要创建/修改/测试的具体文件</td></tr>
+      <tr><td>tasks[n].steps</td><td>复选框列表</td><td>每步 2-5 分钟粒度，含期望命令与输出</td></tr>
+      <tr><td>tasks[n].success</td><td>验收标准</td><td>可验证的完成条件，用于 subagent 评审</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 技能状态存储</h3>
+  <p>Superpowers 与 GSD 2 等工具的一个根本区别在于：<strong>它没有运行时数据库或持久化状态</strong>。整个框架的状态分布在三个层次：</p>
+  <table>
+    <thead><tr><th>存储层</th><th>载体</th><th>负责什么</th><th>持久性</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>代码状态</strong></td>
+        <td>Git（commits, branches, worktrees）</td>
+        <td>所有代码改动的源头；worktree 隔离功能分支；commit 是工作完成的证据</td>
+        <td>永久</td>
+      </tr>
+      <tr>
+        <td><strong>设计/计划状态</strong></td>
+        <td>Markdown 文件（<code>docs/superpowers/specs/</code>，<code>docs/superpowers/plans/</code>）</td>
+        <td>Design Doc 记录为什么这样设计；Plan 记录具体执行步骤与完成状态（复选框）</td>
+        <td>永久（与代码同步 commit）</td>
+      </tr>
+      <tr>
+        <td><strong>会话内任务状态</strong></td>
+        <td>TodoWrite 工具（Agent 内存）</td>
+        <td>当前对话中的任务进度跟踪；仅在活跃会话中有效，关闭会话即消失</td>
+        <td>临时（会话级）</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>这种设计的含义是：<strong>Superpowers 本身不管理状态，它只管理行为</strong>。状态由 Git 和 Markdown 文件承载，恢复工作只需回到正确的 worktree 和读取上次的 Plan 文件，而不需要任何专有的状态恢复命令。</p>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <table>
+    <thead><tr><th>误解</th><th>实际情况</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>"技能只是建议性的系统提示词，不用就不用"</td>
+        <td>错。Iron Law 是绝对约束，违反则必须重来。Brainstorming 的铁律"未获 Human Partner 审批前不得写实现代码"与普通建议有本质区别——设计为让 Agent 主动报告违规，而非悄悄绕过。</td>
+      </tr>
+      <tr>
+        <td>"1% 规则是在描述精确概率"</td>
+        <td>错。1% 是最低调用门槛，语义是"只要有可能适用就必须调用"，强调无需充分理由就应触发——消除"这个太简单了，不需要走设计流程"的合理化借口。</td>
+      </tr>
+      <tr>
+        <td>"用了 TDD 就更慢，不适合快速迭代"</td>
+        <td>错。TDD 铁律（先写失败测试再写实现）短期加了写测试的时间，但规避了后期大面积调试和回归修复的更大时间成本。Superpowers 的 TDD 技能正是为此设计。</td>
+      </tr>
+      <tr>
+        <td>"Subagent 模式比单会话更慢"</td>
+        <td>通常相反。每个 Subagent 独立 context，避免了长对话中注意力稀释导致的错误和返工。双阶段评审提前拦截问题，总体比反复 Debug 快。</td>
+      </tr>
+      <tr>
+        <td>"Human Partner 和 User 只是用词不同"</td>
+        <td>错。这是精心的语言设计。"User"暗示被动消费者，"Human Partner"明确要求 Agent 以协作者姿态主动参与决策（如澄清问题、提出替代方案），而不仅仅是执行指令。</td>
+      </tr>
+      <tr>
+        <td>"Superpowers 会帮我管理任务队列和跨会话进度"</td>
+        <td>不会。Superpowers 是行为规范层，无运行时状态管理。跨会话进度恢复依赖 Plan 文件中的复选框状态（需人工或 Agent 读取）。如需自动状态机，应结合 GSD 2 等工具。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Section 4 -->
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p class="section-lead">以"为现有 Web 应用新增邮件验证功能"为例，走一遍 Superpowers 标准开发链路。</p>
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="step-title">① 用户提出需求</div>
+      <div class="step-desc">用户描述："add email verification to the sign-up flow"。<code>using-superpowers/SKILL.md</code> 中的 <strong style="color:#6d28d9;font-weight:600">1% 规则</strong>触发：Agent 识别这是一项创意/功能实现任务，必须先走 <strong style="color:#6d28d9;font-weight:600">Brainstorming</strong> 技能，不得直接开始写代码。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② Brainstorming 澄清设计</div>
+      <div class="step-desc">Agent 加载 <code>brainstorming/SKILL.md</code>，主动向 Human Partner 提出 5 个澄清问题：Token 有效期多长？是否需要重发按钮？过期后是锁定账号还是允许重发？验证邮件的发送服务使用什么？……用户确认后，Agent 生成设计文档并保存到 <code>docs/superpowers/specs/2026-04-14-email-verification-design.md</code>。<span class="iron-law"><strong>Iron Law</strong>：未经 Human Partner 书面审批设计文档，不得写任何实现代码。</span></div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ 创建隔离工作区</div>
+      <div class="step-desc">Agent 加载 <code>using-git-worktrees/SKILL.md</code>，执行 <code>git worktree add ../myapp-email-verification feature/email-verification</code>，在隔离目录中创建新分支。主分支 main 在整个功能开发期间保持干净，所有改动在 worktree 中进行。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ 拆解实施计划</div>
+      <div class="step-desc">Agent 加载 <code>writing-plans/SKILL.md</code>，基于审批后的设计文档，将工作拆解为 7 个独立任务（每个 2-5 分钟粒度），保存到 <code>docs/superpowers/plans/2026-04-14-email-verification.md</code>。每个任务含文件清单、步骤复选框和验收标准。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ Subagent 逐任务执行（含 TDD）</div>
+      <div class="step-desc">Agent 加载 <code>subagent-driven-development/SKILL.md</code>，为 Plan 中每个任务派发独立 Subagent。每个 Subagent 遵循 <strong style="color:#6d28d9;font-weight:600">Red-Green-Refactor</strong> 循环：先写失败测试（Red），再写最少实现（Green），再重构（Refactor）。完成后经 spec-reviewer 和 code-quality-reviewer 双阶段评审，均通过才标记为完成。<span class="iron-law"><strong>Iron Law</strong>：所有测试必须通过，才能报告任务完成。</span></div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑥ 收尾处置</div>
+      <div class="step-desc">Agent 加载 <code>finishing-a-development-branch/SKILL.md</code>，验证全部测试通过后，向 Human Partner 呈现四个选项：<strong>①</strong> Merge to main（合并到主分支）；<strong>②</strong> Open PR（开 Pull Request 等待评审）；<strong>③</strong> Stash for later（暂存继续迭代）；<strong>④</strong> Abandon（放弃，清理 worktree）。由 Human Partner 做最终决策。</div>
+    </div>
+  </div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>Superpowers 无任何运行时依赖，最小化引入只需三步：复制配置文件 → 开启 AI 会话 → 触发元技能。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+  A["① 获取项目\ngit clone obra/superpowers"] --> B["② 复制引导配置\ncp CLAUDE.md 到项目根"]
+  B --> C["③ 开启 AI Agent\n启动 Claude Code / Cursor"]
+  C --> D["④ 首次需求输入\nAgent 加载 using-superpowers"]
+  D --> E["⑤ 选择适用技能\n进入设计/执行/调试工作流"]
+    </div>
+    <div class="caption">图 4-1：Superpowers 最小可运行路径（5 步）</div>
+  </div>
+
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 克隆仓库（或直接下载单个配置文件）</span><br>
+    <span class="cmd-line">git clone https://github.com/obra/superpowers.git</span><br><br>
+    <span class="cmd-comment"># Claude Code / Cursor 用户 → 复制到项目根目录</span><br>
+    <span class="cmd-line">cp superpowers/CLAUDE.md ./CLAUDE.md</span><br><br>
+    <span class="cmd-comment"># OpenAI Codex / Gemini CLI 用户</span><br>
+    <span class="cmd-line">cp superpowers/AGENTS.md ./AGENTS.md</span><br><br>
+    <span class="cmd-comment"># 可选：复制 skills/ 目录以便本地定制技能</span><br>
+    <span class="cmd-line">cp -r superpowers/skills ./skills</span><br><br>
+    <span class="cmd-comment"># 在 AI Agent 中开启对话，Agent 会自动读取 CLAUDE.md 并加载 using-superpowers</span>
+  </div>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <p>根据任务规模，Superpowers 有三种典型使用模式——框架本身不区分模式，差异在于触发的技能子集：</p>
+
+  <div class="fit-grid" style="grid-template-columns:1fr 1fr 1fr;gap:16px;">
+    <div class="fit-card fit" style="background:#eff6ff;border-color:#bfdbfe;">
+      <h4 style="color:#2563eb;">🔵 完整工程模式</h4>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>适用</strong>：新功能开发、需要设计评审的重要改动</p>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>链路</strong>：<code>using-superpowers</code> → <code>brainstorming</code> → <code>using-git-worktrees</code> → <code>writing-plans</code> → <code>subagent-driven-development</code>（含 TDD）→ <code>verification-before-completion</code> → <code>finishing-a-development-branch</code></p>
+      <p style="font-size:13px;color:#555;"><strong>特征</strong>：Iron Law 全部激活；Design Doc 须审批后才能写代码；每任务双阶段评审</p>
+    </div>
+    <div class="fit-card unfit" style="background:#f0fdf4;border-color:#86efac;">
+      <h4 style="color:#059669;">🟢 快速修复模式</h4>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>适用</strong>：Bug 修复、小范围代码改动（1% 规则判断无需完整设计流程）</p>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>链路</strong>：<code>using-superpowers</code> → <code>systematic-debugging</code>（如有 Bug）→ <code>test-driven-development</code> → <code>verification-before-completion</code></p>
+      <p style="font-size:13px;color:#555;"><strong>特征</strong>：跳过 brainstorming 和 writing-plans；TDD 铁律仍强制执行；完成前验证不可省略</p>
+    </div>
+    <div class="fit-card" style="background:#fdf4ff;border-color:#e9d5ff;">
+      <h4 style="color:#7c3aed;">🟣 评审协作模式</h4>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>适用</strong>：接手他人代码、处理 PR 评审意见</p>
+      <p style="font-size:13px;margin-bottom:8px;"><strong>链路</strong>：<code>using-superpowers</code> → <code>requesting-code-review</code> / <code>receiving-code-review</code></p>
+      <p style="font-size:13px;color:#555;"><strong>特征</strong>：评审请求前测试必须全绿；接收评审时要求技术性分析而非盲目接受意见</p>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">各技能铁律速查：</p>
+  <table style="font-size:13px;">
+    <thead>
+      <tr><th>技能</th><th>触发时机</th><th>铁律核心</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>using-superpowers</code></td><td>每次对话开始时（强制）</td><td>1% 规则：有可能适用就必须调用其他技能</td></tr>
+      <tr><td><code>brainstorming</code></td><td>任何创意性工作、功能添加前</td><td>未获设计审批不得写实现代码</td></tr>
+      <tr><td><code>writing-plans</code></td><td>有设计文档后、开始实现前</td><td>计划必须基于已审批的 Design Doc</td></tr>
+      <tr><td><code>using-git-worktrees</code></td><td>开始功能工作、需要隔离环境时</td><td>先建 worktree 再在其中工作</td></tr>
+      <tr><td><code>subagent-driven-development</code></td><td>有 Plan 后、执行多个独立任务时</td><td>所有测试通过后才能报告完成</td></tr>
+      <tr><td><code>test-driven-development</code></td><td>实现任何功能或修复任何 Bug 时</td><td>没有失败测试不得写生产代码</td></tr>
+      <tr><td><code>systematic-debugging</code></td><td>遇到任何 Bug 或意外行为时</td><td>一次只改一个变量；改前先假设</td></tr>
+      <tr><td><code>finishing-a-development-branch</code></td><td>所有任务完成、准备处置分支时</td><td>呈现全部四选项，由 Human Partner 决策</td></tr>
+      <tr><td><code>verification-before-completion</code></td><td>声称完成或提交 PR 前</td><td>运行验证命令并看到输出，再声称完成</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 5 -->
+  <h2 id="section-5">5 模块解析</h2>
+
+  <h3 id="section-5-1">5.1 架构总览</h3>
+
+  <h4 id="section-5-1-1">5.1.1 系统架构图</h4>
+  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录结构</a>了解项目的整体轮廓。</p>
+
+  <div class="dir-tree">
+    <pre><span class="tree-root">superpowers/</span>
+<span class="tree-branch">├──</span> <span class="tree-entry">★ CLAUDE.md</span>          <span class="tree-comment">← 引导层：Claude Code / Cursor 平台配置，注入 using-superpowers</span>
+<span class="tree-branch">├──</span> <span class="tree-entry">★ AGENTS.md</span>          <span class="tree-comment">← 引导层：OpenAI Codex / Gemini CLI 等平台配置</span>
+<span class="tree-branch">├──</span> <span class="tree-file">README.md</span>            <span class="tree-comment">← 项目介绍与安装指南</span>
+<span class="tree-branch">├──</span> <span class="tree-file">package.json</span>         <span class="tree-comment">← npm 元数据（零运行时依赖）</span>
+<span class="tree-branch">└──</span> <span class="tree-dir">skills/</span>              <span class="tree-comment">← 所有技能文件目录（元技能层 / 设计层 / 执行层 / 收尾层）</span>
+<span class="tree-branch">    ├──</span> <span class="tree-entry">★ using-superpowers/SKILL.md</span>            <span class="tree-comment">← 元技能层：每次对话必须调用，1% 规则调度器</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">brainstorming/SKILL.md</span>                  <span class="tree-comment">← 设计层：需求澄清与 Design Doc 生成</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">using-git-worktrees/SKILL.md</span>            <span class="tree-comment">← 设计层：功能分支隔离工作区</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">writing-plans/SKILL.md</span>                  <span class="tree-comment">← 设计层：Design Doc → 2-5min 任务清单</span>
+<span class="tree-branch">    ├──</span> <span class="tree-entry">★ subagent-driven-development/SKILL.md</span>  <span class="tree-comment">← 执行层核心：独立 context + 双阶段评审</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">test-driven-development/SKILL.md</span>        <span class="tree-comment">← 执行层：Red-Green-Refactor TDD 循环</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">systematic-debugging/SKILL.md</span>           <span class="tree-comment">← 执行层：四阶段系统化调试</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">verification-before-completion/SKILL.md</span> <span class="tree-comment">← 执行层：声称完成前强制验证</span>
+<span class="tree-branch">    ├──</span> <span class="tree-dir">finishing-a-development-branch/SKILL.md</span> <span class="tree-comment">← 收尾层：四选一处置，决策权归 Human Partner</span>
+<span class="tree-branch">    └──</span> <span class="tree-dir">requesting-code-review/SKILL.md</span>         <span class="tree-comment">← 收尾层：测试全绿后提交评审</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+%% 主链路: CLAUDE.md → using-superpowers → brainstorming → using-git-worktrees → writing-plans → subagent-driven-development → finishing-a-development-branch
+graph TD
+  subgraph 引导层["引导层 Bootstrap"]
+    CLAUDE["CLAUDE.md\n注入 using-superpowers 到所有对话"]
+    AGENTS["AGENTS.md\n通用平台配置（Codex/Gemini）"]
+  end
+
+  subgraph 元技能层["元技能层 Meta"]
+    US["using-superpowers\n1% 规则 · 技能选择与强制调用"]
+  end
+
+  subgraph 设计层["设计层 Design"]
+    BS["brainstorming\n需求澄清 · 设计文档 · YAGNI"]
+    GW["using-git-worktrees\n独立分支 · 隔离工作区"]
+    WP["writing-plans\n任务拆解 · 2-5min 粒度 · 复选框计划"]
+  end
+
+  subgraph 执行层["执行层 Execution"]
+    SDD["subagent-driven-development\n独立 context · 双阶段评审"]
+    TDD["test-driven-development\nRed-Green-Refactor · 铁律"]
+    SD["systematic-debugging\n四阶段调试 · 一次改一个变量"]
+    VP["verification-before-completion\n声称完成前强制运行验证"]
+  end
+
+  subgraph 收尾层["收尾层 Completion"]
+    FAB["finishing-a-development-branch\n四选一处置 · Human Partner 决策"]
+    RCR["requesting-code-review\n提交评审 · 测试全绿"]
+  end
+
+  CLAUDE --> US
+  AGENTS --> US
+  US --> BS
+  BS --> GW
+  GW --> WP
+  WP --> SDD
+  SDD --> TDD
+  SDD --> VP
+  TDD --> SD
+  VP --> RCR
+  RCR --> FAB
+    </div>
+    <div class="caption">图 5-1：Superpowers 技能分层架构与主执行链路</div>
+  </div>
+
+  <p><strong>如何读这张图：</strong></p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>层级</th><th>核心文件 / 技能</th><th>核心职责</th><th>主要交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>引导层</td>
+        <td>
+          <span class="module-item"><code>CLAUDE.md</code></span>
+          <span class="module-item"><code>AGENTS.md</code></span>
+        </td>
+        <td>在 Agent 启动时将 using-superpowers 强制注入上下文；是整个框架的零号入口，决定了后续所有技能是否被 Agent 感知</td>
+        <td>→ 元技能层</td>
+      </tr>
+      <tr>
+        <td>元技能层</td>
+        <td>
+          <span class="module-item"><code>using-superpowers/SKILL.md</code></span>
+        </td>
+        <td>每次对话开始时扫描所有技能触发条件，应用 1% 规则强制调用适用技能；统一 Human Partner 语言规范；提供技能优先级排序</td>
+        <td>↔ 各层</td>
+      </tr>
+      <tr>
+        <td>设计层</td>
+        <td>
+          <span class="module-item"><code>brainstorming/SKILL.md</code></span>
+          <span class="module-item"><code>using-git-worktrees/SKILL.md</code></span>
+          <span class="module-item"><code>writing-plans/SKILL.md</code></span>
+        </td>
+        <td>三步完成"想清楚再动手"：澄清需求并生成 Design Doc（brainstorming） → 建立隔离工作区（git-worktrees） → 将 Design Doc 拆解为 2-5min 任务清单（writing-plans）</td>
+        <td>↔ 执行层</td>
+      </tr>
+      <tr>
+        <td>执行层</td>
+        <td>
+          <span class="module-item"><code>subagent-driven-development/SKILL.md</code></span>
+          <span class="module-item"><code>test-driven-development/SKILL.md</code></span>
+          <span class="module-item"><code>systematic-debugging/SKILL.md</code></span>
+          <span class="module-item"><code>verification-before-completion/SKILL.md</code></span>
+        </td>
+        <td>按 Plan 逐任务执行：独立 context Subagent（减少注意力稀释）+ Red-Green-Refactor TDD 循环（测试优先）+ 四阶段调试（出错时）+ 完成前强制验证</td>
+        <td>↔ 收尾层</td>
+      </tr>
+      <tr>
+        <td>收尾层</td>
+        <td>
+          <span class="module-item"><code>finishing-a-development-branch/SKILL.md</code></span>
+          <span class="module-item"><code>requesting-code-review/SKILL.md</code></span>
+          <span class="module-item"><code>receiving-code-review/SKILL.md</code></span>
+        </td>
+        <td>完成最终质量验证后，向 Human Partner 呈现四选项（Merge/PR/Stash/Abandon）做最终决策；处理代码评审的请求与回应</td>
+        <td>终点</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 关键执行链路</h3>
+  <p>呼应 <a href="#section-4-1">4.1 端到端完整过程</a>，追踪从用户提出需求到分支处置的完整技能调用链路，<strong>所在文件</strong>列点击可在右侧面板查看源文件。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant HP as Human Partner
+  participant BT as 引导层 Bootstrap
+  participant US as using-superpowers
+  participant BS as brainstorming
+  participant GW as using-git-worktrees
+  participant WP as writing-plans
+  participant SDD as subagent-driven-development
+  participant TDD as test-driven-development
+  participant FAB as finishing-a-branch
+
+  BT->>US: CLAUDE.md 注入（对话启动）
+  HP->>US: 提出功能需求
+  US->>US: 1% 规则：扫描并匹配适用技能
+  US->>BS: 触发 brainstorming
+  BS->>HP: 提出 5 个澄清问题
+  HP->>BS: 确认需求边界
+  BS->>BS: 生成 Design Doc → docs/superpowers/specs/
+  BS->>HP: 请求审批 Design Doc
+  HP->>GW: 审批通过
+  GW->>GW: git worktree add feature/xxx
+  GW->>WP: 触发 writing-plans
+  WP->>WP: Design Doc → 任务 Plan → docs/superpowers/plans/
+  WP->>SDD: Plan 就绪
+  loop 每个任务（独立 context）
+    SDD->>TDD: 派发 Implementer Subagent
+    TDD->>TDD: Red：写失败测试
+    TDD->>TDD: Green：最少代码通过测试
+    TDD->>TDD: Refactor：优化
+    SDD->>SDD: Spec Compliance 评审
+    SDD->>SDD: Code Quality 评审
+  end
+  SDD->>FAB: 所有任务完成
+  FAB->>HP: 呈现四选项（Merge/PR/Stash/Abandon）
+    </div>
+    <div class="caption">图 5-2：Superpowers 完整任务执行时序图</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>调用链步骤对照表</strong>（对应上图各消息与自调用；所在文件列点击可查看源文件）</p>
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>技能 / 动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>引导注入</td><td>CLAUDE.md / AGENTS.md 加载</td><td><code>CLAUDE.md</code></td><td>对话启动时将 using-superpowers 注入 Agent 上下文；是框架运行的必要前提</td><td>须位于项目根目录</td></tr>
+      <tr><td>2</td><td>技能扫描</td><td>using-superpowers 元技能</td><td><code>using-superpowers/SKILL.md</code></td><td>遍历所有技能触发条件，应用 1% 规则决定调用哪些技能；统一 Human Partner 语言</td><td>★ 每次对话必须执行</td></tr>
+      <tr><td>3</td><td>需求澄清</td><td>brainstorming 触发</td><td><code>brainstorming/SKILL.md</code></td><td>提出 5 个澄清问题，明确边界条件、技术约束、验收标准</td><td>问题回答前不得生成设计文档</td></tr>
+      <tr><td>4</td><td>设计审批</td><td>Design Doc 生成 + 审批</td><td><code>docs/superpowers/specs/</code></td><td>输出包含备选方案对比的设计文档；等待 Human Partner 书面审批（LGTM / approved）</td><td>★ Iron Law：审批前不得写代码</td></tr>
+      <tr><td>5</td><td>工作区隔离</td><td>using-git-worktrees 触发</td><td><code>using-git-worktrees/SKILL.md</code></td><td>执行 <code>git worktree add ../project-feature branch</code>，建立功能分支与隔离目录</td><td>在 worktree 内工作，不污染主分支</td></tr>
+      <tr><td>6</td><td>计划拆解</td><td>writing-plans 触发</td><td><code>writing-plans/SKILL.md</code></td><td>将审批后的 Design Doc 拆解为 2-5min 粒度的任务清单，含复选框与验收标准</td><td>每步须含期望命令输出</td></tr>
+      <tr><td>7</td><td>任务分发</td><td>subagent-driven-development</td><td><code>subagent-driven-development/SKILL.md</code></td><td>为 Plan 中每个任务派发独立 context 的 Implementer Subagent，避免上下文污染</td><td>并行或串行均可，视依赖关系</td></tr>
+      <tr><td>8</td><td>TDD 实现</td><td>test-driven-development（每 Subagent 内）</td><td><code>test-driven-development/SKILL.md</code></td><td>Subagent 内部执行 Red-Green-Refactor 循环；每个 Green 阶段后提交</td><td>★ Iron Law：无失败测试不得写生产代码</td></tr>
+      <tr><td>9</td><td>Spec 评审</td><td>Spec Compliance Reviewer</td><td><code>spec-reviewer-prompt.md</code></td><td>独立评审者检查实现是否符合 Design Doc 的规格要求；发现偏差则返工</td><td>评审者与实现者独立，避免自我审查</td></tr>
+      <tr><td>10</td><td>质量评审</td><td>Code Quality Reviewer</td><td><code>code-quality-reviewer-prompt.md</code></td><td>检查代码风格、测试覆盖率、边界条件、可维护性；两关均通过才标记完成</td><td>任一阶段失败则返回步骤 8 重做</td></tr>
+      <tr><td>11</td><td>完成验证</td><td>verification-before-completion</td><td><code>verification-before-completion/SKILL.md</code></td><td>所有任务完成后运行验证命令（如 <code>npm test</code>），确认全部测试通过再声称完成</td><td>★ Iron Law：看到输出才能声称完成</td></tr>
+      <tr><td>12</td><td>分支收尾</td><td>finishing-a-development-branch</td><td><code>finishing-a-development-branch/SKILL.md</code></td><td>向 Human Partner 呈现四选项：Merge to main / Open PR / Stash for later / Abandon</td><td>决策权由 Human Partner 保留</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 核心技能模块</h3>
+
+  <!-- Module 1: using-superpowers -->
+  <h4 id="section-5-3-1">5.3.1 关键模块一：using-superpowers（元技能）</h4>
+  <div class="module-meta">
+    <span>📄 <code>skills/using-superpowers/SKILL.md</code></span>
+    <span>🏷 元技能 · 每次对话必须调用</span>
+  </div>
+
+  <p><strong>要解决的问题</strong>：AI Agent 在处理"看起来很简单"的任务时，会主动绕过设计评审、测试规范等流程——因为这些步骤让任务"更慢完成"。普通 system prompt 无法解决这个问题，因为 Agent 可以在任何时候以"效率"为由忽略建议性内容。需要一个让"跳步骤本身变成违规行为"的机制。</p>
+  <p><strong>解决方案</strong>：元技能文件作为框架的"总调度器"，强制在每次对话开始时执行技能扫描。核心是 <strong>1% 规则（Iron Law）</strong>：只要有 1% 的可能性某个技能适用，就必须调用——最低门槛是可能性而非确定性。这彻底封闭了 Agent 的"合理化借口"逃生口。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant BT as CLAUDE.md 引导层
+  participant Agent as AI Agent
+  participant US as using-superpowers/SKILL.md
+  participant Skills as 其他 14 个技能
+
+  BT->>Agent: 对话启动，注入 using-superpowers 指令
+  Agent->>US: 读取元技能文件
+  US->>Agent: 返回：所有技能目录 + 1% 规则 + Human Partner 规范
+  Agent->>Agent: 扫描当前任务，逐一检查技能触发条件
+  alt 有技能匹配（≥1% 可能性）
+    Agent->>Skills: 按优先级依次调用适用技能
+    Skills-->>Agent: 各技能返回规范行为指导
+  else 无技能明确匹配
+    Agent->>Agent: 仍需确认——1% 规则下"无匹配"门槛很高
+  end
+  Agent->>Agent: 全程使用"your human partner"而非"user"
+    </div>
+    <div class="caption">图 5-3：using-superpowers 元技能调用流程</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图各消息步骤）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>CLAUDE.md 引导层</td><td><code>CLAUDE.md</code></td><td>AI Agent</td><td>对话启动时注入"读取 using-superpowers"指令</td><td>框架的零号入口，无此步骤整个规范体系不会激活</td></tr>
+      <tr><td>2</td><td>AI Agent</td><td>（Agent 内存）</td><td>using-superpowers/SKILL.md</td><td>读取元技能文件内容</td><td>每次对话的第一步，不可跳过（Iron Law）</td></tr>
+      <tr><td>3</td><td>using-superpowers/SKILL.md</td><td><code>using-superpowers/SKILL.md</code></td><td>AI Agent</td><td>返回：14 个技能目录 + 触发描述 + 1% 规则 + 语言规范</td><td>Agent 从这里获得完整的"可调用技能清单"</td></tr>
+      <tr><td>4</td><td>AI Agent</td><td>（Agent 内存）</td><td>（内部扫描）</td><td>逐一检查每个技能的触发条件，判断 ≥1% 可能性</td><td>1% 是最低门槛——不是"确定适用"，而是"有可能"</td></tr>
+      <tr><td>5</td><td>AI Agent</td><td>（Agent 内存）</td><td>适用技能文件</td><td>按设计→计划→执行的优先级依次调用匹配技能</td><td>多个技能同时适用时的调用顺序由 using-superpowers 定义</td></tr>
+      <tr><td>6</td><td>适用技能</td><td>对应 SKILL.md</td><td>AI Agent</td><td>返回该技能的行为规范、Iron Law 和执行步骤</td><td>Agent 从这里获得具体执行约束</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限</strong>：元技能的运行完全依赖 AI 模型对指令的理解和遵守意愿——没有代码层面的强制机制。能力较弱的模型可能在长上下文中遗忘之前读过的技能规范，或者在"确实很简单的任务"上产生"不需要调用技能"的幻觉判断。框架本身无法检测 Agent 是否真的遵守了 1% 规则。</p>
+
+  <!-- Module 2: brainstorming + writing-plans -->
+  <h4 id="section-5-3-2">5.3.2 关键模块二：brainstorming + writing-plans（设计层）</h4>
+  <div class="module-meta">
+    <span>📄 <code>skills/brainstorming/SKILL.md</code> + <code>skills/writing-plans/SKILL.md</code></span>
+    <span>🏷 设计阶段 · 所有功能开发前必须执行</span>
+  </div>
+
+  <p><strong>要解决的问题</strong>：AI 的默认行为是"立即写代码"——接到需求就开始实现，跳过需求澄清和设计权衡。这导致两个常见失败模式：①构建了技术上正确但解决了错误问题的代码（理解偏差）；②添加了需求里没有提到的"便利功能"（YAGNI 违反）。这两种失败都要到代码完成后才被发现，返工成本极高。</p>
+  <p><strong>解决方案</strong>：两阶段强制规范。brainstorming 技能通过铁律把"先得到设计审批才能写代码"变成不可绕过的约束；writing-plans 技能把通过审批的 Design Doc 拆解为 2-5 分钟粒度的可执行步骤，消除"任务太模糊导致 Subagent 乱猜"的问题。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant Agent as AI Agent
+  participant HP as Human Partner
+  participant BS as brainstorming/SKILL.md
+  participant Doc as Design Doc
+  participant WP as writing-plans/SKILL.md
+  participant Plan as Plan 文件
+
+  Agent->>BS: 识别到功能开发任务，触发 brainstorming
+  BS->>HP: 提出 5 个澄清问题（边界/约束/验收标准）
+  HP->>BS: 回答问题
+  BS->>BS: 生成备选方案 A vs B，应用 YAGNI 剔除超范围功能
+  BS->>Doc: 保存到 docs/superpowers/specs/YYYY-MM-DD-{name}-design.md
+  BS->>HP: 呈现完整 Design Doc，请求审批
+  Note over HP,BS: Iron Law 门槛：未审批不得写任何实现代码
+  HP->>BS: "LGTM" 审批通过
+  BS->>WP: 传递审批后的 Design Doc
+  WP->>WP: 按 Design Doc 拆解为任务，每步 2-5min
+  WP->>Plan: 保存到 docs/superpowers/plans/YYYY-MM-DD-{name}.md
+  WP->>Agent: Plan 就绪，可进入执行阶段
+    </div>
+    <div class="caption">图 5-4：brainstorming + writing-plans 设计层调用流程</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图消息步骤）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>AI Agent</td><td>（Agent 内存）</td><td>brainstorming/SKILL.md</td><td>识别到功能开发任务，触发 brainstorming</td><td>由 using-superpowers 的 1% 规则触发，不是可选步骤</td></tr>
+      <tr><td>2</td><td>brainstorming</td><td><code>brainstorming/SKILL.md</code></td><td>Human Partner</td><td>提出 5 个澄清问题（边界条件、技术约束、验收标准等）</td><td>主动澄清，而非假设——体现 Human Partner 协作定位</td></tr>
+      <tr><td>3</td><td>Human Partner</td><td>（用户输入）</td><td>brainstorming</td><td>回答问题，确认需求边界</td><td>Agent 等待回答后才进入下一步，不得跳过</td></tr>
+      <tr><td>4</td><td>brainstorming</td><td><code>brainstorming/SKILL.md</code></td><td>（内部）</td><td>生成备选方案 A vs B；应用 YAGNI 原则剔除超范围功能</td><td>至少提出两个方案对比，避免单一方案的路径依赖</td></tr>
+      <tr><td>5</td><td>brainstorming</td><td><code>brainstorming/SKILL.md</code></td><td>Design Doc 文件</td><td>保存到 <code>docs/superpowers/specs/YYYY-MM-DD-{name}-design.md</code></td><td>文档与代码同步 commit，作为永久决策记录</td></tr>
+      <tr><td>6</td><td>brainstorming</td><td><code>brainstorming/SKILL.md</code></td><td>Human Partner</td><td>呈现完整 Design Doc，等待书面审批（LGTM / approved）</td><td>★ Iron Law 检查点：未获审批不得进入步骤 7+</td></tr>
+      <tr><td>7</td><td>Human Partner</td><td>（用户输入）</td><td>brainstorming</td><td>"LGTM" 或明确审批语</td><td>模糊回应（如"好的"）不算审批，需要明确确认</td></tr>
+      <tr><td>8</td><td>brainstorming</td><td><code>brainstorming/SKILL.md</code></td><td>writing-plans/SKILL.md</td><td>传递审批后的 Design Doc</td><td>设计层内部交接，Design Doc 是 writing-plans 的必要输入</td></tr>
+      <tr><td>9</td><td>writing-plans</td><td><code>writing-plans/SKILL.md</code></td><td>（内部）</td><td>按 Design Doc 拆解任务，每步 2-5min，含文件清单和验收标准</td><td>粒度控制是关键：太大则 Subagent 无法有效执行，太小则浪费调用次数</td></tr>
+      <tr><td>10</td><td>writing-plans</td><td><code>writing-plans/SKILL.md</code></td><td>Plan 文件</td><td>保存到 <code>docs/superpowers/plans/YYYY-MM-DD-{name}.md</code></td><td>Plan 与代码同步 commit，复选框状态是进度恢复的依据</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限</strong>：对于简单的单文件小改动，触发完整 brainstorming + writing-plans 流程的时间开销（10-15 分钟的澄清/设计/审批）可能远大于任务本身。另外，写得好的 Design Doc 需要 Human Partner 认真阅读并给出有意义的审批，如果 Human Partner 只是"随手通过"，铁律的保护作用就会大打折扣。</p>
+
+  <!-- Module 3: subagent-driven-development -->
+  <h4 id="section-5-3-3">5.3.3 关键模块三：subagent-driven-development（执行层）</h4>
+  <div class="module-meta">
+    <span>📄 <code>skills/subagent-driven-development/SKILL.md</code></span>
+    <span>🏷 执行层核心 · 独立上下文 + 双阶段质量门</span>
+  </div>
+
+  <p><strong>要解决的问题</strong>：在单一长会话中执行多个任务存在两个问题：①<strong>注意力稀释</strong>——对话历史越长，模型对早期指令（包括 Design Doc 规格）的注意力越弱，后期实现容易偏离原始设计；②<strong>评审盲点</strong>——实现者对自己代码的审查存在认知偏差，倾向于忽视微妙的设计合规问题。</p>
+  <p><strong>解决方案</strong>：两层隔离机制。第一层：每个任务派发给一个全新 context 的 Subagent（Implementer），只看当前任务的 Plan 和相关文件，不受长会话历史干扰。第二层：双阶段评审由两个独立 Subagent（Spec Reviewer 和 Code Quality Reviewer）执行，与 Implementer 完全隔离，消除自我审查盲点。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant SDD as subagent-driven-development
+  participant IMP as Implementer Subagent
+  participant SPEC as Spec Compliance Reviewer
+  participant CQ as Code Quality Reviewer
+  participant HP as Human Partner
+
+  SDD->>IMP: 派发任务（独立 context：只含 Plan + 相关文件）
+  IMP->>IMP: Red：写失败测试（test-driven-development）
+  IMP->>IMP: Green：最少代码通过测试
+  IMP->>IMP: Refactor：在绿灯下优化
+  IMP-->>SDD: 实现完成，返回代码变更
+  SDD->>SPEC: 触发 Spec Compliance 评审
+  SPEC->>SPEC: 对照 Design Doc 逐条检查实现合规性
+  alt Spec 不合规
+    SPEC-->>SDD: 返回具体偏差点
+    SDD->>IMP: 重新派发，修复 Spec 偏差
+  else Spec 通过
+    SPEC-->>SDD: 通过
+    SDD->>CQ: 触发 Code Quality 评审
+    CQ->>CQ: 检查代码风格、测试覆盖率、边界条件、可维护性
+    alt 质量不达标
+      CQ-->>SDD: 返回具体质量问题
+      SDD->>IMP: 重新派发，修复质量问题
+    else 双阶段均通过
+      CQ-->>SDD: 通过
+      SDD->>HP: 任务完成确认
+    end
+  end
+    </div>
+    <div class="caption">图 5-5：subagent-driven-development 双阶段评审执行流程</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图各消息与分支；所在文件列点击可查看源文件）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>subagent-driven-development</td><td><code>subagent-driven-development/SKILL.md</code></td><td>Implementer Subagent</td><td>派发任务，context 仅含：当前任务 Plan + 相关文件 + TDD 规范</td><td>独立 context 是关键——Implementer 看不到其他任务的历史，避免干扰</td></tr>
+      <tr><td>2</td><td>Implementer Subagent</td><td><code>test-driven-development/SKILL.md</code>（注入）</td><td>（内部）</td><td>Red：先写失败测试，运行确认失败（证明测试有效）</td><td>★ Iron Law：先写测试才能写生产代码，无捷径</td></tr>
+      <tr><td>3</td><td>Implementer Subagent</td><td><code>test-driven-development/SKILL.md</code>（注入）</td><td>（内部）</td><td>Green：写最少代码让测试通过，不追求完美</td><td>Green 阶段目标是"通过"而非"优雅"</td></tr>
+      <tr><td>4</td><td>Implementer Subagent</td><td><code>test-driven-development/SKILL.md</code>（注入）</td><td>（内部）</td><td>Refactor：在绿灯保护下优化代码，然后 commit</td><td>每个 Green 后必须 commit，保持干净 Git 历史</td></tr>
+      <tr><td>5</td><td>Implementer Subagent</td><td>（Subagent 结果）</td><td>subagent-driven-development</td><td>返回代码变更结果</td><td>实现阶段结束，进入评审阶段</td></tr>
+      <tr><td>6</td><td>subagent-driven-development</td><td><code>subagent-driven-development/SKILL.md</code></td><td>Spec Compliance Reviewer</td><td>触发第一阶段评审，传递 Design Doc + 实现结果</td><td>★ Spec Reviewer 独立于 Implementer，消除自我审查盲点</td></tr>
+      <tr><td>7</td><td>Spec Compliance Reviewer</td><td><code>spec-reviewer-prompt.md</code></td><td>subagent-driven-development</td><td>对照 Design Doc 逐条检查；返回通过或具体偏差点</td><td>Spec 不合规→返回步骤 1 重做，不允许"先合并再修"</td></tr>
+      <tr><td>8</td><td>subagent-driven-development</td><td><code>subagent-driven-development/SKILL.md</code></td><td>Code Quality Reviewer</td><td>Spec 通过后触发第二阶段：检查代码风格/测试覆盖/边界条件</td><td>两阶段串行：只有 Spec 通过才做 Code Quality 评审</td></tr>
+      <tr><td>9</td><td>Code Quality Reviewer</td><td><code>code-quality-reviewer-prompt.md</code></td><td>subagent-driven-development</td><td>返回通过或具体质量问题（如测试覆盖率不足）</td><td>质量不达标→返回步骤 1 重做</td></tr>
+      <tr><td>10</td><td>subagent-driven-development</td><td><code>subagent-driven-development/SKILL.md</code></td><td>Human Partner</td><td>双阶段均通过，确认任务完成</td><td>★ Iron Law：所有测试通过且双阶段评审均通过，才能声称完成</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限</strong>：每个任务需要 3 次独立 LLM 调用（Implementer + 两个 Reviewer），时间和 Token 成本约是单次执行的 3 倍。评审质量本身也依赖模型能力——弱模型的 Reviewer 可能遗漏微妙的规格偏差。此外，subagent 模式目前主要面向串行任务；真正的并行执行（dispatching-parallel-agents 技能）需要任务间无依赖，适用场景相对有限。</p>
+
+  <!-- Section 6 -->
+  <h2 id="section-6">6 工程设计评价</h2>
+
+  <h3 id="section-6-1">6.1 优势</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>✅ 零依赖跨平台</h4>
+      <p>整个框架由纯 Markdown 文件组成，无任何运行时依赖、无需安装、无版本冲突。在 Claude Code、Cursor、Codex、Gemini CLI 上行为一致，迁移成本为零。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>✅ 铁律机制不可绕过</h4>
+      <p>Iron Law 不是建议，而是绝对约束。设计文档未审批不得写代码、测试未通过不得声称完成——这些规则有效防止了 AI Agent 为追求速度而走捷径的系统性风险。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>✅ 覆盖完整生命周期</h4>
+      <p>从需求澄清（brainstorming）到计划拆解（writing-plans），到执行（subagent-driven-development），到调试（systematic-debugging），到评审（requesting-code-review），到收尾（finishing-a-development-branch），链条完整无断点。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>✅ 设计优先防止返工</h4>
+      <p>Brainstorming 铁律强制先出设计文档再动手，从根源减少"构建了正确代码但解决了错误问题"的返工成本，这是 AI 编程中最常见的浪费之一。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>✅ 独立 Context 减少幻觉</h4>
+      <p>Subagent 模式为每个任务开辟独立上下文，避免长会话中历史噪音对后续任务的干扰，是对抗 AI "注意力稀释"问题的结构性解决方案。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>✅ 社区扩展生态</h4>
+      <p>writing-skills 元技能允许任何人按标准格式创建自定义技能。技能是可版本化的 Markdown 文件，可以通过 Git 共享，形成社区驱动的行为规范生态。</p>
+    </div>
+  </div>
+
+  <h3 id="section-6-2">6.2 局限</h3>
+  <div class="eval-grid">
+    <div class="eval-card weakness">
+      <h4>⚠️ 无运行时强制执行</h4>
+      <p>铁律的遵守依赖 AI 模型的理解和合规意愿——没有代码层面的强制机制。弱模型可能遗漏关键铁律，或在长上下文中忘记之前读过的规范内容。框架无法验证 Agent 是否真的遵守了规则。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>⚠️ 无跨会话状态持久化</h4>
+      <p>Superpowers 是纯行为层，没有运行时数据库。TodoWrite 的任务状态在会话结束后消失，大型任务的进度恢复依赖 Plan 文件中的复选框（需手动或 Agent 读取）。无法像 GSD 2 那样在崩溃后自动恢复到精确位置。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>⚠️ 学习曲线与记忆成本</h4>
+      <p>15 个技能需要开发者熟悉各自的触发时机和铁律内容。在实际工作中，"这个情况该用哪个技能"的判断需要一定的实践积累，新用户初期容易触发或漏触发。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>⚠️ 全流程增加了摩擦</h4>
+      <p>对于简单的 5 分钟改动，触发 brainstorming → writing-plans 的完整流程会让轻量任务感觉"过于正式"。1% 规则的设计初衷是防止漏触发，但对有经验的用户可能造成不必要的流程摩擦。</p>
+    </div>
+  </div>
+
+  <!-- Section 7 -->
+  <h2 id="section-7">7 版本化维护区</h2>
+
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文对技能调用链路、Iron Law 内容与行为语义的描述，以开源仓库 <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">https://github.com/obra/superpowers</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-04-14</strong>（与文档撰写环境一致）。</p>
+
+</main>
+
+<!-- Panel HTML -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack"  title="上一页" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"   title="下一页" disabled>›</button>
+    <span class="code-panel-path" id="panelPath"></span>
+    <span class="code-panel-badge" id="panelBadge">GitHub</span>
+    <a class="panel-gh-link" id="panelGhLink" href="#" target="_blank" rel="noopener">在 GitHub 打开 ↗</a>
+    <button class="panel-pin-btn" id="panelPinBtn" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader"><div class="iframe-spin"></div><span>加载中…</span></div>
+    <iframe id="panelIframe" title="Source viewer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
+</script>
+
+<script>
+(function () {
+  // ─── CONFIG ──────────────────────────────────────────────────────────────
+  const GH_REPO = 'obra/superpowers';
+  const BRANCH  = 'main';
+  const GH   = 'https://github.com/'   + GH_REPO;
+  const GH1S = 'https://github1s.com/' + GH_REPO;
+
+  const FILE_MAP = {
+    'README.md':                                  'README.md',
+    'CLAUDE.md':                                  'CLAUDE.md',
+    'AGENTS.md':                                  'AGENTS.md',
+    'package.json':                               'package.json',
+    'using-superpowers/SKILL.md':                 'skills/using-superpowers/SKILL.md',
+    'brainstorming/SKILL.md':                     'skills/brainstorming/SKILL.md',
+    'writing-plans/SKILL.md':                     'skills/writing-plans/SKILL.md',
+    'using-git-worktrees/SKILL.md':               'skills/using-git-worktrees/SKILL.md',
+    'subagent-driven-development/SKILL.md':       'skills/subagent-driven-development/SKILL.md',
+    'test-driven-development/SKILL.md':           'skills/test-driven-development/SKILL.md',
+    'systematic-debugging/SKILL.md':              'skills/systematic-debugging/SKILL.md',
+    'finishing-a-development-branch/SKILL.md':    'skills/finishing-a-development-branch/SKILL.md',
+    'requesting-code-review/SKILL.md':            'skills/requesting-code-review/SKILL.md',
+    'receiving-code-review/SKILL.md':             'skills/receiving-code-review/SKILL.md',
+    'writing-skills/SKILL.md':                    'skills/writing-skills/SKILL.md',
+    'dispatching-parallel-agents/SKILL.md':       'skills/dispatching-parallel-agents/SKILL.md',
+    'executing-plans/SKILL.md':                   'skills/executing-plans/SKILL.md',
+    'verification-before-completion/SKILL.md':    'skills/verification-before-completion/SKILL.md',
+    'implementer-prompt.md':                      'skills/subagent-driven-development/implementer-prompt.md',
+    'spec-reviewer-prompt.md':                    'skills/subagent-driven-development/spec-reviewer-prompt.md',
+    'code-quality-reviewer-prompt.md':            'skills/subagent-driven-development/code-quality-reviewer-prompt.md',
+  };
+
+  const PROJECT_TERMS = {
+    'Iron Law': {
+      tags: ['核心机制', '强制规范'],
+      def: '技能中不可违反的规则。与普通行为建议不同，Iron Law 是绝对约束——违反则必须重来，不接受"只这一次"的例外。它是 Superpowers 区别于普通 system prompt 的根本机制：普通提示词可以被 Agent 悄悄绕过，而铁律设计为让 Agent 主动报告违规。',
+      mechanics: [
+        '每个技能文件中都有明确标注的 Iron Law 列表',
+        'brainstorming 铁律：未完成设计文档审批前不得开始实现',
+        'TDD 铁律：不允许在没有失败测试的情况下写生产代码',
+        'subagent 铁律：所有测试必须通过才能报告完成',
+        '铁律保证 Agent 不会为了"更快完成"而走捷径',
+      ],
+      related: ['1% Rule', 'Human Partner'],
+      patterns: ['Iron Law', '铁律'],
+      files: ['brainstorming/SKILL.md', 'test-driven-development/SKILL.md'],
+    },
+    '1% Rule': {
+      tags: ['调用规则', '元技能'],
+      def: '如果某个技能有 1% 的可能适用于当前情况，Agent 就必须调用它。这是 using-superpowers 的核心原则，目的是消除 Agent "这个任务太简单了，不需要遵守规范" 的自我欺骗。最低门槛是可能性，不是确定性。',
+      mechanics: [
+        '在 using-superpowers/SKILL.md 中定义',
+        '每次对话开始时，Agent 必须检查所有技能的触发条件',
+        '最低门槛：1% 的适用可能性即触发，而非"确定适用"',
+        '防止 Agent 因懒惰或效率原因跳过必要的设计/规范步骤',
+      ],
+      related: ['Iron Law', 'Human Partner'],
+      patterns: ['1% Rule', '1% 规则', '1%规则'],
+      files: ['using-superpowers/SKILL.md'],
+    },
+    'Human Partner': {
+      tags: ['语言设计', '协作理念'],
+      def: '项目中统一使用的术语，指与 Agent 合作的人类。刻意避免使用"User"（用户）——后者暗示被动消费，而"Human Partner"强调双方是协作伙伴，Agent 是有专业判断力的协作者而非执行工具。',
+      mechanics: [
+        '所有技能文件中均一致使用"your human partner"而非"user"',
+        '体现了项目的设计哲学：AI 应主动参与决策，而非被动响应',
+        '在 brainstorming 技能中体现最明显——Agent 会主动澄清需求',
+        '在 finishing-a-development-branch 中体现为"决策权留给 Human Partner"',
+      ],
+      related: ['Iron Law', '1% Rule'],
+      patterns: ['Human Partner', 'human partner'],
+      files: ['using-superpowers/SKILL.md', 'brainstorming/SKILL.md'],
+    },
+    'Harness': {
+      tags: ['平台概念', '跨平台'],
+      def: 'Superpowers 中称 Claude Code、Cursor、Codex、OpenCode、GitHub Copilot CLI、Gemini CLI 等 AI Agent 运行平台为"Harness"（马具/执行框架）。技能文件对所有 Harness 均适用，体现了零依赖跨平台的设计目标。',
+      mechanics: [
+        'CLAUDE.md / AGENTS.md 是各 Harness 的平台特定配置文件',
+        '技能文件本身与 Harness 无关，通用性是核心设计目标',
+        'Harness 负责将 SKILL.md 加载并注入 Agent 上下文',
+      ],
+      related: ['Iron Law'],
+      patterns: ['Harness', 'harness'],
+      files: ['CLAUDE.md', 'AGENTS.md'],
+    },
+    'Subagent': {
+      tags: ['执行机制', '独立上下文'],
+      def: '在 subagent-driven-development 模式中，每个任务被派发给一个独立 context 的执行单元，称为 Subagent。每个 Subagent 只看自己任务的 context，避免上下文污染。完成后经过双阶段评审才算任务完成。',
+      mechanics: [
+        '每个 Subagent 只看自己任务的 context，避免长会话的注意力稀释',
+        '实现者（Implementer）→ Spec 评审 → Code Quality 评审的三步执行单元',
+        'Subagent 完成后，结果回报给主 Agent 汇总进度',
+        '独立 context 是对抗 AI 幻觉的结构性解决方案',
+      ],
+      related: ['Two-Stage Review', 'Iron Law'],
+      patterns: ['Subagent', 'subagent', '子代理'],
+      files: ['subagent-driven-development/SKILL.md'],
+    },
+    'Two-Stage Review': {
+      tags: ['质量保证', '代码评审'],
+      def: 'subagent-driven-development 中的双阶段评审机制：第一阶段 Spec Compliance（规格合规——检查实现是否符合 Design Doc）；第二阶段 Code Quality（代码质量——检查代码风格、测试覆盖、边界条件）。两关均通过才算完成。',
+      mechanics: [
+        '第一阶段 Spec Compliance：由 spec-reviewer-prompt.md 驱动',
+        '第二阶段 Code Quality：由 code-quality-reviewer-prompt.md 驱动',
+        '每个阶段的评审者是独立的 subagent，避免实现者自我审查',
+        '评审失败则返回实现阶段重做，而非强行合并',
+      ],
+      related: ['Subagent', 'Iron Law'],
+      patterns: ['Two-Stage Review', '双阶段评审', '双阶段代码评审'],
+      files: ['subagent-driven-development/SKILL.md', 'spec-reviewer-prompt.md', 'code-quality-reviewer-prompt.md'],
+    },
+    'Red-Green-Refactor': {
+      tags: ['TDD', '测试'],
+      def: 'TDD 技能的核心循环：Red（写一个会失败的测试，证明测试有效）→ Green（写最少代码让测试通过，不追求完美）→ Refactor（在绿灯保护下优化代码）。跳过任何一步都违反铁律。',
+      mechanics: [
+        'Red：先写测试，运行，确认它失败（证明测试是有效的）',
+        'Green：写最少的生产代码使测试通过，不追求完美',
+        'Refactor：在绿灯状态下重构，测试全程保护',
+        '铁律：不允许在没有失败测试的情况下写任何生产代码',
+        '每个 Green 阶段后必须 commit，保持干净的 Git 历史',
+      ],
+      related: ['Iron Law', 'Subagent'],
+      patterns: ['Red-Green-Refactor', 'Red/Green/Refactor'],
+      files: ['test-driven-development/SKILL.md'],
+    },
+    'YAGNI': {
+      tags: ['设计原则', 'Brainstorming'],
+      def: '"You Aren\'t Gonna Need It"（你不会需要它的）。Brainstorming 技能的重要原则：只设计和实现需求中明确提出的功能，不要预测性地添加"以后可能需要"的功能，避免过度工程化。',
+      mechanics: [
+        '在 brainstorming/SKILL.md 中明确引用',
+        '澄清问题阶段会主动识别并剥离超出范围的功能',
+        '设计文档应明确标注"超出范围"的内容，供未来参考',
+      ],
+      related: ['Iron Law', 'Human Partner'],
+      patterns: ['YAGNI'],
+      files: ['brainstorming/SKILL.md'],
+    },
+  };
+
+  // ─── PANEL STATE ─────────────────────────────────────────────────────────
+  const panel      = document.getElementById('codePanel');
+  const backdrop   = document.getElementById('codeBackdrop');
+  const closeBtn   = document.getElementById('codePanelClose');
+  const pathEl     = document.getElementById('panelPath');
+  const badgeEl    = document.getElementById('panelBadge');
+  const ghLink     = document.getElementById('panelGhLink');
+  const iframeBody = document.getElementById('iframePanelBody');
+  const iframeEl   = document.getElementById('panelIframe');
+  const iframeLoader = document.getElementById('iframeLoader');
+  const termBody   = document.getElementById('termPanelBody');
+  const navBack    = document.getElementById('panelNavBack');
+  const navFwd     = document.getElementById('panelNavFwd');
+  const pinBtn     = document.getElementById('panelPinBtn');
+
+  let pinned = false;
+  let navStack = [], navIdx = -1;
+
+  function openPanel() {
+    panel.classList.add('open');
+    if (!pinned) backdrop.classList.add('open');
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+  closeBtn.addEventListener('click', closePanel);
+  backdrop.addEventListener('click', closePanel);
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    panel.classList.toggle('pinned', pinned);
+    backdrop.classList.toggle('open', !pinned && panel.classList.contains('open'));
+  });
+
+  function pushNav(entry) {
+    navStack = navStack.slice(0, navIdx + 1);
+    navStack.push(entry);
+    navIdx = navStack.length - 1;
+    updateNavBtns();
+  }
+  function updateNavBtns() {
+    navBack.disabled = navIdx <= 0;
+    navFwd.disabled  = navIdx >= navStack.length - 1;
+  }
+  navBack.addEventListener('click', () => { if (navIdx > 0) { navIdx--; restoreNav(navStack[navIdx]); updateNavBtns(); } });
+  navFwd.addEventListener('click',  () => { if (navIdx < navStack.length - 1) { navIdx++; restoreNav(navStack[navIdx]); updateNavBtns(); } });
+  function restoreNav(e) {
+    if (e.type === 'file')     _openGitHubPanelInternal(e.path, e.label);
+    else if (e.type === 'term') _openTermPanel(e.key);
+    else if (e.type === 'reporoot') _openRepoBrowserInternal();
+  }
+
+  // ─── PANEL RESIZE ────────────────────────────────────────────────────────
+  const grip = document.getElementById('panelResizeGrip');
+  let resizing = false, startX = 0, startW = 0;
+  grip.addEventListener('mousedown', e => {
+    resizing = true; startX = e.clientX; startW = panel.offsetWidth;
+    grip.classList.add('dragging');
+    const shield = document.createElement('div');
+    shield.id = 'resize-shield';
+    shield.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:ew-resize;';
+    document.body.appendChild(shield);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const delta = startX - e.clientX;
+    const newW  = Math.max(300, Math.min(window.innerWidth * 0.92, startW + delta));
+    panel.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizing) return;
+    resizing = false;
+    grip.classList.remove('dragging');
+    const shield = document.getElementById('resize-shield');
+    if (shield) shield.remove();
+  });
+
+  // ─── OPEN GITHUB PANEL ───────────────────────────────────────────────────
+  function _openGitHubPanelInternal(ghPath, label) {
+    panel.dataset.type   = 'file';
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'GitHub';
+    ghLink.href          = GH + '/blob/' + BRANCH + '/' + ghPath;
+    ghLink.style.display = 'inline-block';
+    iframeBody.style.display = 'flex';
+    termBody.style.display   = 'none';
+    iframeEl.style.display   = 'none';
+    iframeEl.style.flex      = '';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>加载中…</span>';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + GH + '/blob/' + BRANCH + '/' + ghPath + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/blob/' + BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) {
+    pushNav({ type: 'file', path: ghPath, label });
+    _openGitHubPanelInternal(ghPath, label);
+  }
+
+  function _openRepoBrowserInternal() {
+    panel.dataset.type   = 'file';
+    pathEl.textContent   = GH_REPO;
+    badgeEl.textContent  = 'GitHub';
+    ghLink.href          = GH + '/tree/' + BRANCH;
+    ghLink.style.display = 'inline-block';
+    iframeBody.style.display = 'flex';
+    termBody.style.display   = 'none';
+    iframeEl.style.display   = 'none';
+    iframeEl.style.flex      = '';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>加载中…</span>';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + GH + '/tree/' + BRANCH + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/tree/' + BRANCH;
+    }, 60);
+  }
+  function openRepoBrowser() {
+    pushNav({ type: 'reporoot' });
+    _openRepoBrowserInternal();
+  }
+
+  // ─── OPEN TERM PANEL ─────────────────────────────────────────────────────
+  function renderTermHTML(key) {
+    const t = PROJECT_TERMS[key]; if (!t) return '';
+    const tags  = (t.tags  || []).map(g => '<span class="term-tag">'  + g + '</span>').join('');
+    const mech  = (t.mechanics || []).map(m => '<li>' + m + '</li>').join('');
+    const rels  = (t.related || []).map(r => '<button class="term-rel-btn" data-term="' + r + '">' + r + '</button>').join('');
+    const files = (t.files  || []).filter(f => FILE_MAP[f]).map(f =>
+      '<button class="term-file-btn" data-file="' + FILE_MAP[f] + '">' + f + '</button>').join('');
+    return '<div class="term-tags">' + tags + '</div>' +
+      '<div class="term-title-h">' + key + '</div>' +
+      '<div class="term-def">'  + t.def + '</div>' +
+      (mech  ? '<div class="term-sec">实现机制</div><ul class="term-mechanics">' + mech + '</ul>' : '') +
+      (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
+      (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
+  }
+  function _openTermPanel(key) {
+    panel.dataset.type   = 'term';
+    pathEl.textContent   = key;
+    badgeEl.textContent  = '术语解释';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'flex';
+    termBody.style.flexDirection = 'column';
+    termBody.innerHTML = renderTermHTML(key);
+    termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+      btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+    termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+      btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+    openPanel();
+  }
+  function openTermPanel(key) {
+    if (!PROJECT_TERMS[key]) return;
+    pushNav({ type: 'term', key });
+    _openTermPanel(key);
+  }
+
+  // ─── UNIFIED CLICK HANDLER ───────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+    const termEl = e.target.closest('.term-link[data-term]');
+    if (fileEl && fileEl.dataset.file) {
+      e.preventDefault();
+      openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+      e.preventDefault();
+      openTermPanel(termEl.dataset.term);
+    }
+  });
+
+  // ─── AUTO-TAG FILE LINKS (inline <code>) ────────────────────────────────
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.classList.contains('file-link')) return;
+    const raw = el.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (ghPath) {
+      el.classList.add('file-link');
+      el.dataset.file  = ghPath;
+      el.dataset.label = raw.replace(/^★\s*/, '');
+      el.title = '在 GitHub 中查看';
+    }
+  });
+
+  // ─── AUTO-TAG FILE LINKS (table first-cell) ──────────────────────────────
+  document.querySelectorAll('.cast-table td:first-child').forEach(td => {
+    if (td.querySelector('.file-link')) return;
+    const raw    = td.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (!ghPath) return;
+    const label  = raw.replace(/^★\s*/, '');
+    const btn    = document.createElement('span');
+    btn.className    = 'file-link';
+    btn.dataset.file  = ghPath;
+    btn.dataset.label = label;
+    btn.title         = '在 GitHub 中查看';
+    btn.textContent   = raw;
+    btn.style.cursor  = 'pointer';
+    td.innerHTML = '';
+    td.appendChild(btn);
+  });
+
+  // ─── AUTO-TAG TERM LINKS ─────────────────────────────────────────────────
+  const termPatterns = [];
+  for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+    for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+  }
+  termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+
+  const TERM_RE = new RegExp(
+    termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+
+  const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+    'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+
+  function tagTermsInDocument() {
+    const content = document.querySelector('.content');
+    if (!content) return;
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p = node.parentNode;
+        while (p && p !== content) {
+          if (SKIP_TAGS.has(p.tagName) ||
+              p.classList.contains('term-link') ||
+              p.classList.contains('file-link') ||
+              p.classList.contains('mermaid') ||
+              p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = []; let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(textNode => {
+      const text = textNode.textContent;
+      TERM_RE.lastIndex = 0;
+      if (!TERM_RE.test(text)) return;
+      TERM_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = TERM_RE.exec(text)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const key = PAT_KEY[m[0]];
+        if (key) {
+          const sp = document.createElement('span');
+          sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+          frag.appendChild(sp);
+        } else {
+          frag.appendChild(document.createTextNode(m[0]));
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  tagTermsInDocument();
+  window.openRepoBrowser = openRepoBrowser;
+
+  // ─── TOC collapse / expand ───────────────────────────────────────────────
+  (function () {
+    const toc     = document.getElementById('tocNav');
+    const btn     = document.getElementById('tocToggle');
+    const content = document.querySelector('.content');
+    if (!toc || !btn) return;
+    let collapsed = false;
+    btn.addEventListener('click', () => {
+      collapsed = !collapsed;
+      toc.classList.toggle('collapsed', collapsed);
+      content.classList.toggle('toc-collapsed', collapsed);
+      btn.textContent = collapsed ? '▶' : '◀';
+      btn.title       = collapsed ? '展开目录' : '收起目录';
+    });
+  })();
+
+  // ─── Diagram zoom (lightbox) ─────────────────────────────────────────────
+  (function () {
+    document.querySelectorAll('.diagram-container').forEach(container => {
+      const zoomBtn = document.createElement('button');
+      zoomBtn.className   = 'diagram-zoom-btn';
+      zoomBtn.title       = '放大查看';
+      zoomBtn.textContent = '⤢';
+      container.appendChild(zoomBtn);
+      function openLightbox() {
+        const svg = container.querySelector('.mermaid svg');
+        if (!svg) return;
+        const rect = svg.getBoundingClientRect();
+        const w = rect.width  * 1.5;
+        const h = rect.height * 1.5;
+        const lightbox = document.createElement('div');
+        lightbox.className = 'diagram-lightbox';
+        const inner = document.createElement('div');
+        inner.className   = 'diagram-lightbox-inner';
+        inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+        inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+        inner.style.overflow = 'auto';
+        inner.style.padding  = '20px';
+        const cloneSvg = svg.cloneNode(true);
+        cloneSvg.setAttribute('width',  w);
+        cloneSvg.setAttribute('height', h);
+        cloneSvg.style.display = 'block';
+        function close() { lightbox.remove(); }
+        lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+        document.addEventListener('keydown', function esc(e) {
+          if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+        });
+        inner.appendChild(cloneSvg);
+        lightbox.appendChild(inner);
+        document.body.appendChild(lightbox);
+      }
+      zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+      container.addEventListener('click', openLightbox);
+    });
+  })();
+})();
+</script>
+</body>
+</html>

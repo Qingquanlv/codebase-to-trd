@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specmatic 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --bg-alt: #f8f9fa; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #0d9488; --accent-light: #ccfbf1; --border: #e5e7eb;
+    --success: #059669; --warning: #d97706; --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.8; display: flex;
+  }
+  .toc {
+    position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+    overflow-y: auto; padding: 24px 16px; background: var(--bg-alt);
+    border-right: 1px solid var(--border); font-size: 13px; z-index: 100;
+  }
+  .toc h3 { font-size: 14px; color: var(--accent); margin-bottom: 12px; letter-spacing: 0.5px; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; }
+  .toc a:hover { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead {
+    font-size: 16px; color: var(--text-secondary); line-height: 1.8;
+    padding: 16px 20px; background: var(--bg-alt);
+    border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0;
+  }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #f0fdfa 0%, #eff6ff 100%); border: 1px solid #99f6e4; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+  .module-card { margin: 28px 0 40px; padding: 24px 28px; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .module-card h4 { margin-top: 0; font-size: 17px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+  .diagram-container { position: relative; cursor: zoom-in; margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
+  .diagram-zoom-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px; border: 1px solid var(--border);
+    background: white; border-radius: 6px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); opacity: 0; transition: opacity 0.15s;
+    z-index: 5;
+  }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,.75);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .diagram-lightbox-inner {
+    background: white; border-radius: 12px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 24px 64px rgba(0,0,0,.4);
+    max-width: 92vw; max-height: 90vh;
+  }
+  .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #86efac; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness { background: #fff7ed; border-color: #fdba74; }
+  .eval-card.weakness h4 { color: var(--warning); }
+  .eval-card.tradeoff { background: #f8fafc; border-color: #cbd5e1; }
+  .eval-card.tradeoff h4 { color: #475569; }
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; border-radius: 4px; }
+  .dir-tree { margin: 16px 0; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-size: 13px; line-height: 1.85; }
+  .gh { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; font-weight:600; }
+  .term-link:hover { color:#6d28d9 !important; }
+  /* ─── Term Panel Body ─── */
+  #termPanelBody { flex:1; overflow-y:auto; padding:20px 22px 32px; }
+  .tp-tags  { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .tp-tag   { font-size:11px; padding:2px 9px; border-radius:12px; background:#313244; color:#89b4fa; }
+  .tp-title { font-size:17px; font-weight:700; color:#cdd6f4; margin:0 0 12px; }
+  .tp-def   { font-size:13px; line-height:1.8; color:#bac2de; padding:12px 14px; background:#181825; border-left:3px solid #89b4fa; border-radius:0 6px 6px 0; margin-bottom:16px; }
+  .tp-def code, .tp-list li code { background:#313244; color:#f38ba8; padding:1px 5px; border-radius:3px; font-size:11.5px; }
+  .tp-sec   { font-size:11px; font-weight:700; color:#89b4fa; text-transform:uppercase; letter-spacing:.5px; margin:14px 0 7px; }
+  .tp-list  { list-style:none; padding:0; margin:0; }
+  .tp-list li { font-size:12.5px; color:#bac2de; padding:6px 0 6px 18px; position:relative; border-bottom:1px solid #313244; line-height:1.65; }
+  .tp-list li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .tp-list li:last-child { border-bottom:none; }
+  .tp-rels  { display:flex; gap:8px; flex-wrap:wrap; }
+  .tp-rel-btn  { font-size:12px; padding:3px 10px; border-radius:4px; background:#313244; color:#a6e3a1; border:1px solid #45475a; cursor:pointer; transition:all .15s; }
+  .tp-rel-btn:hover { background:#45475a; }
+  .tp-files { display:flex; flex-direction:column; gap:5px; margin-top:2px; }
+  .tp-file-btn { font-size:12px; font-family:'JetBrains Mono',Consolas,monospace; padding:5px 12px; background:#181825; color:#89b4fa; border:1px solid #313244; border-radius:4px; cursor:pointer; text-align:left; transition:all .15s; }
+  .tp-file-btn:hover { background:#313244; color:#cdd6f4; }
+  /* ─── Right Side Panel ─── */
+  .code-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.38); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .code-backdrop.open { opacity:1; pointer-events:auto; }
+  .code-panel { position:fixed; top:0; right:0; height:100vh; width:min(820px,65vw); min-width:300px; max-width:96vw; background:#1e1e2e; color:#cdd6f4; transform:translateX(100%); transition:transform .26s cubic-bezier(.4,0,.2,1); z-index:201; display:flex; flex-direction:column; box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute; left:0; top:0; width:6px; height:100%; cursor:ew-resize; z-index:10; background:transparent; border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; height:48px; border-bottom:1px solid #313244; flex-shrink:0; background:#181825; overflow:hidden; }
+  .code-panel-path { font-size:13px; font-family:'JetBrains Mono',Consolas,monospace; color:#cdd6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .code-panel-badge { font-size:11px; padding:2px 8px; border-radius:4px; background:#313244; color:#89b4fa; white-space:nowrap; flex-shrink:0; }
+  .panel-gh-link { font-size:12px; color:#89b4fa; text-decoration:none; white-space:nowrap; border:1px solid #89b4fa44; padding:2px 9px; border-radius:4px; flex-shrink:0; transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px; height:28px; border:none; background:transparent; color:#9399b2; cursor:pointer; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all .15s; flex-shrink:0; }
+  .code-panel-close:hover { background:#313244; color:#cdd6f4; }
+  #iframePanelBody { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  #iframePanelBody iframe { width:100%; flex:1; border:none; display:none; }
+  .iframe-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:#6c7086; gap:12px; font-size:14px; }
+  .iframe-spin { width:32px; height:32px; border:3px solid #313244; border-top-color:#89b4fa; border-radius:50%; animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
+  .gh:hover { color: #0f766e; }
+  .chain-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  .chain-table th { background: var(--accent-light); color: #134e4a; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #99f6e4; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  .chain-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .chain-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .chain-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 28px; white-space: nowrap; }
+  .chain-table td:nth-child(2) { white-space: nowrap; font-weight: 600; font-size: 12px; }
+  .chain-table td:nth-child(3) code, .chain-table td:nth-child(4) code { font-size: 11px; color: #c7254e; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+  .chain-table td:nth-child(5) { font-size: 12px; }
+  .chain-table td:nth-child(6) { font-size: 12px; color: #6d28d9; font-weight: 500; }
+  .seq-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  .seq-table th { background: var(--accent-light); color: #134e4a; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #99f6e4; font-size: 11px; letter-spacing: 0.3px; white-space: nowrap; }
+  .seq-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 28px; }
+  .seq-table td:nth-child(2), .seq-table td:nth-child(4) { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .seq-table td:nth-child(3) code, .seq-table td:nth-child(5) code { font-size: 11px; color: #c7254e; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+  .seq-table td:nth-child(5) { font-size: 12px; }
+  .seq-table td:nth-child(6) { font-size: 12px; color: var(--text-secondary); }
+  .seq-table-caption { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 80px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 180px; }
+  .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .module-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 6px 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
+  .module-item { display: block; padding: 2px 0; white-space: nowrap; }
+  .section-lead { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 16px; line-height: 1.6; }
+  .tip-box { margin: 16px 0; padding: 12px 16px 14px; background: #fefce8; border: 1px solid #facc15; border-radius: 8px; font-size: 13px; line-height: 1.65; color: var(--text); }
+  .tip-box strong { color: #854d0e; }
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+  .usage-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .usage-card { padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); font-size: 14px; }
+  .usage-card h4 { margin: 0 0 10px; font-size: 15px; color: var(--accent); }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .usage-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc" id="tocNav">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 规格编译为统一场景模型</a>
+  <a href="#section-2-2" class="toc-h3">2.2 同一场景模型同时服务 Test 与 Stub</a>
+  <a href="#section-2-3" class="toc-h3">2.3 以 JUnit Platform 为执行编排中心</a>
+  <a href="#section-2-4" class="toc-h3">2.4 JVM 多模块发布与嵌入式接入</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 运行时输入与产物载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-3-5" class="toc-h3">3.5 读源码建议优先级</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从 OpenAPI 到一次契约测试</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 三条执行调用链</a>
+  <a href="#section-5-2-1" class="toc-h4">5.2.1 test 链</a>
+  <a href="#section-5-2-2" class="toc-h4">5.2.2 stub 链</a>
+  <a href="#section-5-2-3" class="toc-h4">5.2.3 proxy 链（定位）</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 OpenAPI → Feature / Scenario</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 ScenarioAsTest 执行</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 HttpStub 场景匹配</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 架构代价与取舍</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Specmatic 深度解读</h1>
+    <div class="subtitle">把Spec编译成统一场景模型，再分发给契约测试、Stub 与兼容检查 — Kotlin / JVM，多协议（OpenAPI、AsyncAPI、GraphQL、gRPC、WSDL 等）</div>
+    <div class="lead">
+      <strong><a class="gh" href="https://github.com/specmatic/specmatic" target="_blank" rel="noopener">specmatic</a></strong>
+      是面向<strong>契约驱动开发（CDD）</strong>的工具集：同一份 API 规格既可<strong>驱动对真实服务的测试</strong>，也可<strong>起“预设响应型”的 mock 服务（Stub） 替代下游</strong>，并支持向后兼容检查、代理录例、JUnit5、MCP 等周边能力。
+      <strong>Specmatic 说的不是“由契约直接生成业务代码”，而是 Contract-Driven Development：先把 API 规格当成可执行契约，围绕它来驱动协作、联调、验证、替身和版本演进，类似原TDD，BDD的思路。</strong>
+    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>Spec = 可执行编译器</strong> — Specmatic 会在运行时把 OpenAPI 这类规格翻译成内部统一对象，再把这套对象同时拿去做测试和起 Stub。它不会存一份中间 YAML。</li>
+      <li><strong>规格为中心，而不是入口为中心</strong> — 不管输入是 OpenAPI 还是别的规格，Specmatic 都会先把它收敛成统一的 Scenario；真正被执行、被匹配、被复用的，不是原始规格文本，而是这套统一场景模型。</li>
+      <li><strong>Stub 与 Test 镜像</strong> — 测试链和 Stub 链并不是两套平行实现，而是围绕同一批 Scenario 运转；正因为它们共用同一套契约语义，测试结果和替身行为才更容易对齐。</li>
+      <li><strong>架构有显式代价</strong> — 通过把很多核心逻辑集中到 <code>Feature</code> 换来了 test / stub / examples 的统一复用；但代价是 Feature 这个对象会越来越重，代码阅读、维护和边界判断也会更复杂。（<a href="#section-6-2">§6.2</a>）。</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>微服务互相依赖时，集成测试昂贵且脆弱；若团队各自解释 OpenAPI，很容易出现「文档写了、实现没跟上」或「消费者假设与提供者真实行为不一致」。Specmatic 把<strong>规格文件本身</strong>当作可执行契约：在 CI 中对运行中的 API 做符合性检查，或用 Stub 在本地挡住不稳定下游，从而支持更频繁的独立部署。官方叙事见仓库 README 与 <a class="gh" href="https://specmatic.io/" target="_blank" rel="noopener">specmatic.io</a>。</p>
+  <p><strong>技术栈：</strong>Gradle（Kotlin DSL）、<strong>Kotlin 2.3</strong>、JUnit 5 / Platform、Ktor、Jackson、Swagger Parser、Cucumber Gherkin、部分能力依赖 Netty / OkHttp 等。<strong>构建：</strong>根目录 <code>./gradlew</code>；产物包含可执行 JAR（<code>application</code> 模块）、Maven 中央库上的 <code>specmatic-core</code>、<code>junit5-support</code>、<code>specmatic-mcp</code> 等。</p>
+  <p><strong>规模（粗估）：</strong><code>core/src/main/kotlin</code> 下约 509 个 Kotlin 源文件；<code>application</code> 约 35 个，负责 Picocli 子命令装配。<strong>目标用户：</strong>需要契约测试、API Mock、兼容门禁或代理录例的后端团队与平台工程。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「文档与实现悄悄分叉」——规格符合性验证</h4>
+  <p>OpenAPI 文档写好、但服务实现逐渐偏离，是微服务团队最常见的隐患。Specmatic 把规格文件编译成可执行的 <code>Scenario</code> 集合，在 CI 中对运行中的服务发起真实 HTTP 调用并断言，而不是只做静态 diff。任何字段缺失、状态码不符或类型错误都会立即让 CI 失败（见 <a href="#section-4-1">§4.1</a>、<a href="#section-5-2-1">§5.2.1</a>）。</p>
+  <h4>1.2.2 「下游未就绪、联调被阻塞」——基于同源规格的 Stub</h4>
+  <p>消费者团队需要在下游服务还没完工时照常开发和测试。<code>specmatic stub</code> 直接从同一份规格起一个与契约行为一致的 HTTP 替身，匹配逻辑与契约测试共用同一套 <code>Feature</code> / <code>Scenario</code>，不会出现「挡板行为与真实服务规则不同步」的漂移问题（见 <a href="#section-5-2-2">§5.2.2</a>、<a href="#section-5-3-3">§5.3.3</a>）。</p>
+  <h4>1.2.3 「API 版本升级悄悄破坏下游」——向后兼容检查</h4>
+  <p>提供者升级规格时，很难人工判断所有变更对已有消费者是否安全。Specmatic 内置 <code>BackwardCompatibilityCheckCommandV2</code>，对两个版本的规格做差异分析，把「删字段、改类型、去掉响应码」等破坏性变更在发布前拦截，作为 CI 门禁（<a href="#section-3-4">§3.4</a>）。</p>
+  <h4>1.2.4 「真实流量与规格脱节」——代理录例回填</h4>
+  <p>已有服务缺乏规格、或规格年久失修时，可以用 <code>specmatic proxy</code> 让真实流量经过代理，把实际的 Request / Response 对录制为示例文件并反向推导契约素材，形成「从线上学习、回填到规格」的闭环（<a href="#section-4-3">§4.3</a>；源码定位 <a href="#section-5-2-3">§5.2.3</a>）。</p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 规格编译为统一场景模型</h3>
+  <p>OpenAPI / AsyncAPI 等输入经 Swagger 解析与内部转换，落成<strong>可遍历的场景</strong>：<code>Scenario</code> 携带 <code>HttpRequestPattern</code> / <code>HttpResponsePattern</code>、示例行、绑定、协议元数据等。后续无论是生成外向请求还是 Stub 内向匹配，都针对这一模型操作，而不是各子系统各自解析 YAML。</p>
+
+  <h3 id="section-2-2">2.2 同一场景模型同时服务 Test 与 Stub</h3>
+  <p><code>Feature</code> 聚合场景列表并提供 <code>lookupResponse</code>（Stub 路径）与供 <code>ScenarioAsTest</code> 使用的同一套 <code>Scenario</code>（Test 路径）。设计取舍是<strong>一致性优先</strong>：匹配器、示例、状态机在两条链路上复用，减少「挡板与契约测试各写一套规则」的漂移。</p>
+
+  <h3 id="section-2-3">2.3 以 JUnit Platform 为执行编排中心</h3>
+  <p><code>specmatic test</code> 不显式手写「for each scenario」循环，而是构造 <code>LauncherDiscoveryRequest</code> 仅选择 <code>SpecmaticJUnitSupport</code>，由 JUnit 完成发现、并行、listener 与报告钩子。这样 CLI 成为<strong>薄编排</strong>：把 CLI 参数写入线程本地配置后，把控制权交给与 IDE 相同的执行内核（详见 <a href="#section-5-2-1">§5.2.1</a>）。</p>
+
+  <h2 id="section-3">3 核心对象与术语</h2>
+  <p>在进入 <a href="#section-4">使用方式</a> 与 <a href="#section-5">详细设计</a> 之前，先固定<strong>名词与数据流</strong>，避免在后文 <code>Feature</code>、<code>ScenarioAsTest</code>、<code>HttpStub</code> 之间迷失。</p>
+
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="chain-table">
+    <thead><tr><th>术语</th><th>一句话</th><th>典型落点（包/类）</th></tr></thead>
+    <tbody>
+      <tr><td><code>OpenApiSpecification</code></td><td>已解析 OpenAPI 文档 + 路径/配置的封装，可向 <code>Feature</code> 过渡。</td><td><code>io.specmatic.conversions</code></td></tr>
+      <tr><td><code>Feature</code></td><td>一份契约对应的场景集合 + 服务器状态 + 示例存储等，是 Test/Stub 的<strong>枢纽类型</strong>。</td><td><code>io.specmatic.core.Feature</code></td></tr>
+      <tr><td><code>Scenario</code></td><td>单次可执行契约单元：请求/响应模式、示例、负例标记、绑定等。</td><td><code>io.specmatic.core.Scenario</code></td></tr>
+      <tr><td><code>ScenarioAsTest</code></td><td>把 <code>Scenario</code> 包成可对接 <code>TestExecutor</code> 的 <code>ContractTest</code>，负责生成请求、发 HTTP、校验响应。</td><td><code>io.specmatic.test.ScenarioAsTest</code></td></tr>
+      <tr><td><code>ContractTest</code> / <code>TestExecutor</code></td><td>契约测试抽象与「如何对 baseURL 发请求」的注入点。</td><td><code>io.specmatic.test</code></td></tr>
+      <tr><td><code>SpecmaticJUnitSupport</code></td><td>JUnit5 侧动态测试入口；<code>TestCommand</code> 通过 selectClass 指向它。</td><td><code>junit5-support</code> / <code>io.specmatic.test</code></td></tr>
+      <tr><td><code>HttpStub</code></td><td>Ktor 上的 Stub HTTP 服务，将入站请求交给 <code>Feature.lookupResponse</code>。</td><td><code>io.specmatic.stub.HttpStub</code></td></tr>
+      <tr><td><code>Proxy</code> / <code>ProxyCommand</code></td><td>代理录例、转换示例等「流量穿过 Specmatic」的路径（与 test/stub 并列的子命令）。</td><td><code>io.specmatic.proxy</code> / <code>application</code></td></tr>
+      <tr><td>Backward compatibility</td><td>规格版本间兼容检查（CLI 子命令 <code>BackwardCompatibilityCheckCommandV2</code> 等）。</td><td><code>application.backwardCompatibility</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <p>主轴线可记为：<strong>规格文件 → <code>OpenApiSpecification</code>（解析态）→ <code>Feature</code>（场景集合）→ 每条 <code>Scenario</code> → 外向则 <code>ScenarioAsTest</code>，内向则 <code>HttpStub</code> + <code>lookupResponse</code></strong>。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+flowchart LR
+  subgraph spec["规格侧"]
+    FILE[OpenAPI 文件]
+    OAS[OpenApiSpecification]
+  end
+  subgraph model["模型侧"]
+    FE[Feature]
+    SC[Scenario 列表]
+  end
+  subgraph exec["执行侧"]
+    SAT[ScenarioAsTest]
+    TE[TestExecutor / HTTP Client]
+    STUB[HttpStub + lookupResponse]
+  end
+  FILE --> OAS
+  OAS --> FE
+  FE --> SC
+  SC --> SAT
+  SAT --> TE
+  SC --> STUB
+    </div>
+    <p class="caption">图 3-1：核心对象依赖（简化）</p>
+  </div>
+
+  <h3 id="section-3-3">3.3 运行时输入与产物载体</h3>
+  <table>
+    <thead><tr><th>类型</th><th>载体 / 配置</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td>输入</td><td>OpenAPI/AsyncAPI 等规格文件、<code>--overlay-file</code>、<code>--examples</code> 目录</td><td>决定场景集合与示例解析。</td></tr>
+      <tr><td>输入</td><td><code>specmatic.json</code>（或 <code>--config</code>）、字典文件、过滤器环境变量</td><td>严格模式、并行度、测试过滤等。</td></tr>
+      <tr><td>输入</td><td><code>--testBaseURL</code> 或 host/port/https</td><td>契约测试时真实服务根地址。</td></tr>
+      <tr><td>产物</td><td>控制台日志、<code>ContractExecutionListener</code> 汇聚的退出码</td><td>CI 门禁主信号。</td></tr>
+      <tr><td>产物</td><td><code>--junitReportDir</code> 下的 JUnit XML</td><td>与 Jenkins/GitLab 等报告集成。</td></tr>
+      <tr><td>产物</td><td>Stub 场景下的 usage 报告、CTRF 等（视配置与版本）</td><td>可观测性与复盘。</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <table>
+    <thead><tr><th>误解</th><th>实际情况</th></tr></thead>
+    <tbody>
+      <tr><td>「Specmatic 只做 Stub」</td><td>Stub 与<strong>契约测试</strong>同等重要；<code>specmatic test</code> 是主路径之一（<a href="#section-4-3">§4.3</a>）。</td></tr>
+      <tr><td>「只校验文档、不测真实服务」</td><td>默认外向路径对 <code>testBaseURL</code> 发真实 HTTP，用响应匹配契约期望（<a href="#section-5-2-1">§5.2.1</a>、<a href="#section-5-3-2">§5.3.2</a>）。</td></tr>
+      <tr><td>「和 Schemathesis 一样是随机属性测试主导」</td><td>Specmatic 以<strong>规格符合与示例/模式驱动</strong>为主，不是 Hypothesis 式海量随机 fuzz；选型见 <a href="#section-6-2">§6.2</a>。</td></tr>
+      <tr><td>「等同于 Pact 消费者驱动契约」</td><td>Specmatic 以<strong>规格文件</strong>为权威源组织协作，与消费者驱动的双向发布模型不同（可并存，但不等价）。</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-5">3.5 读源码建议优先级</h3>
+  <div class="tip-box">
+    <strong>速读顺序（只记结论）：</strong><code>OpenApiSpecification</code> → <code>Feature</code>（枢纽）→ <code>ScenarioAsTest</code>（外向）→ <code>HttpStub</code>（内向）→ 最后 <code>TestCommand</code> + <code>SpecmaticJUnitSupport</code>（把 CLI 参数对上 JUnit 线程）。主轴见图 <a href="#section-3-2">3-1</a>。
+  </div>
+
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从一份 OpenAPI 到一次契约测试执行过程</h3>
+  <p><strong>具象带读：</strong>假设 <code>api.yaml</code> 里有一条操作：<code>POST /orders</code>，契约写明「成功时应返回 <strong>201</strong>，且 JSON body 里必须出现 <strong>orderId</strong>（例如 string 类型）」。你把订单服务起在 <code>http://localhost:8080</code>，然后执行 <code>specmatic test api.yaml --testBaseURL=http://localhost:8080</code>。Specmatic 会先把这条操作（及响应 schema / 示例）<strong>编译</strong>进 <code>Feature</code> 下的一条或多条 <code>Scenario</code>；JUnit 发现 <code>SpecmaticJUnitSupport</code> 后，为其中一条场景构造 <code>ScenarioAsTest</code>，由它生成符合契约形状的 <code>POST /orders</code> 请求体、发到真实 baseURL，再把<strong>实际 HTTP 响应</strong>与契约中的响应模式做匹配——若你的实现返回 200 却漏了 <code>orderId</code>，或状态码不是 201，这条场景就会失败并计入退出码。</p>
+  <p class="section-lead">同一逻辑链的抽象视图如下（与 <a href="#section-5-2">§5.2</a> 各图对应；上面例子即图中「每个 Scenario」里的一次迭代）。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant Dev as 开发者/CI
+  participant CLI as specmatic test
+  participant TC as TestCommand
+  participant JU as JUnit Launcher
+  participant SU as SpecmaticJUnitSupport
+  participant ST as ScenarioAsTest
+  participant SUT as 被测服务 baseURL
+  participant Rep as JUnit XML / 退出码
+  Dev->>CLI: 传入契约路径 + baseURL 等
+  CLI->>TC: Picocli 调用 call()
+  TC->>TC: 日志/并行度/ContractTestSettings 写入线程本地
+  TC->>JU: DiscoveryRequest(selectClass SU)
+  JU->>SU: 发现动态测试
+  SU->>ST: 为各 Scenario 构造可运行项
+  loop 每个 Scenario
+    ST->>SUT: HTTP 请求
+    SUT-->>ST: HTTP 响应
+    ST->>ST: 匹配契约期望
+  end
+  TC->>Rep: execute 完成 / 可选 JUnit 报告
+  Rep-->>Dev: 退出码
+    </div>
+    <p class="caption">图 4-1：契约测试用户链（逻辑顺序）</p>
+  </div>
+  <p><strong>文字版摘要：</strong>① 进程进入 <code>SpecmaticApplication.main</code> → ② 子命令 <code>TestCommand</code> 配置日志与并行、把 host/port/baseURL 等写入 <code>ContractTestSettings</code> → ③ JUnit 只发现 <code>SpecmaticJUnitSupport</code> → ④ 动态测试实例化为 <code>ScenarioAsTest</code>（<a href="#section-5-3-2">§5.3.2</a>）→ ⑤ 对 <code>testBaseURL</code> 发请求并校验 → ⑥ 监听器与可选 <code>--junitReportDir</code> 产出报告 → ⑦ <code>ContractExecutionListener.exitCode()</code> 决定进程退出码。</p>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>下列命令为<strong>形态示例</strong>：具体 flags 以 <code>specmatic --help</code> 与 <a class="gh" href="https://specmatic.io/documentation/" target="_blank" rel="noopener">官方文档</a>为准；路径需换成本地契约与被测地址。</p>
+  <h4>契约测试（外向）</h4>
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 对运行中的实现跑契约（示例）</span><br>
+    <span class="cmd-line">specmatic test api.yaml --testBaseURL=http://localhost:8080</span>
+  </div>
+  <h4>Stub（内向）</h4>
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 基于契约起本地替身（端口等按子命令帮助填写）</span><br>
+    <span class="cmd-line">specmatic stub api.yaml</span>
+  </div>
+  <h4>代理录例</h4>
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 流量经代理录制/转换，再回填契约或示例（详见文档）</span><br>
+    <span class="cmd-line">specmatic proxy …</span>
+  </div>
+  <p>三条路径在 <code>SpecmaticCommand</code> 中均以独立子命令注册（<code>TestCommand</code>、<code>StubCommand</code>、<code>ProxyCommand</code> 等，见 <a href="#section-5-2">§5.2</a>），共享同一套 core 解析能力，但<strong>进程目的不同</strong>：test 偏「验证」、stub 偏「替代」、proxy 偏「观测与素材回流」。</p>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <h4>验证真实服务</h4>
+      <p>CI 或本地启动被测服务后，用 <code>specmatic test</code> 将契约中每条 <code>Scenario</code> 转为 HTTP 调用并断言。适合作为<strong>部署门禁</strong>：规格变更必须同步通过契约套件。</p>
+    </div>
+    <div class="usage-card">
+      <h4>Stub 替代下游</h4>
+      <p>消费者团队在下游未就绪或环境不稳定时，用 <code>specmatic stub</code> 起与契约一致的 HTTP 替身，减少联调摩擦（实现落点 <a href="#section-5-2-2">§5.2.2</a>、<a href="#section-5-3-3">§5.3.3</a>）。</p>
+    </div>
+    <div class="usage-card">
+      <h4>代理录例 → 回填契约</h4>
+      <p>让流量经过代理，把真实交互沉淀为可复用示例或契约素材，再与 strict 模式、示例目录等策略结合，形成「从线上学习」的闭环（<code>proxy</code> 包与 <code>ProxyCommand</code>）。源码级定位见 <a href="#section-5-2-3">§5.2.3</a>（本文对 proxy 只作定位，不做与 test/stub 同深度的展开）。</p>
+    </div>
+  </div>
+
+  <h2 id="section-5">5 系统详细设计</h2>
+  <p>本章承接 <a href="#section-4">§4</a>：先用架构图定位各层职责（5.1），再按三条执行调用链从命令入口追踪到核心动作（5.2），最后深入三个关键模块看机制细节（5.3）。</p>
+
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
+
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>先从目录结构了解项目的整体轮廓（对照 <a class="gh" href="https://github.com/specmatic/specmatic/blob/main/settings.gradle.kts" target="_blank" rel="noopener">settings.gradle.kts</a>）。</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">specmatic/</span>
+<span class="tree-branch">├── </span><span class="tree-entry">application/ ★</span>                        <span class="tree-comment">← 进程入口：Picocli 命令树、License、日志、退出码</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">src/main/kotlin/application/</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="application/src/main/kotlin/application/SpecmaticApplication.kt" data-label="SpecmaticApplication.kt">SpecmaticApplication.kt ★</span>   <span class="tree-comment">← main()：License / Picocli / 日志初始化</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="application/src/main/kotlin/application/TestCommand.kt" data-label="TestCommand.kt">TestCommand.kt ★</span>             <span class="tree-comment">← specmatic test：构造 LauncherDiscoveryRequest 驱动 JUnit</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="application/src/main/kotlin/application/StubCommand.kt" data-label="StubCommand.kt">StubCommand.kt ★</span>             <span class="tree-comment">← specmatic stub：初始化 HttpStub / Ktor</span>
+<span class="tree-branch">│       └── </span><span class="tree-entry file-link" data-file="application/src/main/kotlin/application/ProxyCommand.kt" data-label="ProxyCommand.kt">ProxyCommand.kt</span>              <span class="tree-comment">← specmatic proxy：代理录例与转换</span>
+<span class="tree-branch">├── </span><span class="tree-dir">core/ ★</span>                                <span class="tree-comment">← 契约核心：规格解析、场景模型、匹配引擎、Stub、代理</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">src/main/kotlin/io/specmatic/</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="core/src/main/kotlin/io/specmatic/conversions/OpenApiSpecification.kt" data-label="OpenApiSpecification.kt">conversions/OpenApiSpecification.kt ★</span>   <span class="tree-comment">← OpenAPI → Feature 编译入口</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt ★</span>                       <span class="tree-comment">← 场景集合枢纽，提供 lookupResponse / generateTests</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="core/src/main/kotlin/io/specmatic/core/Scenario.kt" data-label="Scenario.kt">core/Scenario.kt ★</span>                      <span class="tree-comment">← 单契约单元：请求模式 + 响应模式 + 示例/状态</span>
+<span class="tree-branch">│       ├── </span><span class="tree-entry file-link" data-file="core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt" data-label="ScenarioAsTest.kt">test/ScenarioAsTest.kt ★</span>                <span class="tree-comment">← Scenario → DynamicTest：发真实 HTTP 并断言</span>
+<span class="tree-branch">│       └── </span><span class="tree-entry file-link" data-file="core/src/main/kotlin/io/specmatic/stub/HttpStub.kt" data-label="HttpStub.kt">stub/HttpStub.kt ★</span>                      <span class="tree-comment">← Ktor Netty Stub 服务，内向匹配入口</span>
+<span class="tree-branch">├── </span><span class="tree-dir">junit5-support/</span>                        <span class="tree-comment">← JUnit5 扩展辅助 API（SpecmaticJUnitSupport 等）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">specmatic-mcp/</span>                         <span class="tree-comment">← MCP 测试客户端、JSON-RPC 模型与控制台报告</span>
+<span class="tree-branch">└── </span><span class="tree-dir">conformance-tests/</span>                     <span class="tree-comment">← 对 Specmatic 自身的集成与兼容性测试</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TB
+  subgraph entry["入口层"]
+    CLI[Picocli SpecmaticCommand]
+    T[TestCommand]
+    S[StubCommand / ProxyCommand]
+  end
+  subgraph orch["编排层"]
+    JU[JUnit Platform Launcher]
+    SU[SpecmaticJUnitSupport]
+    KT[Ktor Netty HttpStub]
+  end
+  subgraph domain["领域核心"]
+    OAS[OpenApiSpecification]
+    FE[Feature]
+    SC[Scenario / Patterns]
+    EX[ScenarioAsTest]
+  end
+  subgraph io["I/O 与报告"]
+    HTTP[HTTP Client / Server]
+    REP[JUnit XML / CTRF]
+  end
+  CLI --> T
+  CLI --> S
+  T --> JU
+  JU --> SU
+  SU --> FE
+  OAS --> FE
+  FE --> SC
+  SC --> EX
+  EX --> HTTP
+  S --> KT
+  KT --> FE
+  EX --> REP
+    </div>
+    <p class="caption">图 5-1：逻辑分层与主要依赖方向（简化）</p>
+  </div>
+
+  <p><strong>如何读这张图：</strong></p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>入口层</td>
+        <td>
+          <span class="module-item"><code>SpecmaticApplication</code></span>
+          <span class="module-item"><code>TestCommand</code></span>
+          <span class="module-item"><code>StubCommand</code></span>
+        </td>
+        <td>Picocli 解析 argv；License 上下文、日志、遥测开关；路由到具体子命令；最终取退出码结束进程</td>
+        <td>→ 编排层</td>
+      </tr>
+      <tr>
+        <td>编排层</td>
+        <td>
+          <span class="module-item">JUnit Launcher</span>
+          <span class="module-item"><code>SpecmaticJUnitSupport</code></span>
+          <span class="module-item"><code>HttpStub</code></span>
+        </td>
+        <td>test 路径：以 JUnit 动态测试发现与执行场景，复用并行、报告、IDE 绿色条；stub 路径：Ktor Netty 路由生命周期管理</td>
+        <td>↕ 领域核心</td>
+      </tr>
+      <tr>
+        <td>领域核心</td>
+        <td>
+          <span class="module-item"><code>OpenApiSpecification</code></span>
+          <span class="module-item"><code>Feature</code></span>
+          <span class="module-item"><code>Scenario</code></span>
+          <span class="module-item"><code>ScenarioAsTest</code></span>
+        </td>
+        <td>规格编译（OAS → Feature → List&lt;Scenario&gt;）；外向测试执行（ScenarioAsTest）；内向场景匹配与响应合成（lookupResponse）</td>
+        <td>↕ 编排、↕ I/O</td>
+      </tr>
+      <tr>
+        <td>I/O 与报告</td>
+        <td>
+          <span class="module-item">Apache HTTP Client</span>
+          <span class="module-item">Ktor Engine</span>
+          <span class="module-item">JUnit XML / CTRF</span>
+        </td>
+        <td>入站/出站 HTTP；规格文件读取与 Git 源；JUnit XML、CTRF 等报告输出</td>
+        <td>↕ 领域核心</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 三条执行调用链</h3>
+  <p>呼应 <a href="#section-4-3">§4.3 核心使用模式</a>，按三条路径分别追踪从命令入口到核心动作的完整函数跳转链。<strong>所在模块</strong>列对应仓库文件路径。</p>
+
+  <h4 id="section-5-2-1">5.2.1 test 链</h4>
+
+  <p><code>specmatic test</code> 是 Specmatic 的<strong>外向契约验证</strong>路径。进程启动后，CLI 把所有配置（testBaseURL、并行度、过滤器）写入线程本地，随后<strong>委托给 JUnit Platform</strong>：仅发现 <code>SpecmaticJUnitSupport</code> 这一个测试类，由它展开全部 <code>Scenario</code> 为 <code>DynamicTest</code>；每个 <code>ScenarioAsTest</code> 独立生成 HTTP 请求、发向被测服务、匹配响应，最终由 <code>ContractExecutionListener</code> 汇总退出码。</p>
+
+  <p><strong>与 stub 链的核心区别：</strong>test 是<strong>主动出向</strong>——进程是客户端，目标是正在运行的真实服务；stub 是<strong>被动入向</strong>——进程是服务端，等待客户端连入。两条链共享同一套 <code>Feature</code> / <code>Scenario</code> 领域模型，差异仅在编排层（JUnit vs Ktor）与 I/O 方向。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["specmatic test\n用户/CI 触发"]) --> B["SpecmaticApplication.main\n初始化 License / 日志"]
+    B --> C["TestCommand.call\n写入 ContractTestSettings"]
+    C --> D["JUnit Launcher\ndiscover + execute"]
+    D --> E["SpecmaticJUnitSupport\n展开 DynamicTest"]
+    E --> F["ScenarioAsTest.runTest\n生成请求 + 断言"]
+    F --> G["HTTP Client\n→ 被测服务"]
+    G --> H["ContractExecutionListener\n汇总退出码"]
+    style C fill:#dcfce7,stroke:#16a34a,color:#1f2937
+    style E fill:#dcfce7,stroke:#16a34a,color:#1f2937
+    </div>
+    <div class="caption">图 5-2：test 链调用链（CLI → JUnit 委托 → ScenarioAsTest → 被测服务）</div>
+  </div>
+
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 类</th><th>所在模块</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>进程入口</td><td><code>SpecmaticApplication.main</code></td><td><code>application/.../SpecmaticApplication.kt</code></td><td>设置 License 执行器、加载可选 specmatic.json 配置、初始化 Picocli 与日志；路由到子命令</td><td>需可读取规格文件；遥测开关在此判断</td></tr>
+      <tr><td>2</td><td>命令解析</td><td><code>TestCommand.call()</code></td><td><code>application/.../TestCommand.kt</code></td><td>解析 testBaseURL / port / 过滤器；调用 <code>setTestThreadLocalSettings()</code> 把配置写入线程本地；设置 JUnit 并行度</td><td>线程本地配置影响全部 Scenario；并行度须与 JVM 线程池匹配</td></tr>
+      <tr><td>3</td><td>JUnit 发现</td><td><code>LauncherDiscoveryRequest</code> + <code>Launcher.discover</code></td><td>JUnit Platform</td><td><code>selectClass(SpecmaticJUnitSupport)</code>，触发动态测试树构建；注册可选 JUnit XML listener</td><td>仅选择此一个测试类；过滤器与 specmatic.json 在此生效</td></tr>
+      <tr><td>4</td><td>动态测试生成</td><td><code>SpecmaticJUnitSupport.testList()</code></td><td><code>junit5-support/.../SpecmaticJUnitSupport.kt</code></td><td>读取全部规格，展开每个 Scenario 为 <code>DynamicTest</code>，提供给 JUnit 引擎</td><td>示例目录、版本筛选、兼容性标志在此解析</td></tr>
+      <tr><td>5</td><td>场景执行</td><td><code>ScenarioAsTest.runTest → executeTestAndReturnResultAndResponse</code></td><td><code>core/.../test/ScenarioAsTest.kt</code></td><td>按 flagsBased 生成 <code>HttpRequest</code>；设置 serverState；调用 <code>TestExecutor.execute</code>；matcherEngine + validators 校验响应</td><td>testBaseURL 与 timeout 继承自线程本地；serverState 在每次 assert 后清空</td></tr>
+      <tr><td>6</td><td>退出码</td><td><code>ContractExecutionListener.exitCode()</code></td><td><code>core/.../ContractExecutionListener.kt</code></td><td>汇总测试失败数、生成可选 CTRF/JUnit XML 报告，最终返回进程退出码（0=全通过，1=失败）</td><td>CI 门禁主信号；报告路径须可写</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-5-2-2">5.2.2 stub 链</h4>
+
+  <p><code>specmatic stub</code> 是 Specmatic 的<strong>内向契身替代</strong>路径。进程启动后解析端口与契约路径，构造 <code>HttpStub</code>（同时加载 <code>Feature</code> 与示例目录），启动 Ktor Netty 监听；当客户端发来请求，Ktor 将其转交 <code>Feature.lookupResponse</code>，由场景匹配逻辑找到最优 <code>Scenario</code> 并合成响应，最终返回给客户端。进程保持运行直到 SIGINT 或超时。</p>
+
+  <p><strong>与 test 链的核心区别：</strong>stub 进程是<strong>长驻服务端</strong>，每次请求在内存中完成匹配与响应合成，不发出任何出向 HTTP；test 进程是<strong>短促客户端</strong>，跑完全套 Scenario 后即退出。两条链共用 <code>OpenApiSpecification → Feature → Scenario</code> 规格编译路径。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["specmatic stub\n用户/CI 触发"]) --> B["SpecmaticApplication.main\n初始化 License / 日志"]
+    B --> C["StubCommand.call\n解析端口 / 契约路径"]
+    C --> D["HttpStub 构造\n加载 Feature + 示例"]
+    D --> E["Ktor Netty\n绑定端口监听"]
+    E --> F["Feature.lookupResponse\n入站请求匹配"]
+    F --> G["lookupScenario\n场景评分 + 最优命中"]
+    G --> H(["HTTP 响应\n← 客户端"])
+    style D fill:#dbeafe,stroke:#2563eb,color:#1f2937
+    style F fill:#dbeafe,stroke:#2563eb,color:#1f2937
+    </div>
+    <div class="caption">图 5-3：stub 链调用链（CLI → HttpStub 初始化 → 长驻监听 → 场景匹配）</div>
+  </div>
+
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 类</th><th>所在模块</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>进程入口</td><td><code>SpecmaticApplication.main</code></td><td><code>application/.../SpecmaticApplication.kt</code></td><td>设置 License、初始化 Picocli 与日志；路由到 StubCommand</td><td>—</td></tr>
+      <tr><td>2</td><td>命令解析</td><td><code>StubCommand.call()</code></td><td><code>application/.../StubCommand.kt</code></td><td>解析端口、契约文件路径、示例目录、strict 模式等配置；构造 <code>HttpStub</code></td><td>端口冲突在此暴露；TLS 配置若有误则初始化失败</td></tr>
+      <tr><td>3</td><td>Stub 初始化</td><td><code>HttpStub</code> 构造函数</td><td><code>core/.../stub/HttpStub.kt</code></td><td>调用 <code>OpenApiSpecification.fromFile</code> → <code>toFeature()</code> 加载全部场景；注册 Ktor 路由与 CORS、double-receive 等中间件</td><td>规格解析错误在此阶段暴露；示例目录层次须与规格路径对应</td></tr>
+      <tr><td>4</td><td>Ktor 启动</td><td><code>KtorRoutingServer</code> / Netty</td><td><code>core/.../stub/HttpStub.kt</code></td><td>绑定端口，开始接受入站 HTTP 连接；进程长驻直到 <code>close()</code></td><td>—</td></tr>
+      <tr><td>5</td><td>请求路由</td><td>Ktor 路由处理器</td><td><code>core/.../stub/HttpStub.kt</code></td><td>将入站请求转换为 Specmatic <code>HttpRequest</code>，转交 <code>Feature.lookupResponse</code></td><td>CORS 预检、multipart、chunked 等须中间件正确注册</td></tr>
+      <tr><td>6</td><td>场景匹配</td><td><code>Feature.lookupResponse → lookupScenario</code></td><td><code>core/.../core/Feature.kt</code></td><td>按请求路径/方法/头/体遍历场景列表，打分取最优；strict 模式影响匹配宽严</td><td>未命中时合成错误响应；serverState 在 finally 清空</td></tr>
+      <tr><td>7</td><td>响应合成</td><td><code>Scenario.generateHttpResponse(serverState)</code></td><td><code>core/.../core/Scenario.kt</code></td><td>按命中场景生成响应体、状态码与响应头；serverState 可通过 <code>/_specmatic/state</code> 注入</td><td>示例优先级高于模式生成；multipart 边界随机</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-5-2-3">5.2.3 proxy 链（定位）</h4>
+
+  <p><code>specmatic proxy</code> 是 Specmatic 的<strong>流量录例与回填</strong>路径，与 test / stub 并列为三大主路径之一。进程在本地或流水线中作为中间代理，把真实流量透明转发到上游服务，同时录制请求/响应对，经 <code>ExampleTransformer</code> 转换为可复用的示例文件或契约素材，回填至示例目录或规格。</p>
+
+  <p><strong>本文展开范围：</strong>proxy 实现横跨 <code>io.specmatic.proxy</code> 录例/转换与 Stub 示例管道衔接处，属于「工具链支线」，涉及文件写出、流量整形与团队工作流，深拆会拉长篇幅。此处仅列调用链骨架；需要深挖时从 <code>application</code> 中的 <code>ProxyCommand</code> 起跳，沿 <code>proxy</code> 包内初始化与 handler 阅读即可。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["specmatic proxy\n用户/CI 触发"]) --> B["SpecmaticApplication.main\n初始化 License / 日志"]
+    B --> C["ProxyCommand.call\n解析上游地址 / 输出目录"]
+    C --> D["ProxyInitializer\n启动中间代理服务"]
+    D --> E["ProxyRequestHandler\n转发入站请求到上游"]
+    E --> F["ExampleTransformer\n录制 → 示例/契约素材"]
+    F --> G(["写出示例目录\n契约素材回填"])
+    style D fill:#fef3c7,stroke:#d97706,color:#1f2937
+    style F fill:#fef3c7,stroke:#d97706,color:#1f2937
+    </div>
+    <div class="caption">图 5-4：proxy 链骨架（中间代理录制 → 示例回填，仅定位）</div>
+  </div>
+
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 类</th><th>所在模块</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>进程入口</td><td><code>SpecmaticApplication.main</code></td><td><code>application/.../SpecmaticApplication.kt</code></td><td>初始化 License、日志；路由到 ProxyCommand</td><td>—</td></tr>
+      <tr><td>2</td><td>命令解析</td><td><code>ProxyCommand.call()</code></td><td><code>application/.../ProxyCommand.kt</code></td><td>解析上游地址、输出目录、端口等配置</td><td>需可访问上游服务</td></tr>
+      <tr><td>3</td><td>代理初始化</td><td><code>ProxyInitializer</code></td><td><code>core/.../proxy/</code></td><td>启动中间代理服务，注册录制拦截器</td><td>HTTPS 需证书信任配置</td></tr>
+      <tr><td>4</td><td>流量转发</td><td><code>ProxyRequestHandler</code></td><td><code>core/.../proxy/</code></td><td>透明转发入站请求到上游并录制请求/响应对</td><td>部分 HTTPS 流量须客户端安装代理证书</td></tr>
+      <tr><td>5</td><td>示例写出</td><td><code>ExampleTransformer</code></td><td><code>core/.../proxy/</code></td><td>将录制的交互转换为示例文件或契约素材，写入指定目录</td><td>输出格式与目录路径配置影响回填兼容性</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
+  <p>以下三节深入 <a href="#section-5-2-1">§5.2.1 test 链</a> 与 <a href="#section-5-2-2">§5.2.2 stub 链</a> 中的核心机制；每节依次给出：要解决的问题、方案要点、时序图、时序对照表、代码节选与代价。</p>
+
+  <!-- Module 1 -->
+  <h4 id="section-5-3-1">5.3.1 关键模块一：OpenAPI → Feature / Scenario（规格编译）</h4>
+  <div class="module-meta">
+    <span>📁 core/src/main/kotlin/io/specmatic/conversions/OpenApiSpecification.kt · core/.../core/Feature.kt</span>
+    <span>🏷️ 编译器模式：规格文件 → 统一场景模型</span>
+  </div>
+  <p><strong>要解决的问题：</strong>把多格式规格（含 <code>$ref</code>、overlay、示例目录、字典、AsyncAPI）变成内存中可遍历、可匹配、可生成的场景集合，同时对外屏蔽格式差异，让 test 与 stub 路径共享同一套场景模型。</p>
+  <p><strong>解决方案：</strong><code>OpenApiSpecification.fromFile()</code> 触发 Swagger Parser 展开 <code>$ref</code>，得到 <code>io.swagger.v3.oas.models.OpenAPI</code> 对象；再经 <code>toFeature()</code> 折叠为 <code>Feature(scenarios: List&lt;Scenario&gt;)</code>，同时合并 overlay、加载示例目录、应用 strict/lenient 配置。最终每条 path × method × status × 示例行产生一个独立的 <code>Scenario</code>。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant FILE as OpenAPI 文件
+    participant SP as Swagger Parser
+    participant OAS as OpenApiSpecification
+    participant FE as Feature
+    participant SC as List&lt;Scenario&gt;
+
+    FILE->>SP: 读取 YAML / JSON（含 $ref 递归展开）
+    SP->>OAS: io.swagger.v3.oas.models.OpenAPI 对象
+    OAS->>OAS: 应用 overlay / strict / 字典配置
+    OAS->>FE: toFeature()
+    FE->>SC: 展开 path × method × status × 示例行
+    SC-->>FE: List&lt;Scenario&gt;（正例 + 负例 + 示例行）
+    </div>
+    <div class="caption">图 5-5：规格编译时序（OpenApiSpecification → Feature → List&lt;Scenario&gt;）</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（列名对齐上图参与者与消息）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>TestCommand / HttpStub</td><td><span class="file-link" data-file="application/src/main/kotlin/application/TestCommand.kt" data-label="TestCommand.kt">TestCommand.kt</span> · <span class="file-link" data-file="core/src/main/kotlin/io/specmatic/stub/HttpStub.kt" data-label="HttpStub.kt">HttpStub.kt</span></td><td>OpenApiSpecification</td><td><code>OpenApiSpecification.fromFile(path, config)</code></td><td>以规格文件路径（或 URL）构造解析器，尚未实际解析</td></tr>
+      <tr><td>2</td><td>OpenApiSpecification</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/conversions/OpenApiSpecification.kt" data-label="OpenApiSpecification.kt">conversions/OpenApiSpecification.kt</span></td><td>Swagger Parser</td><td>解析 YAML/JSON，递归展开 <code>$ref</code> → 返回 <code>OpenAPI</code> 对象</td><td>网络 <code>$ref</code>、本地文件 <code>$ref</code> 均在此阶段完成；解析失败直接抛出</td></tr>
+      <tr><td>3</td><td>OpenApiSpecification</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/conversions/OpenApiSpecification.kt" data-label="OpenApiSpecification.kt">conversions/OpenApiSpecification.kt</span></td><td>Feature</td><td><code>toFeature()</code> → 返回 <code>Feature</code> 对象</td><td>含 overlay 合并、示例目录挂载、strict 模式注入</td></tr>
+      <tr><td>4</td><td>Feature</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt</span></td><td>List&lt;Scenario&gt;</td><td>展开每条 path / method / status / example 行 → 正例 + 负例 + 示例行各成独立 Scenario</td><td>Scenario 数量 = 路径数 × 方法数 × 响应码数 × 示例行数（正+负展开）</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong><code>Feature</code> 单文件体量极大（数千行），承担 Stub 匹配、示例目录加载、字典、生成式测试开关等多重职责，模块化边界不清晰，初次阅读时需要结合包结构逐步展开（与 <a href="#section-6-2">§6.2</a> 回扣）。overlay 合并顺序隐性，先后顺序不同可产生不同场景集合。</p>
+
+  <!-- Module 2 -->
+  <h4 id="section-5-3-2">5.3.2 关键模块二：ScenarioAsTest（外向测试执行）</h4>
+  <div class="module-meta">
+    <span>📁 core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt</span>
+    <span>🏷️ Adapter 模式：Scenario → JUnit DynamicTest → HTTP 断言</span>
+  </div>
+  <p><strong>要解决的问题：</strong>把 <code>Scenario</code> 中的请求/响应模式实例化为真实 HTTP 调用，发向被测服务，再把实际响应匹配回期望模式，给出可读的失败信息。</p>
+  <p><strong>解决方案：</strong><code>ScenarioAsTest.runTest</code> 调用 <code>executeTestAndReturnResultAndResponse</code>：先由 <code>Scenario.generateHttpRequest(flagsBased)</code> 按模式实例化请求（含 workflow 更新、ContentType 调整、Specmatic 辅助头注入），再调 <code>TestExecutor.execute</code> 发出真实 HTTP；响应回来后经 matcherEngine + validators 校验，产出 <code>ContractTestExecutionResult</code> 返回给 JUnit。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant SU as SpecmaticJUnitSupport
+    participant SAT as ScenarioAsTest
+    participant SC as Scenario
+    participant TE as TestExecutor
+    participant SUT as 被测服务
+
+    SU->>SAT: runTest(testBaseURL, timeout)
+    SAT->>SC: generateHttpRequest(flagsBased)
+    SC-->>SAT: HttpRequest（含辅助头）
+    SAT->>SAT: workflow.updateRequest + adjustPayloadForContentType
+    SAT->>TE: execute(HttpRequest)
+    TE->>SUT: HTTP 请求
+    SUT-->>TE: HttpResponse
+    TE-->>SAT: HttpResponse
+    SAT->>SAT: matcherEngine + validators 校验
+    SAT-->>SU: ContractTestExecutionResult
+    </div>
+    <div class="caption">图 5-6：ScenarioAsTest 执行时序（generate → execute → match）</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 SU → SAT → SC / TE / SUT 链路）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>SpecmaticJUnitSupport</td><td><span class="file-link" data-file="junit5-support/src/main/kotlin/io/specmatic/test/SpecmaticJUnitSupport.kt" data-label="SpecmaticJUnitSupport.kt">SpecmaticJUnitSupport.kt</span></td><td>ScenarioAsTest</td><td><code>runTest(testBaseURL, timeout)</code></td><td>JUnit 调用单测入口；testBaseURL 来自线程本地 ContractTestSettings</td></tr>
+      <tr><td>2</td><td>ScenarioAsTest</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt" data-label="ScenarioAsTest.kt">test/ScenarioAsTest.kt</span></td><td>Scenario</td><td><code>generateHttpRequest(flagsBased)</code> → <code>HttpRequest</code></td><td>flagsBased 控制示例/负例/生成式切换；辅助头（如 <code>X-Specmatic-Response-Code</code>）在此注入</td></tr>
+      <tr><td>3</td><td>ScenarioAsTest</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt" data-label="ScenarioAsTest.kt">test/ScenarioAsTest.kt</span></td><td>TestExecutor</td><td><code>execute(HttpRequest)</code></td><td>TestExecutor 可替换为 mock（测试用）；真实实现走 Apache HTTP Client</td></tr>
+      <tr><td>4</td><td>TestExecutor</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt" data-label="ScenarioAsTest.kt">core/.../test/</span></td><td>被测服务</td><td>HTTP 请求 → <code>HttpResponse</code></td><td>真实网络调用；timeout 由 JUnit platform 超时配置继承</td></tr>
+      <tr><td>5</td><td>ScenarioAsTest</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt" data-label="ScenarioAsTest.kt">test/ScenarioAsTest.kt</span></td><td>（内部）</td><td>matcherEngine + validators 校验 → <code>ContractTestExecutionResult</code></td><td>把实际响应对比 <code>HttpResponsePattern</code>；校验失败附带 diff 信息</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong>线程本地 <code>ContractTestSettings</code> 与 JUnit Platform 生命周期耦合，排查「CI 与本地行为不一致」时需同时排查环境变量、JUnit 并行度配置与线程本地传播；<code>workflow.updateRequest</code> 插点使测试行为可扩展，但增加了追踪默认行为的间接层（回扣 <a href="#section-6-2">§6.2</a>）。</p>
+
+  <!-- Module 3 -->
+  <h4 id="section-5-3-3">5.3.3 关键模块三：HttpStub 场景匹配（内向 Stub）</h4>
+  <div class="module-meta">
+    <span>📁 core/src/main/kotlin/io/specmatic/stub/HttpStub.kt · core/.../core/Feature.kt</span>
+    <span>🏷️ Chain of Responsibility 变体：顺序评估 Scenario 列表取最优匹配</span>
+  </div>
+  <p><strong>要解决的问题：</strong>对任意入站 HTTP 请求，在已加载的场景集合中找到最能「解释」该请求的场景，并合成符合契约的响应——而不是简单的精确路径匹配（请求体内容、头、查询参数均参与匹配打分）。</p>
+  <p><strong>解决方案：</strong>Ktor 路由将入站请求转为 <code>HttpRequest</code> 后委托给 <code>Feature.lookupResponse</code>；后者调 <code>lookupScenario</code> 对全部场景逐一匹配打分，取最优者调 <code>generateHttpResponse(serverState)</code> 合成响应；finally 块无条件清空 <code>serverState</code>（防止跨请求污染）。未命中场景时合成 400/500 级错误响应并附说明。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant C as 客户端
+    participant K as Ktor 路由
+    participant F as Feature
+    participant LS as lookupScenario
+    participant SC as Scenario
+
+    C->>K: HTTP 请求
+    K->>F: lookupResponse(HttpRequest)
+    F->>LS: lookupScenario(request, scenarios)
+    LS->>SC: 逐场景匹配请求模式（打分）
+    SC-->>LS: 匹配结果列表
+    LS-->>F: 最优命中场景
+    F->>SC: generateHttpResponse(serverState)
+    SC-->>F: HttpResponse
+    F-->>K: HttpResponse（finally: serverState = emptyMap()）
+    K-->>C: 响应
+    </div>
+    <div class="caption">图 5-7：HttpStub 场景匹配时序（lookupResponse → 打分匹配 → 响应合成）</div>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 C → K → F → LS / SC 链路）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>客户端</td><td>—</td><td>Ktor 路由</td><td>HTTP 请求（任意路径/方法）</td><td>入站请求到达 Netty 监听端口；CORS 预检、double-receive 中间件先行处理</td></tr>
+      <tr><td>2</td><td>Ktor 路由</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/stub/HttpStub.kt" data-label="HttpStub.kt">stub/HttpStub.kt</span></td><td>Feature</td><td><code>lookupResponse(HttpRequest)</code></td><td>Ktor ApplicationCall 转换为 Specmatic <code>HttpRequest</code>，委托给 Feature</td></tr>
+      <tr><td>3</td><td>Feature</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt</span></td><td>lookupScenario</td><td><code>lookupScenario(request, scenarios)</code></td><td>传入全部场景列表；matchingScenario 策略按路径/方法/头/体打分</td></tr>
+      <tr><td>4</td><td>lookupScenario</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt</span></td><td>Scenario</td><td>逐场景匹配 → 返回匹配结果列表（含每个场景的 Result）</td><td>strict 模式影响额外头与体的宽严；示例优先级高于模式生成</td></tr>
+      <tr><td>5</td><td>Feature</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt</span></td><td>Scenario</td><td><code>generateHttpResponse(serverState)</code> → <code>HttpResponse</code></td><td>合成响应体、状态码、响应头；serverState 可通过 <code>/_specmatic/state</code> 接口预注入</td></tr>
+      <tr><td>6</td><td>Feature</td><td><span class="file-link" data-file="core/src/main/kotlin/io/specmatic/core/Feature.kt" data-label="Feature.kt">core/Feature.kt</span></td><td>（finally）</td><td><code>serverState = emptyMap()</code></td><td>无条件清空，避免跨请求状态污染；与有状态测试配合时须每次重注入</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong>Stub 与测试共享匹配引擎，行为细节受 strict 模式、响应头、multipart 边界等参数影响大；逐场景打分在规格较大时有线性开销，高并发场景下匹配延迟可感知。此外 <code>Feature</code> 同时承担「测试生成」与「Stub 匹配」，两条路径的配置开关混合在同一对象中（回扣 <a href="#section-2-2">§2.2</a> 与 <a href="#section-6-2">§6.2</a>）。</p>
+
+  <h2 id="section-6">6 方案评价</h2>
+  <p>评价条目与 <a href="#section-5">§5</a>、<a href="#section-2">§2</a> 显式挂钩，避免「放之四海皆准」的空泛优缺点。</p>
+
+  <h3 id="section-6-1">6.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength"><h4>契约与替身同源</h4><p>与 <a href="#section-2-2">§2.2</a>、<a href="#section-5-3-3">§5.3.3</a> 一致：测试与 Stub 共享 <code>Feature</code>/<code>Scenario</code>，降低规格漂移风险。</p></div>
+    <div class="eval-card strength"><h4>多协议与工程化</h4><p>仓库内除 REST/OpenAPI 外尚有 WSDL/SOAP、GraphQL、gRPC、AsyncAPI 等子系统；大量测试与发布流水线体现可维护性。</p></div>
+    <div class="eval-card strength"><h4>JUnit 生态对齐</h4><p>对应 <a href="#section-2-3">§2.3</a>：<code>specmatic test</code> 走 JUnit Platform，IDE 与 CI 接入成本低。</p></div>
+    <div class="eval-card strength"><h4>命令到类的映射清晰</h4><p>工程上主链可落到具体类型：<code>specmatic test</code> → <code>TestCommand</code> → JUnit → <code>SpecmaticJUnitSupport</code> → <code>ScenarioAsTest</code>；<code>specmatic stub</code> → Ktor → <code>HttpStub</code> → <code>Feature.lookupResponse</code>（见 <a href="#section-5-2">§5.2</a>）。新人可用 <a href="#section-3-5">§3.5</a> 顺序在仓库内自导航。</p></div>
+  </div>
+
+  <h3 id="section-6-2">6.2 架构代价与取舍</h3>
+  <div class="eval-grid">
+    <div class="eval-card tradeoff"><h4>以 Feature 作为中心枢纽</h4><p>把 test、stub、examples 都收在 Feature 这一个中心对象上，好处是复用更强、规则更统一；代价是这个对象会越来越重，文件更大、职责更多，一个小改动也更容易同时影响多条链路。</p></div>
+    <div class="eval-card tradeoff"><h4>JUnit Platform 编排</h4><p>把契约测试挂到 JUnit Platform 上，好处是能直接复用 Surefire、并行执行、listener 和报告生态；代价是排障时不能只看 Specmatic 自己，还得同时看 CLI 参数、线程本地配置、系统属性和 JUnit 环境。</p></div>
+    <div class="eval-card tradeoff"><h4>同规格驱动 Test 与 Stub</h4><p>让 test 和 stub 共用同一套规格与场景，好处是两边更容易保持一致；代价是 strict 模式、示例策略、headers 等边界规则会同时影响两条链，出了问题通常要回到同一套匹配逻辑里查。</p></div>
+    <div class="eval-card tradeoff"><h4>模糊测试与边界发现</h4><p>Specmatic 很擅长验证“当前实现是否符合已经写下来的契约”；但它不是以随机探索未知 bug 为主的工具。若团队的重点是 fuzz 和边界发现，通常还需要再配 Schemathesis 这类工具。</p></div>
+  </div>
+
+  <h2 id="section-7">7 版本化维护区</h2>
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文对路径、类名与调用关系的描述，以开源仓库 <a class="gh" href="https://github.com/specmatic/specmatic" target="_blank" rel="noopener">https://github.com/specmatic/specmatic</a> 的 <strong>main</strong> 分支为参照；结构重组与补充基于同一基线；浅克隆分析日期 <strong>2026-04-14</strong>。行号可能随上游提交变化，请以 GitHub 为准。</p>
+
+</main>
+
+<!-- ─── Right Side Panel ──────────────────────────────────────────────── -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
+    <span class="code-panel-path" id="codePanelPath"></span>
+    <span class="code-panel-badge" id="codePanelBadge">github1s</span>
+    <a id="panelGhLink" class="panel-gh-link" href="#" target="_blank" rel="noopener" style="display:none">⤢ 在浏览器中打开</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose" title="关闭 (Esc)">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader">
+      <div class="iframe-spin"></div>
+      <span>正在加载 GitHub 页面…</span>
+    </div>
+    <iframe id="githubIframe" src="" title="GitHub"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </div>
+  <div id="termPanelBody" style="display:none"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.hljs) hljs.highlightAll();
+});
+
+(function () {
+  'use strict';
+
+  const GH1S   = 'https://github1s.com/specmatic/specmatic';
+  const GH     = 'https://github.com/specmatic/specmatic';
+  const BRANCH = 'main';
+
+  // ─── TERMS MAP: 核心术语 → 定义 (在右侧面板展示) ───────────────────────
+  const SPECMATIC_TERMS = {
+    'SpecmaticApplication': {
+      tags: ['CLI 入口', 'Picocli', 'Kotlin'],
+      def:  'CLI 启动入口。通过 Picocli 注册 <code>TestCommand</code>、<code>StubCommand</code>、<code>ProxyCommand</code> 等子命令，解析 argv 后委托对应子命令执行。',
+      mechanics: ['@Command 注解声明子命令', 'CommandLine.execute(args) 触发路由', '子命令各自持有独立参数对象'],
+      related: ['TestCommand', 'StubCommand', 'ProxyCommand'],
+      files: [{ label: 'SpecmaticApplication.kt', path: 'application/src/main/kotlin/application/SpecmaticApplication.kt' }],
+    },
+    'TestCommand': {
+      tags: ['CLI', 'Picocli', '入口层'],
+      def:  '<code>specmatic test</code> 子命令。解析 <code>--testBaseURL</code>、端口、过滤器等参数，写入线程本地 <code>ContractTestSettings</code>，构造 JUnit LauncherDiscoveryRequest 仅选择 <code>SpecmaticJUnitSupport</code>，委托 JUnit Platform 执行全套契约测试。',
+      mechanics: ['setTestThreadLocalSettings() 写入线程本地配置', 'selectClass(SpecmaticJUnitSupport) 唯一选择器', '支持 --junitReportDir 生成 XML 报告', 'ContractExecutionListener.exitCode() 产出进程退出码'],
+      related: ['SpecmaticJUnitSupport', 'ScenarioAsTest', 'ContractTestSettings'],
+      files: [{ label: 'TestCommand.kt', path: 'application/src/main/kotlin/application/TestCommand.kt' }],
+    },
+    'StubCommand': {
+      tags: ['CLI', 'Picocli', '入口层'],
+      def:  '<code>specmatic stub</code> 子命令。解析端口、契约路径、示例目录等参数，构造 <code>HttpStub</code> 对象并启动 Ktor Netty 监听，进程长驻直到 SIGINT。',
+      mechanics: ['构造 HttpStub 完成规格加载', 'Ktor Netty 绑定端口长驻', '端口冲突或 TLS 错误在初始化阶段暴露'],
+      related: ['HttpStub', 'Feature'],
+      files: [{ label: 'StubCommand.kt', path: 'application/src/main/kotlin/application/StubCommand.kt' }],
+    },
+    'ProxyCommand': {
+      tags: ['CLI', 'Picocli', '流量录制'],
+      def:  '<code>specmatic proxy</code> 子命令。以 HTTP 代理模式拦截真实流量，将 Request/Response 对写成示例文件（<code>_spec/</code>），也可反向推导契约文件。',
+      mechanics: ['HTTP 代理监听指定端口', '逐请求将交互写入 YAML 示例文件', '可追加至已有规格或生成新规格'],
+      related: ['StubCommand', 'Feature'],
+      files: [{ label: 'ProxyCommand.kt', path: 'application/src/main/kotlin/application/ProxyCommand.kt' }],
+    },
+    'OpenApiSpecification': {
+      tags: ['规格解析', '编译器入口', 'Kotlin'],
+      def:  '将 OpenAPI/AsyncAPI 文件（YAML/JSON，含 <code>$ref</code> 递归展开）解析并编译为内部领域模型的入口类。持有已解析的 OpenAPI 对象与各种配置（strict/lenient、示例路径、overlay、字典等）。调用 <code>toFeature()</code> 将规格折叠为 <code>Feature</code>。',
+      mechanics: ['fromFile(path) / fromURL(url) 构造解析器', 'Swagger Parser 递归展开 $ref', 'toFeature() 折叠为 Feature(scenarios)', 'init 块尽早初始化 StringProviders'],
+      related: ['Feature', 'Scenario'],
+      files: [{ label: 'OpenApiSpecification.kt', path: 'core/src/main/kotlin/io/specmatic/conversions/OpenApiSpecification.kt' }],
+    },
+    'Feature': {
+      tags: ['领域核心', '枢纽对象', 'Kotlin'],
+      def:  'Specmatic 的核心聚合根，持有 <code>List&lt;Scenario&gt;</code> 与服务器状态（<code>serverState</code>）。对外提供两条主路径：<code>generateContractTests()</code>（驱动 Test 链）和 <code>lookupResponse()</code>（驱动 Stub 链）。是 Test 与 Stub 两条链共享的枢纽。',
+      mechanics: ['由 OpenApiSpecification.toFeature() 编译生成', 'serverState 在每次响应的 finally 中清空，防止跨请求污染', '同时服务于 test（外向）和 stub（内向）两条链', '单文件体量极大，承担规格加载、示例目录、字典等多重职责'],
+      related: ['Scenario', 'OpenApiSpecification', 'HttpStub', 'ScenarioAsTest'],
+      files: [{ label: 'Feature.kt', path: 'core/src/main/kotlin/io/specmatic/core/Feature.kt' }],
+    },
+    'Scenario': {
+      tags: ['领域核心', '契约单元', '最小调度粒度'],
+      def:  '单个可执行契约单元，包含请求模式（<code>HttpRequestPattern</code>）、响应模式（<code>HttpResponsePattern</code>）、示例（<code>Examples</code>）及元数据。是 Feature 展开后的最小调度粒度，正例＋负例＋示例行各成独立 Scenario。',
+      mechanics: ['由 Feature 按 path × method × status × 示例行展开', 'generateHttpRequest(flagsBased) 实例化请求', 'generateHttpResponse(serverState) 合成响应', '负例场景额外覆盖格式错误、缺字段等边界'],
+      related: ['Feature', 'ScenarioAsTest'],
+      files: [{ label: 'Scenario.kt', path: 'core/src/main/kotlin/io/specmatic/core/Scenario.kt' }],
+    },
+    'ScenarioAsTest': {
+      tags: ['测试执行', 'JUnit Adapter', 'Kotlin'],
+      def:  'Adapter：把 <code>Scenario</code> 适配为 JUnit 5 DynamicTest。负责实例化 <code>HttpRequest</code>、委托 <code>TestExecutor</code> 发出真实 HTTP 请求、校验响应并返回 <code>ContractTestExecutionResult</code>。',
+      mechanics: ['runTest(testBaseURL, timeout) 是 JUnit 调用入口', 'generateHttpRequest → TestExecutor.execute → 匹配器校验', 'workflow.updateRequest 插点支持请求级扩展', '线程本地 ContractTestSettings 控制 baseURL 等配置'],
+      related: ['Scenario', 'SpecmaticJUnitSupport', 'Feature'],
+      files: [{ label: 'ScenarioAsTest.kt', path: 'core/src/main/kotlin/io/specmatic/test/ScenarioAsTest.kt' }],
+    },
+    'HttpStub': {
+      tags: ['Stub 服务', 'Ktor Netty', '替身生成器'],
+      def:  '基于 Ktor Netty 的 HTTP Stub 服务。初始化时将规格编译为 <code>Feature</code>，注册 Ktor 路由；对每条入站请求调用 <code>Feature.lookupResponse</code>，实现场景级别的模糊匹配与响应合成。',
+      mechanics: ['构造时完成 OpenApiSpecification → Feature 编译', 'lookupResponse → lookupScenario 打分匹配', 'serverState 在 finally 中每次重置防污染', '支持 /_specmatic/state 接口预注入服务器状态'],
+      related: ['Feature', 'Scenario', 'StubCommand'],
+      files: [{ label: 'HttpStub.kt', path: 'core/src/main/kotlin/io/specmatic/stub/HttpStub.kt' }],
+    },
+    'SpecmaticJUnitSupport': {
+      tags: ['JUnit 5', '测试编排', '扩展入口'],
+      def:  'JUnit 5 扩展入口，实现 <code>ContractTest</code> 接口。被 <code>TestCommand</code> 通过 <code>selectClass</code> 选定后，由 JUnit Platform 调用 <code>testList()</code> 展开全部 Scenario 为 DynamicTest，再逐一调用 <code>ScenarioAsTest.runTest</code>。',
+      mechanics: ['testList() 读取规格并展开 DynamicTest 集合', '与 IDE 绿色条、Surefire、并行度完全兼容', 'ContractTestSettings 通过线程本地传入', '过滤器、版本筛选在此阶段生效'],
+      related: ['ScenarioAsTest', 'Feature', 'TestCommand'],
+      files: [{ label: 'SpecmaticJUnitSupport.kt', path: 'junit5-support/src/main/kotlin/io/specmatic/test/SpecmaticJUnitSupport.kt' }],
+    },
+    'ContractTestSettings': {
+      tags: ['配置', '线程本地', '参数传递'],
+      def:  '通过 ThreadLocal 在 <code>TestCommand</code> 与 <code>ScenarioAsTest</code> 之间传递测试配置（baseURL、超时、过滤器等），无需在对象间显式传参。',
+      mechanics: ['ThreadLocal 保证并行测试隔离', 'TestCommand 写入，ScenarioAsTest 读取', '生命周期随单次测试执行结束'],
+      related: ['TestCommand', 'ScenarioAsTest'],
+      files: [{ label: 'ContractTestSettings.kt', path: 'core/src/main/kotlin/io/specmatic/test/ContractTestSettings.kt' }],
+    },
+    'ContractExecutionListener': {
+      tags: ['测试监听', 'JUnit Listener', 'Kotlin'],
+      def:  'JUnit Platform 测试执行监听器。统计每个契约测试的 pass / fail / skip，汇总后输出控制台报告并计算 <code>exitCode()</code>，CLI 以此决定进程退出码。',
+      mechanics: ['testSuccessful / testFailed 回调累加计数', 'printSummary() 输出 ASCII 报告', 'exitCode() 返回 0（全通过）或 1（有失败）'],
+      related: ['TestCommand', 'ScenarioAsTest'],
+      files: [{ label: 'ContractExecutionListener.kt', path: 'core/src/main/kotlin/io/specmatic/test/ContractExecutionListener.kt' }],
+    },
+  };
+
+  // ─── FILE MAP: 非术语文件名 → 完整路径（仅用于 seq-table 文件列等） ────────
+  const FILE_MAP = {
+    'SpecmaticCommand':        'application/src/main/kotlin/application/SpecmaticCommand.kt',
+  };
+
+  const backdrop   = document.getElementById('codeBackdrop');
+  const panel      = document.getElementById('codePanel');
+  const closeBtn   = document.getElementById('codePanelClose');
+  const pathEl     = document.getElementById('codePanelPath');
+  const badgeEl    = document.getElementById('codePanelBadge');
+  const ghLink     = document.getElementById('panelGhLink');
+  const iframeBody = document.getElementById('iframePanelBody');
+  const iframeLoader = document.getElementById('iframeLoader');
+  const iframeEl   = document.getElementById('githubIframe');
+  const termBody   = document.getElementById('termPanelBody');
+  const resizeGrip = document.getElementById('panelResizeGrip');
+  const navBack    = document.getElementById('panelNavBack');
+  const navFwd     = document.getElementById('panelNavFwd');
+  const pinBtn     = document.getElementById('panelPin');
+
+  // ── Render term definition HTML ───────────────────────────────────────
+  function renderTermHTML(name, t) {
+    const tags = (t.tags || []).map(g => `<span class="tp-tag">${g}</span>`).join('');
+    const mech = (t.mechanics || []).map(m => `<li>${m}</li>`).join('');
+    const rels = (t.related || []).map(r => `<button class="tp-rel-btn" data-term="${r}">${r}</button>`).join('');
+    const files = (t.files || []).map(f => `<button class="tp-file-btn" data-file="${f.path}" data-label="${f.label}">${f.label}</button>`).join('');
+    return `
+      <div class="tp-tags">${tags}</div>
+      <h3 class="tp-title">${name}</h3>
+      <div class="tp-def">${t.def}</div>
+      ${mech ? `<div class="tp-sec">实现机制</div><ul class="tp-list">${mech}</ul>` : ''}
+      ${rels  ? `<div class="tp-sec">相关概念</div><div class="tp-rels">${rels}</div>` : ''}
+      ${files ? `<div class="tp-sec">关键文件</div><div class="tp-files">${files}</div>` : ''}
+    `;
+  }
+
+  // ── Open term panel ───────────────────────────────────────────────────
+  function _openTermPanelInternal(termName) {
+    const t = SPECMATIC_TERMS[termName];
+    if (!t) return;
+    pathEl.textContent  = termName;
+    badgeEl.textContent = '术语';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    if (iframeEl) iframeEl.src = '';
+    termBody.innerHTML = renderTermHTML(termName, t);
+    termBody.style.display = 'flex';
+    termBody.style.flexDirection = 'column';
+    openPanel();
+  }
+  function openTermPanel(termName) {
+    if (!SPECMATIC_TERMS[termName]) return;
+    pushNav({ type: 'term', name: termName });
+    _openTermPanelInternal(termName);
+  }
+
+  // ── Navigation history ────────────────────────────────────────────────
+  const navHistory = []; let navIndex = -1;
+  function updateNavBtns() { navBack.disabled = navIndex <= 0; navFwd.disabled = navIndex >= navHistory.length - 1; }
+  function pushNav(entry) { navHistory.splice(navIndex + 1); navHistory.push(entry); navIndex = navHistory.length - 1; updateNavBtns(); }
+  function _loadEntry(e) {
+    if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanelInternal(e.name);
+  }
+  navBack.addEventListener('click', () => { if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); } });
+  navFwd.addEventListener('click',  () => { if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); } });
+
+  // ── Pin ───────────────────────────────────────────────────────────────
+  let pinned = false;
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    pinBtn.title = pinned ? '取消固定' : '固定面板';
+    panel.classList.toggle('pinned', pinned);
+    if (pinned) { backdrop.classList.remove('open'); document.body.style.overflow = ''; }
+    else if (panel.classList.contains('open')) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  });
+
+  // ── Open / Close ──────────────────────────────────────────────────────
+  function openPanel() { panel.classList.add('open'); if (!pinned) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; } }
+  function _doClose() {
+    panel.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow = '';
+    if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+    iframeBody.style.display = 'none';
+    termBody.style.display = 'none';
+    navHistory.length = 0; navIndex = -1; updateNavBtns();
+  }
+  function forceClose() { pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板'; panel.classList.remove('pinned'); _doClose(); }
+  closeBtn.addEventListener('click', forceClose);
+  backdrop.addEventListener('click', () => { if (!pinned) _doClose(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
+
+  // ── Resize (drag left edge) ───────────────────────────────────────────
+  let resizing = false, rsX = 0, rsW = 0, rsOverlay = null;
+  resizeGrip.addEventListener('mousedown', e => {
+    resizing = true; rsX = e.clientX; rsW = panel.offsetWidth;
+    resizeGrip.classList.add('dragging'); document.body.style.userSelect = 'none'; document.body.style.cursor = 'ew-resize';
+    rsOverlay = document.createElement('div'); rsOverlay.style.cssText = 'position:absolute;inset:0;z-index:9999;cursor:ew-resize;'; panel.appendChild(rsOverlay);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => { if (!resizing) return; panel.style.width = Math.max(300, Math.min(window.innerWidth * 0.96, rsW + (rsX - e.clientX))) + 'px'; panel.style.transition = 'none'; });
+  document.addEventListener('mouseup', () => { if (!resizing) return; resizing = false; resizeGrip.classList.remove('dragging'); document.body.style.userSelect = ''; document.body.style.cursor = ''; panel.style.transition = ''; if (rsOverlay) { rsOverlay.remove(); rsOverlay = null; } });
+
+  // ── Open GitHub iframe ────────────────────────────────────────────────
+  function _openGitHubPanel(ghPath, label) {
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'github1s';
+    ghLink.href          = GH + '/blob/' + BRANCH + '/' + ghPath;
+    ghLink.style.display = '';
+    iframeBody.style.display = 'flex'; iframeBody.style.flexDirection = 'column';
+    termBody.style.display = 'none';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>正在加载 GitHub 页面…</span>';
+    iframeEl.style.display = 'none'; iframeEl.src = '';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + ghLink.href + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/blob/' + BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) { pushNav({ type: 'github', path: ghPath, label: label || ghPath }); _openGitHubPanel(ghPath, label); }
+
+  // ── Unified click handler ─────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    // term buttons inside the rendered term panel (related + file buttons)
+    const relBtn = e.target.closest('.tp-rel-btn');
+    if (relBtn && relBtn.dataset.term) { e.preventDefault(); openTermPanel(relBtn.dataset.term); return; }
+    const fileBtn = e.target.closest('.tp-file-btn');
+    if (fileBtn && fileBtn.dataset.file) { e.preventDefault(); openGitHubPanel(fileBtn.dataset.file, fileBtn.dataset.label || fileBtn.dataset.file); return; }
+    // term-link: open term panel
+    const termEl = e.target.closest('[data-term]');
+    if (termEl && termEl.dataset.term && !termEl.classList.contains('tp-rel-btn')) {
+      e.preventDefault(); openTermPanel(termEl.dataset.term); return;
+    }
+    // file-link: open GitHub panel
+    const fileEl = e.target.closest('[data-file]');
+    if (fileEl && fileEl.dataset.file && !fileEl.classList.contains('tp-file-btn')) {
+      e.preventDefault(); openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    }
+  });
+
+  // ── Diagram zoom (lightbox) ───────────────────────────────────────────
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className   = 'diagram-zoom-btn';
+    zoomBtn.title       = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+
+    function openLightbox() {
+      const svg = container.querySelector('.mermaid svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const w = rect.width  * 1.5;
+      const h = rect.height * 1.5;
+      const lightbox = document.createElement('div');
+      lightbox.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className    = 'diagram-lightbox-inner';
+      inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+      inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+      inner.style.overflow = 'auto';
+      inner.style.padding  = '20px';
+      const cloneSvg = svg.cloneNode(true);
+      cloneSvg.setAttribute('width',  w);
+      cloneSvg.setAttribute('height', h);
+      cloneSvg.style.display = 'block';
+      function close() { lightbox.remove(); }
+      lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+      });
+      inner.appendChild(cloneSvg);
+      lightbox.appendChild(inner);
+      document.body.appendChild(lightbox);
+    }
+
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+
+  // ── Auto-tag inline <code>: TERMS first, then FILE_MAP ───────────────
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.dataset.term || el.classList.contains('file-link') || el.classList.contains('term-link')) return;
+    const raw = el.textContent.trim();
+    const key = raw.replace(/\(.*$/, '').replace(/\..+$/, '').trim();
+    if (SPECMATIC_TERMS[raw] || SPECMATIC_TERMS[key]) {
+      const termName = SPECMATIC_TERMS[raw] ? raw : key;
+      el.classList.add('term-link');
+      el.dataset.term = termName;
+      el.title = '查看术语定义：' + termName;
+      el.style.cursor = 'pointer';
+    } else {
+      const ghPath = FILE_MAP[raw] || FILE_MAP[key];
+      if (ghPath) {
+        el.classList.add('file-link');
+        el.dataset.file  = ghPath;
+        el.dataset.label = key;
+        el.title = '在 GitHub 中查看 ' + key;
+        el.style.cursor = 'pointer';
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

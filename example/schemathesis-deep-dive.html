@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schemathesis 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Diagram zoom --- */
+  .diagram-container { position: relative; cursor: zoom-in; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: white; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,.4); max-width: 92vw; max-height: 90vh; }
+
+  /* --- Main Content --- */
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+
+  /* --- Core Conclusions Box --- */
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+
+  /* --- Section Headings --- */
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+
+  /* --- Body Text --- */
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Module Card --- */
+  .module-card { margin: 28px 0 40px; padding: 24px 28px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .module-card h4 { margin-top: 0; font-size: 17px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+  .module-meta { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 8px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
+  .module-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* --- Diagram Container --- */
+  .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
+  .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+
+  /* --- Evaluation Grid --- */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card h4 { font-size: 16px; margin-bottom: 12px; }
+  .eval-card.strength { background: #f0fdf4; border-color: #86efac; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness { background: #fff7ed; border-color: #fdba74; }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  /* --- Code Blocks --- */
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+
+  /* --- Command Flow Block --- */
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+
+  /* --- Fit/Unfit Section --- */
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .fit-card { padding: 20px; border-radius: 12px; }
+  .fit-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .fit-card.fit { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit-card.fit h4 { color: var(--success); }
+  .fit-card.unfit { background: #fff7ed; border: 1px solid #fdba74; }
+  .fit-card.unfit h4 { color: var(--warning); }
+
+  /* --- Timeline --- */
+  .section-lead { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 16px; line-height: 1.6; }
+  .timeline { margin: 20px 0; }
+  .timeline-step { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .timeline-step:last-child { border-bottom: none; }
+  .step-title { font-weight: 600; font-size: 14px; min-width: 220px; color: var(--accent); }
+  .step-desc { font-size: 14px; color: var(--text-secondary); }
+  /* 与 timeline-step 并列：圆点 + 正文（schemathesis / opencode 等 splice 页使用） */
+  .timeline-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-dot { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; box-sizing: border-box; }
+  .timeline-body { flex: 1; min-width: 0; font-size: 14px; line-height: 1.75; color: var(--text); }
+  .timeline-body strong { color: var(--text); }
+
+  /* --- Directory Tree --- */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root   { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir    { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry  { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file   { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+
+  /* --- Cast of Characters Table --- */
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #ffffff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+
+  /* --- Dir Table --- */
+  .dir-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 14px; }
+  .dir-table th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 240px; }
+  .dir-rationale { font-size: 13px !important; color: var(--text-secondary) !important; font-style: italic; margin: 4px 0 8px !important; padding: 8px 12px; background: var(--bg-alt); border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; }
+
+  /* --- Arch / Schema Tables --- */
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 120px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 200px; }
+  .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+
+  .schema-obj-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 24px 0 6px; border-left: 3px solid var(--accent); padding-left: 10px; line-height: 1.5; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 12.5px; }
+  .schema-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 10px; border: 1px solid var(--border); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #374151; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 200px; font-weight: 600; }
+  .schema-table td:nth-child(2) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #6d28d9; white-space: nowrap; width: 140px; }
+  .schema-table tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Iron Law callout --- */
+  .iron-law { margin: 14px 0; padding: 12px 16px; background: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; font-size: 14px; }
+  .iron-law strong { color: #dc2626; }
+
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .fit-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Panel System ──────────────────────────────────────────────────────── */
+  .code-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.38); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .code-backdrop.open { opacity:1; pointer-events:auto; }
+  .code-panel { position:fixed; top:0; right:0; height:100vh; width:min(820px,65vw); min-width:300px; max-width:96vw; background:#1e1e2e; color:#cdd6f4; transform:translateX(100%); transition:transform .26s cubic-bezier(.4,0,.2,1); z-index:201; display:flex; flex-direction:column; box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute; left:0; top:0; width:6px; height:100%; cursor:ew-resize; z-index:10; background:transparent; border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; height:48px; border-bottom:1px solid #313244; flex-shrink:0; background:#181825; overflow:hidden; }
+  .code-panel-path { font-size:13px; font-family:'JetBrains Mono',Consolas,monospace; color:#cdd6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .code-panel-badge { font-size:11px; padding:2px 8px; border-radius:4px; background:#313244; color:#89b4fa; white-space:nowrap; flex-shrink:0; }
+  .panel-gh-link { font-size:12px; color:#89b4fa; text-decoration:none; white-space:nowrap; border:1px solid #89b4fa44; padding:2px 9px; border-radius:4px; flex-shrink:0; transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px; height:28px; border:none; background:transparent; color:#9399b2; cursor:pointer; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all .15s; flex-shrink:0; }
+  .code-panel-close:hover { background:#313244; color:#cdd6f4; }
+  #iframePanelBody { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  #iframePanelBody iframe { width:100%; flex:1; border:none; display:none; }
+  .iframe-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:#6c7086; gap:12px; font-size:14px; }
+  .iframe-spin { width:32px; height:32px; border:3px solid #313244; border-top-color:#89b4fa; border-radius:50%; animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  #termPanelBody { display:none; flex:1; overflow-y:auto; padding:20px 22px 32px; }
+  .term-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .term-tag { font-size:11px; padding:2px 8px; border-radius:12px; background:#313244; color:#89b4fa; }
+  .term-title-h { font-size:18px; font-weight:700; color:#cdd6f4; margin-bottom:12px; }
+  .term-def { font-size:14px; line-height:1.75; color:#bac2de; margin-bottom:16px; padding:12px 14px; background:#181825; border-left:3px solid #89b4fa; border-radius:0 6px 6px 0; }
+  .term-sec { font-size:11px; font-weight:700; color:#89b4fa; text-transform:uppercase; letter-spacing:.5px; margin:14px 0 8px; }
+  .term-mechanics { list-style:none; padding:0; margin:0; }
+  .term-mechanics li { font-size:13px; color:#bac2de; padding:6px 0 6px 18px; position:relative; border-bottom:1px solid #313244; line-height:1.6; }
+  .term-mechanics li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-related-list { display:flex; gap:8px; flex-wrap:wrap; }
+  .term-rel-btn { font-size:12px; padding:3px 10px; border-radius:4px; background:#313244; color:#a6e3a1; border:1px solid #45475a; cursor:pointer; transition:all .15s; }
+  .term-rel-btn:hover { background:#45475a; }
+  .term-files-list { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+  .term-file-btn { font-size:12px; font-family:'JetBrains Mono',Consolas,monospace; padding:5px 10px; background:#181825; color:#89b4fa; border:1px solid #313244; border-radius:4px; cursor:pointer; text-align:left; transition:all .15s; }
+  .term-file-btn:hover { background:#313244; }
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .term-link:hover { color:#6d28d9; }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,0.2); }
+
+
+  .chain-table, .seq-table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 12.5px; }
+  .chain-table th, .seq-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 8px; border: 1px solid var(--border); text-align: left; font-size: 11px; }
+  .chain-table td, .seq-table td { padding: 6px 8px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .chain-table tr:nth-child(even) td, .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table-caption { font-size: 13px; color: var(--text-secondary); margin: 12px 0 6px; }
+  .module-item code { font-size: 11px; }
+
+  /* --- Directory Tree --- */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root    { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch  { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir     { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry   { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file    { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+
+</style>
+</head>
+<body>
+
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起/展开目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 规范驱动测试生成</a>
+  <a href="#section-2-2" class="toc-h3">2.2 分阶段执行引擎</a>
+  <a href="#section-2-3" class="toc-h3">2.3 Hypothesis 策略编译</a>
+  <a href="#section-2-4" class="toc-h3">2.4 选型与适用边界</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 运行时输入与产物载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从一份 OpenAPI 到一次完整测试执行过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 总体架构</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 运行链路</a>
+  <a href="#section-5-2-1" class="toc-h4">5.2.1 CLI：<code>run</code> 链</a>
+  <a href="#section-5-2-2" class="toc-h4">5.2.2 pytest：<code>parametrize</code> 链</a>
+  <a href="#section-5-2-3" class="toc-h4">5.2.3 Stateful：状态机链</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键机制拆解</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 Engine 与 phases</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 Hypothesis builder 与 Case</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  <a href="#section-7-1" class="toc-h4">7.1 本文观察基线</a>
+  </div>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Schemathesis（schemathesis/schemathesis）深度解读</h1>
+    <div class="subtitle">OpenAPI / GraphQL · Hypothesis · Click CLI · pytest · 分阶段 Engine</div>
+    <div class="lead"><span class="term-link" data-term="Schemathesis">Schemathesis</span> 是一款<strong>规范驱动的 API 模糊测试工具</strong>：把 OpenAPI / GraphQL 规范编译为 <span class="term-link" data-term="Hypothesis">Hypothesis</span> 生成策略，自动产生覆盖正例、边界与非法输入的测试用例，并由分阶段 <span class="term-link" data-term="Engine">Engine</span> 编排执行、<strong>checks</strong> 层做契约断言，最终输出可复现的失败报告。<span class="term-link" data-term="CLI (Click)">CLI</span> 与 <span class="term-link" data-term="pytest 插件">pytest</span> 是同一执行语义的两个入口。</div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>Schema 不是文档附件，而是测试生成器</strong> — OpenAPI / GraphQL 直接约束「能生成哪些 <span class="term-link" data-term="Case">Case</span>」；正例 / 负例（negative）同属生成空间</li>
+      <li><strong>Engine 不是命令包装层，而是分阶段编排器</strong> — <span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="engine/core.py">Engine.execute</span> 用 <code>ExecutionPlan</code> 串联探测、分析、examples、coverage、fuzz、stateful，每阶段可独立开关并给出跳过原因</li>
+      <li><strong>Hypothesis 不是外围依赖，而是生成引擎核心</strong> — <span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">builder.py</span> 把 JSON Schema 等编译成 strategies；失败用例由框架收缩（shrink）</li>
+      <li><strong>CLI / pytest 不是两套能力，而是同一语义的两个入口</strong> — <code>schemathesis run</code> 与 <code>@schema.parametrize()</code> 共享生成、传输与 checks 语义</li>
+      <li><strong>事件流即可观测契约</strong> — <span class="term-link" data-term="Reporting">Reporting</span>（JUnit、HAR、NDJSON、Allure 等）消费 Engine 事件，把「跑过什么」固化为 CI 与复盘资产</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>手工 API 测试难以覆盖组合爆炸与边界输入；契约测试多验证「 happy path」，而生产上常见 500、契约漂移、非法输入被误接受。<span class="term-link" data-term="Schemathesis">Schemathesis</span> 用规范驱动生成 + 属性测试，把「文档是否撒谎」变成可执行的回归信号。</p>
+  <p>技术栈：<strong>Python ≥ 3.10</strong>、<strong>Click</strong> CLI、<strong>pytest</strong> 插件、<strong>Hypothesis 6.x</strong>、<strong>jsonschema / jsonschema_rs</strong>、<strong>httpx</strong>、<strong>Rich</strong>；可选 Allure 等（见 <span class="file-link" data-file="pyproject.toml" data-label="pyproject.toml">pyproject.toml</span>）。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「手工测试覆盖不了组合爆炸与边界输入」——规范驱动自动生成测试空间</h4>
+  <p>API 的参数组合、类型边界、非法输入数量远超人工能枚举的范围，手写用例只能覆盖 happy path。Schemathesis 把 OpenAPI / GraphQL Schema 直接编译为 <span class="term-link" data-term="Hypothesis">Hypothesis</span> strategies，自动生成结构化测试空间（含正例与 negative 用例），在 CI 中持续搜索真实服务能否接受规范允许的任意输入。</p>
+  <h4>1.2.2 「API 文档与实现悄悄漂移，契约测试发现不了」——规范即可执行的回归信号</h4>
+  <p>传统契约测试只验证固定用例，服务悄悄返回 500、接受了本应拒绝的字段时无法感知。Schemathesis 的 <span class="term-link" data-term="checks">checks</span> 层将「不应返回 5xx」「响应体须符合 schema」等属性内嵌为每次运行的断言，把「文档是否撒谎」变成可量化的回归信号，而非依赖人工比对。</p>
+  <h4>1.2.3 「有状态 API 流程难以自动化测试」——状态机串联多步骤链路</h4>
+  <p>「先创建资源、再操作、再删除」这类多步骤场景手工难以覆盖全路径。Schemathesis 的 <span class="term-link" data-term="Stateful">Stateful</span> 状态机从 OpenAPI links 或响应中自动提取资源 ID，把多个 operation 串联为有序链路并随机组合，以低成本覆盖有状态 API 的集成场景（见 <a href="#section-5-2">§5.2</a>）。</p>
+  <h4>1.2.4 「测试失败结果难以复现和定位」——自动收缩 + 结构化报告</h4>
+  <p>随机生成的失败用例往往体积庞大，开发者难以定位根因。Schemathesis 利用 Hypothesis 的 shrink 机制自动将失败用例精简到最小可复现形式，同时通过 JUnit、HAR、NDJSON、Allure 等多格式报告（见 <a href="#section-2-4">§2.4</a>）把「跑过什么、哪里失败、最小复现是什么」固化为 CI 资产。</p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 规范驱动测试生成（Schema as Generator）</h3>
+  <p>设计锚点是：<strong>规范文件不是附录，而是生成约束的源头</strong>。路径模板、查询参数、请求体、媒体类型、安全方案、示例值与 links 等，一律进入 <span class="term-link" data-term="Specs 层">Specs</span> 解析层，再变为可枚举或可数无穷的 <span class="term-link" data-term="APIOperation">APIOperation</span> 集合上的生成问题。这样「改规范」等价于「改测试空间」，CI 里对 schema 的 review 与对测试覆盖的 review 被绑在同一条因果链上。</p>
+
+  <h3 id="section-2-2">2.2 分阶段执行引擎（Phased Engine）</h3>
+  <p>第二个锚点是：<strong>不是一上来就纯随机 fuzz</strong>。<span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="engine/core.py">Engine</span> 把执行拆成 <span class="file-link" data-file="ARCHITECTURE.md" data-label="ARCHITECTURE.md">ARCHITECTURE</span> 所述阶段：examples（吃 schema 内嵌示例）、coverage（系统化扫约束）、fuzzing（Hypothesis 随机探索）、以及可选的 stateful（多步工作流）。每阶段可因「规范不支持」或「配置关闭」而跳过，并记录 <code>skip_reason</code>，避免把「没跑到」误当成「通过了」。</p>
+
+  <h3 id="section-2-3">2.3 Hypothesis 策略编译（Strategies, not Hand-Picked Payloads）</h3>
+  <p>第三个锚点是：<strong>Hypothesis 在架构中心，而不是可有可无的 fuzz 装饰</strong>。<span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">builder.py</span> 将 JSON Schema、参数位置、格式与负例变异等编译为 <code>strategies</code>；<span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">Case</span> 是「一次可发送的 HTTP 载荷」的值对象。<strong>checks</strong> 在各类生成模式下独立运行——因此既有「合法输入是否仍 500」类 bug，也有「非法输入是否被错误接受」类漏洞信号。失败时由 Hypothesis 做 <strong>shrink</strong>，把反例压到人类可读的最小复现。</p>
+
+  <h3 id="section-2-4">2.4 选型与适用边界</h3>
+  <p>与常见替代方案的<strong>抓手级</strong>对比（便于团队选型卡片）：</p>
+  <table>
+    <thead><tr><th>工具</th><th>定位</th><th>优势</th><th>劣势</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Schemathesis</strong></td><td>OpenAPI/GraphQL 上的分阶段 PBT + stateful</td><td>Hypothesis 收缩；pytest 一等；examples/coverage/negative/stateful 同引擎</td><td>强依赖 schema 质量；写接口 fuzz 有数据/负载风险</td></tr>
+      <tr><td><strong>Dredd</strong></td><td>契约蓝本执行</td><td>简单、语言无关 HTTP</td><td>生成与策略深度通常不及 Hypothesis 一体化</td></tr>
+      <tr><td><strong>Postman / Newman</strong></td><td>集合驱动</td><td>协作与 UI</td><td>规范级自动生成与 PBT 非主线</td></tr>
+      <tr><td><strong>纯 Hypothesis</strong></td><td>任意 Python 属性测试</td><td>最灵活</td><td>需自写 schema → Request 的全部胶水</td></tr>
+    </tbody>
+  </table>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>适合</h4>
+      <ul>
+        <li>已有较完整 OpenAPI / GraphQL，希望在 <strong>CI</strong> 里持续找边界 bug</li>
+        <li>团队已用 <strong>pytest</strong>，要与单元测试同一报告与 xdist</li>
+        <li>需要 <strong>stateful</strong> 覆盖「创建 → 查询 → 删除」类链路</li>
+      </ul>
+    </div>
+    <div class="fit-card unfit">
+      <h4>不太适合</h4>
+      <ul>
+        <li>无稳定 schema 或与实现严重脱节</li>
+        <li>生产禁止自动化写删且无隔离沙箱</li>
+        <li>拒绝引入 Python / pytest 工具链</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="section-3">3 核心对象与术语</h2>
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="arch-read-table">
+    <thead><tr><th>术语</th><th>定义</th><th>所在文件</th></tr></thead>
+    <tbody>
+      <tr><td><span class="term-link" data-term="Schemathesis">Schemathesis</span></td><td>项目与 PyPI 包总称。</td><td><span class="file-link" data-file="README.md" data-label="README.md">README.md</span></td></tr>
+      <tr><td><span class="term-link" data-term="Hypothesis">Hypothesis</span></td><td>属性测试库；策略与收缩。</td><td><span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">builder.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Engine">Engine</span></td><td>阶段编排与事件流。</td><td><span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="core.py">engine/core.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Case">Case</span></td><td>单次请求的完整参数载体。</td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="APIOperation">APIOperation</span></td><td>解析后的单个 HTTP/GraphQL 操作。</td><td><span class="file-link" data-file="src/schemathesis/schemas.py" data-label="schemas.py">schemas.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Specs 层">Specs 层</span></td><td>OpenAPI/GraphQL 解析与适配。</td><td><span class="file-link" data-file="ARCHITECTURE.md" data-label="ARCHITECTURE.md">ARCHITECTURE.md</span></td></tr>
+      <tr><td><span class="term-link" data-term="Generation">Generation</span></td><td>从 operation 构造 Case 与策略。</td><td><code>src/schemathesis/generation/</code></td></tr>
+      <tr><td><span class="term-link" data-term="CLI (Click)">CLI (Click)</span></td><td><code>schemathesis</code> / <code>st</code>。</td><td><span class="file-link" data-file="src/schemathesis/cli/commands/__init__.py" data-label="__init__.py">cli/commands/__init__.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="pytest 插件">pytest 插件</span></td><td>pytest11 与 parametrize。</td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Stateful">Stateful</span></td><td>基于 links 等的多步状态机。</td><td><span class="file-link" data-file="src/schemathesis/generation/stateful/state_machine.py" data-label="state_machine.py">state_machine.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Reporting">Reporting</span></td><td>JUnit / HAR / NDJSON / Allure 等。</td><td><span class="file-link" data-file="src/schemathesis/reporting/junitxml.py" data-label="junitxml.py">reporting/junitxml.py</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <p>不要按「字典序」读下表，而按<strong>链序</strong>读：上一行的输出，就是下一行的输入。整链可概括为：<strong>加载 → 门面 → 编排 → 单次请求 →（可选）pytest 展开</strong>。</p>
+  <table class="arch-read-table">
+    <thead><tr><th>链序</th><th>对象</th><th>定义</th><th>分属模块</th></tr></thead>
+    <tbody>
+      <tr><td>①</td><td>Schema 加载</td><td><code>from_url</code> / <code>from_file</code> 等：把磁盘/网络上的规范变成内存中的解析结果</td><td><span class="file-link" data-file="src/schemathesis/openapi/__init__.py" data-label="openapi/__init__.py">openapi/__init__.py</span></td></tr>
+      <tr><td>②</td><td>BaseSchema</td><td>挂 config、operations、hooks 的<strong>门面</strong>；后续 Engine / parametrize 都从这里取「有哪些 operation」</td><td><span class="file-link" data-file="src/schemathesis/schemas.py" data-label="schemas.py">schemas.py</span></td></tr>
+      <tr><td>③</td><td>Engine.execute</td><td>针对整份 schema 的 <code>ExecutionPlan</code> + 事件流：决定阶段顺序与跳过原因</td><td><span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="core.py">engine/core.py</span></td></tr>
+      <tr><td>④</td><td>Case</td><td>针对<strong>单个</strong> <span class="term-link" data-term="APIOperation">APIOperation</span> 的一次 HTTP 载荷；<code>call_and_validate</code> 是链上「出手」动作</td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td></tr>
+      <tr><td>⑤</td><td>pytest 收集</td><td>仅在走 pytest 入口时出现：把 ② 展开成多个可发现节点，但<strong>不改写</strong> ③④ 的语义</td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="pyproject.toml" data-label="pyproject.toml">pyproject.toml [project]</span> — 节选</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>name / version</td><td>PyPI 包名与语义化版本</td></tr>
+      <tr><td>requires-python</td><td><code>&gt;=3.10</code></td></tr>
+      <tr><td>project.scripts</td><td><code>schemathesis</code>、<code>st</code> → <code>schemathesis.cli:schemathesis</code></td></tr>
+      <tr><td>entry-points.pytest11</td><td><code>schemathesis = schemathesis.pytest.plugin</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 运行时输入与产物载体</h3>
+  <p>Schemathesis 的「状态」不像 GSD 那样以磁盘状态机为哲学核心；更值得记住的是：<strong>测试空间由哪些输入定义</strong>、<strong>一次跑完留下什么可审计产物</strong>。下表按这一视角归类（避免为对齐模板而写空的「存储层」叙事）。</p>
+  <table>
+    <thead><tr><th>类别</th><th>载体</th><th>在系统里的角色</th></tr></thead>
+    <tbody>
+      <tr><td><strong>测试空间输入</strong></td><td>OpenAPI / GraphQL 规范（URL 或受版本控制的文件）</td><td>定义可生成哪些 <span class="term-link" data-term="Case">Case</span>、哪些响应算契约违背——是「生成器」本体，不是附录</td></tr>
+      <tr><td><strong>运行策略输入</strong></td><td><code>schemathesis.toml</code>、CLI 参数、环境变量</td><td>裁剪 phases、base URL、鉴权、速率限制等，把「全空间搜索」变成「团队可承受的搜索」</td></tr>
+      <tr><td><strong>复现与性能侧车</strong></td><td>Hypothesis 示例库（本地 DB，可配置）</td><td>跨运行复现与加速；CI 上常需显式策略，否则与「可重复门禁」目标冲突</td></tr>
+      <tr><td><strong>可观测产物</strong></td><td>JUnit、HAR、NDJSON、Allure 等</td><td>把事件流固化为 CI 与复盘资产；实现落在 <code>src/schemathesis/reporting/</code>，与生成逻辑解耦</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解（认知纠偏）</h3>
+  <p>下列误解会直接误导排期与安全预期，宜在团队 onboarding 时显式对齐：</p>
+  <table>
+    <thead><tr><th>误解</th><th>实际情况</th></tr></thead>
+    <tbody>
+      <tr><td>「只是给 OpenAPI 发几个示例请求」</td><td>核心是从 schema <strong>派生测试空间</strong>，再在各阶段系统探索；examples 只是其中<strong>一个</strong>阶段，不是全部。</td></tr>
+      <tr><td>「等于纯随机 fuzz」</td><td>还有 <strong>coverage、examples、schema 分析、stateful</strong> 等阶段；负例（negative）与正例模式并行，checks 对所有模式运行（见 ARCHITECTURE）。</td></tr>
+      <tr><td>「只适合 CLI，pytest 是二等公民」</td><td><strong>同一套</strong>生成、传输与 checks 语义；pytest 通过 <code>pytest11</code> 深度集成，适合与业务测试同仓。</td></tr>
+      <tr><td>「默认每次都会跑 stateful」</td><td>无 links 或配置关闭时，stateful 可因 <code>NOT_APPLICABLE</code> 等跳过；不是「没报错就等于测了多步链路」。</td></tr>
+      <tr><td>「只测 happy path」</td><td>负例与 fuzz 专门攻击「非法输入仍被接受」「边界仍 500」类问题；与「只验证 200 + 示例 body」不是一类工具。</td></tr>
+      <tr><td>「分支名是 main」</td><td>上游默认 <strong>master</strong>（README badge / clone 默认）。</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>读源码建议优先级：</strong>先盯住三个对象——<span class="term-link" data-term="APIOperation">APIOperation</span>（规范落到「测哪一个操作」）、<span class="term-link" data-term="Case">Case</span>（一次 HTTP 请求长什么样）、<span class="term-link" data-term="Engine">Engine</span>（何时跑哪一阶段、为何跳过）。其余条目可按 §3.1 当辞典检索。</p>
+
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从一份 OpenAPI 到一次完整测试执行过程</h3>
+  <p class="section-lead">本节回答：<strong>当你把一份 OpenAPI（或 GraphQL schema）交给 Schemathesis 之后，系统内部按什么顺序动？</strong>与「怎么安装」无关；安装与命令示例见 <a href="#section-4-2">§4.2</a>。下面是一条与 CLI / pytest 无关的<strong>逻辑主链</strong>（入口不同，后半段仍汇合到 Engine）。</p>
+  <p><strong>贯穿案例（与下面 ①–⑧ 逐步对齐）：</strong>全节只用一个任务——规范中的 <code>POST /users</code>，JSON body 里 <code>email</code> 必填且 <code>format: email</code>。读者可以把自己代入「要为该接口做回归」的负责人：<strong>examples</strong> 先打文档声称合法的样本；<strong>coverage / fuzz</strong> 再系统产出缺字段、错格式等负例；若服务误返回 500 或误接受非法数据，<strong>checks</strong> 失败，<strong>shrink</strong> 把 body 压到仍能复现的最小非法形态。下面 ①–⑧ 是通用主链，但<strong>每一步末尾都回扣同一案例</strong>，避免「前面讲故事、后面纯抽象」的断裂感。</p>
+  <div class="timeline">
+    <div class="timeline-item"><div class="timeline-dot">①</div><div class="timeline-body"><strong>加载规范</strong> — 通过 <code>from_url</code> / <code>from_file</code> 等（<span class="file-link" data-file="src/schemathesis/openapi/__init__.py" data-label="openapi/__init__.py">openapi/__init__.py</span>）拉取 JSON/YAML，完成引用解析与版本适配；得到挂有 <span class="file-link" data-file="src/schemathesis/schemas.py" data-label="schemas.py">BaseSchema</span> 与项目配置的对象。<strong>贯穿本例：</strong>加载结果中已包含 <code>paths./users.post</code> 及其 requestBody schema（含 <code>email</code> 约束）。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">②</div><div class="timeline-body"><strong>解析为 APIOperation</strong> — <span class="term-link" data-term="Specs 层">Specs</span> 将路径项、方法、参数、body、安全、响应模型等折叠为可遍历的 <span class="term-link" data-term="APIOperation">APIOperation</span> 列表；这是后续一切生成的「轴」。<strong>贯穿本例：</strong>列表中有一条即「<code>POST /users</code> + 该 body model」；后续所有 draw 都挂在这条 operation 上。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">③</div><div class="timeline-body"><strong>Engine 建立执行计划</strong> — <span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="engine/core.py">Engine._create_execution_plan</span> 按规范能力与配置，决定是否启用 probing、schema 分析、examples、coverage、fuzzing、stateful 等 Phase，并可能构造 <code>Observations</code> 以支持 stateful 推断。<strong>贯穿本例：</strong>对该 operation 会先安排 examples（若有）再进入 coverage/fuzz；无用户链路需求时 stateful 可跳过。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">④</div><div class="timeline-body"><strong>生成 Case</strong> — <span class="term-link" data-term="Generation">Generation</span> 在每个 operation 上，经 <span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">Hypothesis builder</span> 将约束编译为 strategies，按阶段 draw 出 path/query/header/cookie/body 等字段，实例化为 <span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">Case</span>。<strong>贯穿本例：</strong>某次 draw 得到「缺少 <code>email</code>」或「<code>email</code> 为非法字符串」的 body；另一轮得到 schema examples 中的合法用户。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">⑤</div><div class="timeline-body"><strong>发送请求（Transport）</strong> — <code>Case</code> 经 transport 层序列化为真实 HTTP（或 ASGI/WSGI 内联调用）；请求头可带测试用例 ID 便于日志关联。<strong>贯穿本例：</strong>向被测服务的 <code>POST /users</code> 发出上述合法/非法 JSON，观察真实状态码与错误体（而非臆测）。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">⑥</div><div class="timeline-body"><strong>checks 校验</strong> — 对响应状态码、头、体与 schema 契约运行注册检查；<strong>与生成模式解耦</strong>：正例 / 负例 / fuzz 都走同一套检查语义。<strong>贯穿本例：</strong>对非法 <code>email</code>，若 OpenAPI 声明了 <code>422</code> + problem+json，则 checks 验证是否命中该契约；若实际落 <code>500</code>，判为失败——这正是「契约 vs 实现」类 bug 的捕获点。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">⑦</div><div class="timeline-body"><strong>失败则 shrink</strong> — Hypothesis 在断言失败时自动缩小输入，直到得到「最小反例」，便于定位是哪一个字段组合触发了 500 或契约违背。<strong>贯穿本例：</strong>可能从「多字段全错」缩到「仅 <code>email</code> 错、其余合法」仍能 500 的最小 body，便于开发一眼改对。</div></div>
+    <div class="timeline-item"><div class="timeline-dot">⑧</div><div class="timeline-body"><strong>输出报告</strong> — Engine 产出事件流，由 Rich 终端、<span class="file-link" data-file="src/schemathesis/reporting/junitxml.py" data-label="junitxml.py">JUnit</span>、HAR、NDJSON、Allure 等模块消费；CI 据此做门禁与留档。<strong>贯穿本例：</strong>CI 里对应节点会标记 <code>POST /users</code> 失败，并附带复现片段（如 curl），与「哪一个反例 body」绑定。</div></div>
+  </div>
+  <p class="diagram-caption">图 4-1：与上文时间线同构的数据平面（便于对照记忆）</p>
+  <div class="diagram-container"><pre class="mermaid">
+flowchart LR
+  S[Schema] --> O[APIOperation]
+  O --> P[ExecutionPlan / phases]
+  P --> G[Hypothesis → Case]
+  G --> T[Transport HTTP]
+  T --> C[checks]
+  C -->|fail| H[shrink]
+  C -->|events| R[Reporting]
+  </pre></div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p class="diagram-caption">图 4-2：上手最短路径（工具视角，与 §4.1 逻辑链互补）</p>
+  <div class="diagram-container"><pre class="mermaid">
+graph LR
+  A["① 安装 / uvx"] --> B["② 指向 OpenAPI URL\n或本地文件"]
+  B --> C["③ schemathesis run …\n或 pytest"]
+  C --> D["④ 读终端或 JUnit\n看 shrink 反例"]
+  </pre></div>
+  <pre><code class="language-bash">uvx schemathesis run https://example.schemathesis.io/openapi.json
+</code></pre>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card"><h4>CLI 持续探测</h4><p>对 staging 定时 <code>run</code>，配速率限制与 hooks。</p></div>
+    <div class="usage-card"><h4>pytest 回归</h4><p>与业务测试同套件，fixtures 注入 base_url、鉴权。</p></div>
+    <div class="usage-card"><h4>Stateful 工作流</h4><p><code>as_state_machine().TestCase</code>；依赖 links 或推断。</p></div>
+  </div>
+
+  <h2 id="section-5">5 系统详细设计</h2>
+
+  <h3 id="section-5-1">5.1 总体架构：Schema → APIOperation → Case → Transport / Checks</h3>
+  <p><strong>本节分工：</strong>只建立<strong>静态对象与分层边界</strong>——「有哪些块、块之间传递什么」；<strong>不展开</strong>从加载到 shrink 的时间顺序（已在 <a href="#section-4-1">§4.1</a> 讲过一次）也不展开三种入口谁先谁后（一律见 <a href="#section-5-2">§5.2</a>）。五层总览仍以 <span class="file-link" data-file="ARCHITECTURE.md" data-label="ARCHITECTURE.md">ARCHITECTURE.md</span> 为准。</p>
+  <p class="diagram-caption">图 5-1：主数据平面（对象边界；执行顺序见 §5.2）</p>
+  <div class="diagram-container"><pre class="mermaid">
+flowchart TB
+  subgraph spec["规范侧"]
+    SCH[Schema 文件/URL]
+    OPS[APIOperation 列表]
+  end
+  subgraph gen["生成侧"]
+    BD[Hypothesis builder]
+    CA[Case]
+  end
+  subgraph run["执行侧"]
+    TR[Transport]
+    CH[checks]
+  end
+  SCH --> OPS
+  OPS --> BD
+  BD --> CA
+  CA --> TR
+  TR --> CH
+  </pre></div>
+  <p><strong>如何读图 5-1：</strong>只看「规范 → 可发送请求 → 契约判定」这条<strong>值管道</strong>。<span class="term-link" data-term="Engine">Engine</span> / CLI / pytest 如何驱动这条管道，见 §5.2；旋钮级实现见 §5.3。</p>
+  <p class="seq-table-caption"><strong>数据平面步骤对照表</strong>（对应图 5-1 各子图与边；<strong>所在文件</strong>列可点击在 GitHub 中打开）</p>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>技能 / 函数·动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>规范入站</td><td><code>from_url</code> / <code>from_file</code> 等加载与解析</td><td><span class="file-link" data-file="src/schemathesis/openapi/__init__.py" data-label="openapi/__init__.py">openapi/__init__.py</span></td><td>把 URL 或磁盘上的 OpenAPI/GraphQL 变成内存中的可操作文档</td><td>网络、TLS、<code>$ref</code> 解析与规范版本</td></tr>
+      <tr><td>2</td><td>Operation 抽象</td><td>Specs 适配 → <span class="term-link" data-term="APIOperation">APIOperation</span> 列表</td><td><span class="file-link" data-file="src/schemathesis/specs/openapi/schemas.py" data-label="schemas.py">specs/openapi/schemas.py</span> 等</td><td>把路径项、方法、参数、body、响应模型折叠为「可遍历的测试轴」</td><td>规范子集能力决定后续能否 coverage / stateful</td></tr>
+      <tr><td>3</td><td>策略编译</td><td>JSON Schema / 参数位置 → Hypothesis strategies</td><td><span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">generation/hypothesis/builder.py</span></td><td>为每个 operation 构造可 draw 的生成空间（含负例）</td><td><code>Unsatisfiable</code>、Phase 与健康检查</td></tr>
+      <tr><td>4</td><td>Case 实例化</td><td><code>draw</code> → 填充 path/query/header/body</td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td><td>得到一次可发送的 HTTP 载荷值对象</td><td><code>NOT_SET</code>、multipart、序列化边界</td></tr>
+      <tr><td>5</td><td>传输</td><td>prepare + 实际 HTTP / ASGI / WSGI</td><td><span class="file-link" data-file="src/schemathesis/core/transport.py" data-label="transport.py">core/transport.py</span> 及 <code>transport/</code></td><td>把 <code>Case</code> 变成线上真实请求并取回 <code>Response</code></td><td>base URL、auth、超时、速率限制</td></tr>
+      <tr><td>6</td><td>契约判定</td><td><code>run_checks</code> / 注册检查</td><td><span class="file-link" data-file="src/schemathesis/checks.py" data-label="checks.py">checks.py</span></td><td>对状态码、头、体与响应 schema 做断言；与生成模式解耦</td><td>checks 配置与「误报 / 漏报」权衡</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录结构</a>了解项目整体轮廓。★ 运行时内核在 <code>src/schemathesis/</code>。</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">src/schemathesis/</span>
+<span class="tree-branch">├── </span><span class="tree-dir">specs/</span>                 <span class="tree-comment">← 规范适配层：解析 OpenAPI / GraphQL，构建 APIOperation 列表</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="src/schemathesis/specs/openapi/schemas.py" data-label="schemas.py" title="在右侧面板查看源码">openapi/schemas.py ★</span>  <span class="tree-comment">← OpenAPI 规范对象，枚举路径项并生成 APIOperation</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">graphql/</span>              <span class="tree-comment">← GraphQL 规范适配（查询/变体生成）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">generation/</span>           <span class="tree-comment">← 生成侧：Hypothesis strategies、Case 实例化、stateful 状态机</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py" title="在右侧面板查看源码">hypothesis/builder.py ★</span>  <span class="tree-comment">← 把 JSON Schema 编译为 Hypothesis strategies</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py" title="在右侧面板查看源码">case.py ★</span>            <span class="tree-comment">← Case 数据类 + call_and_validate（传输 + checks 触发点）</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">stateful/</span>             <span class="tree-comment">← 状态机多步链路（links 推断 + APIStateMachine）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">core/</span>                  <span class="tree-comment">← 执行侧基础：传输、配置、错误模型、结果容器</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry file-link" data-file="src/schemathesis/core/transport.py" data-label="transport.py" title="在右侧面板查看源码">transport.py ★</span>        <span class="tree-comment">← HTTP / ASGI / WSGI 适配，把 Case 变成真实 HTTP 请求</span>
+<span class="tree-branch">├── </span><span class="tree-dir">engine/</span>               <span class="tree-comment">← 阶段编排器：ExecutionPlan、events、fuzz runner</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry file-link" data-file="src/schemathesis/engine/core.py" data-label="engine/core.py" title="在右侧面板查看源码">core.py ★</span>            <span class="tree-comment">← Engine.execute：探测→examples→coverage→fuzz→stateful 阶段串联</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="src/schemathesis/checks.py" data-label="checks.py" title="在右侧面板查看源码">checks.py ★</span>          <span class="tree-comment">← 契约判定：不应返回 5xx、响应体符合 schema、自定义 checks 注册</span>
+<span class="tree-branch">├── </span><span class="tree-dir">cli/</span>                   <span class="tree-comment">← Click 命令入口（run、replay、auth 等子命令）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">pytest/</span>               <span class="tree-comment">← pytest 插件：parametrize 展开 + xdist 支持</span>
+<span class="tree-branch">├── </span><span class="tree-dir">reporting/</span>            <span class="tree-comment">← 报告层：JUnit、HAR、NDJSON、Allure…</span>
+<span class="tree-branch">└── </span><span class="tree-file">hooks.py</span>              <span class="tree-comment">← 用户自定义钩子注册（before_generate_case 等）</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    %% 主链路: Schema → APIOperation → Case → Transport → checks
+    subgraph 规范侧
+      Schema["Schema 文件/URL\nOpenAPI · GraphQL"]
+      Op["APIOperation 列表\n路径×方法×参数模型"]
+      Schema -->|"from_url / from_file\n解析 + $ref 展开"| Op
+    end
+    subgraph 生成侧
+      Builder["Hypothesis builder\nJSON Schema → strategies"]
+      Case["Case\npath/query/header/body 值对象"]
+      Op -->|"编译 strategies"| Builder
+      Builder -->|"draw()"| Case
+    end
+    subgraph 执行侧
+      Transport["Transport\nHTTP / ASGI / WSGI"]
+      Checks["checks\n契约断言层"]
+      Shrink["Hypothesis shrink\n最小可复现"]
+      Case -->|"prepare + send"| Transport
+      Transport -->|"Response"| Checks
+      Checks -->|"失败时触发"| Shrink
+    end
+    </div>
+    <div class="caption">图 5-1：主数据平面（对象边界；执行顺序见 §5.2）</div>
+  </div>
+
+  <p><strong>如何读图 5-1：</strong>只看「规范 → 可发送请求 → 契约判定」这条<em>值管道</em>。Engine / CLI / pytest 如何驱动这条管道，见 §5.2；各模块内部实现旋钮见 §5.3。</p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>规范侧</td>
+        <td>
+          <span class="module-item"><code>specs/openapi/schemas.py</code></span>
+          <span class="module-item"><code>specs/graphql/</code></span>
+        </td>
+        <td>把 URL 或磁盘上的 OpenAPI / GraphQL 规范加载、解析、展开 <code>$ref</code>，折叠路径×方法×参数为可遍历的 <code>APIOperation</code> 列表，供后续阶段枚举</td>
+        <td>→ 生成侧</td>
+      </tr>
+      <tr>
+        <td>生成侧</td>
+        <td>
+          <span class="module-item"><code>generation/hypothesis/builder.py</code></span>
+          <span class="module-item"><code>generation/case.py</code></span>
+          <span class="module-item"><code>generation/stateful/</code></span>
+        </td>
+        <td>将每个 <code>APIOperation</code> 的参数 schema 编译为 Hypothesis strategies（含负例 / boundary）；每轮 <code>draw()</code> 得到一个填充了 path/query/header/body 值的 <code>Case</code> 对象</td>
+        <td>↔ 规范侧；→ 执行侧</td>
+      </tr>
+      <tr>
+        <td>执行侧</td>
+        <td>
+          <span class="module-item"><code>core/transport.py</code></span>
+          <span class="module-item"><code>checks.py</code></span>
+          <span class="module-item">Hypothesis shrink</span>
+        </td>
+        <td><code>Transport</code> 将 <code>Case</code> 序列化为真实 HTTP 请求（HTTP / ASGI / WSGI）并取回 <code>Response</code>；<code>checks</code> 层对状态码、响应体 schema 等属性做断言；失败时 Hypothesis 自动收缩为最小可复现用例</td>
+        <td>↔ 生成侧；→ 报告层</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>数据平面步骤对照表</strong>（对应图 5-1 各子图与边；所在文件列可点击在 GitHub 中打开）</p>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>技能 / 函数·动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>规范入站</td><td><code>from_url</code> / <code>from_file</code> 加载与解析</td><td><span class="file-link" data-file="src/schemathesis/specs/openapi/schemas.py" data-label="schemas.py">specs/openapi/schemas.py</span></td><td>把 URL 或磁盘上的 OpenAPI/GraphQL 变成内存中可操作的规范对象；展开 <code>$ref</code></td><td>网络、TLS、$ref 循环引用；规范版本检测</td></tr>
+      <tr><td>2</td><td>Operation 抽象</td><td>Specs 适配 → <code>APIOperation</code> 列表枚举</td><td><span class="file-link" data-file="src/schemathesis/specs/openapi/schemas.py" data-label="schemas.py">specs/openapi/schemas.py</span></td><td>把路径项、方法、参数、body、响应模型折叠为「可遍历的测试轴」</td><td>规范子集能力决定后续能否做 coverage / stateful</td></tr>
+      <tr><td>3</td><td>策略编译</td><td>JSON Schema / 参数位置 → Hypothesis strategies</td><td><span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">generation/hypothesis/builder.py</span></td><td>为每个 operation 构造可 <code>draw</code> 的生成空间（含负例与 boundary 值）</td><td><code>Unsatisfiable</code>、Phase 与健康检查限制</td></tr>
+      <tr><td>4</td><td>Case 实例化</td><td><code>draw()</code> → 填充 path/query/header/body</td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td><td>得到一次可发送的 HTTP 载荷值对象（<code>NOT_SET</code>、multipart、序列化边界）</td><td>NOT_SET 语义；multipart 序列化；编码边界</td></tr>
+      <tr><td>5</td><td>传输</td><td><code>prepare</code> + 实际 HTTP / ASGI / WSGI 调用</td><td><span class="file-link" data-file="src/schemathesis/core/transport.py" data-label="transport.py">core/transport.py</span></td><td>把 <code>Case</code> 变成线上真实请求并取回 <code>Response</code></td><td>base URL、auth、超时、速率限制</td></tr>
+      <tr><td>6</td><td>契约判定</td><td><code>run_checks</code> / 注册的 check 函数</td><td><span class="file-link" data-file="src/schemathesis/checks.py" data-label="checks.py">checks.py</span></td><td>对状态码、响应头、响应体与 schema 做属性断言；失败触发 Hypothesis shrink</td><td>checks 配置粒度与「误报 / 漏报」权衡</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 运行链路：三条「用户视角」执行链</h3>
+  <p><strong>本节分工：</strong>只回答「<strong>谁触发谁</strong>」——三种入口下，进程 / pytest 收集器如何把工作交给同一套执行内核。<strong>不重述</strong> <code>APIOperation</code> / <code>Case</code> 的结构定义（见 §3 与 §5.1）。三条链在后半段都汇入 <code>Engine</code>（或等价的单测执行路径）与 <code>Case.call_and_validate</code>。</p>
+
+  <h4 id="section-5-2-1">5.2.1 CLI：<code>schemathesis run</code> 链</h4>
+  <p>进程入口 <span class="file-link" data-file="src/schemathesis/cli/commands/__init__.py" data-label="__init__.py">Click Group</span> → 解析 URL、phases、workers 等 → 构造 schema 对象 → <code>Engine.execute()</code> 或 fuzz 模式 → 终端 Rich 输出 + 可选 JUnit/HAR。</p>
+  <div class="diagram-container"><pre class="mermaid">
+sequenceDiagram
+  participant U as 用户/CI
+  participant CLI as Click run
+  participant Sch as BaseSchema
+  participant En as Engine
+  U->>CLI: schemathesis run URL
+  CLI->>Sch: 加载 + 配置
+  CLI->>En: execute()
+  En-->>U: 事件 / 退出码
+  </pre></div>
+  <p class="seq-table-caption"><strong>调用链步骤对照表</strong>（对应上图 U→CLI→Sch→En；<strong>所在文件</strong>列可点击在 GitHub 中打开）</p>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>技能 / 函数·动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>进程入口</td><td>Click 根组注册 <code>run</code> 等子命令</td><td><span class="file-link" data-file="src/schemathesis/cli/commands/__init__.py" data-label="__init__.py">cli/commands/__init__.py</span></td><td>把 <code>argv</code> 路由到 <code>run</code>；全局选项（配色、<code>schemathesis.toml</code>）在此汇合</td><td>与 shell / CI 环境变量（如 <code>NO_COLOR</code>）交互</td></tr>
+      <tr><td>2</td><td><code>run</code> 体</td><td>解析 URL、phases、workers、filters、checks</td><td><span class="file-link" data-file="src/schemathesis/cli/commands/run/__init__.py" data-label="run/__init__.py">cli/commands/run/__init__.py</span></td><td>组装 <code>ProjectConfig</code> 与过滤集，调用 <code>executor.execute</code></td><td>选项矩阵大；与 <code>toml</code> 合并顺序影响默认值</td></tr>
+      <tr><td>3</td><td>加载 + 引擎桥接</td><td><code>into_event_stream</code> → <code>from_schema(...).execute()</code></td><td><span class="file-link" data-file="src/schemathesis/cli/loaders.py" data-label="loaders.py">cli/loaders.py</span> · <span class="file-link" data-file="src/schemathesis/cli/commands/run/executor.py" data-label="executor.py">run/executor.py</span> · <span class="file-link" data-file="src/schemathesis/engine/__init__.py" data-label="engine/__init__.py">engine/__init__.py</span></td><td>将 location 变成 <code>BaseSchema</code>，再得到与 UI 无关的 Engine 事件流</td><td>网络、鉴权、rate limit；schema 错误多在流入 Engine 前暴露</td></tr>
+      <tr><td>4</td><td>事件循环与退出</td><td><code>execute_event_loop</code> + <code>OutputHandler</code></td><td><span class="file-link" data-file="src/schemathesis/cli/executor.py" data-label="cli/executor.py">cli/executor.py</span> 及 <code>cli/commands/run/handlers/</code></td><td>Rich 终端与 JUnit/HAR 等 handler 消费事件；退出码反映失败统计</td><td>handler 注册顺序与并发 workers 影响输出时序</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-5-2-2">5.2.2 pytest：<code>@schema.parametrize()</code> 链</h4>
+  <p><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest 插件</span> 在收集阶段把 schema 展开为多个测试项；每个项仍由 Hypothesis 驱动生成，最终调用与 CLI 相同的 <code>Case</code> 与 checks。差异主要在<strong>发现、fixtures、xdist 与报告集成</strong>。</p>
+  <div class="diagram-container"><pre class="mermaid">
+sequenceDiagram
+  participant Py as pytest
+  participant Pl as plugin
+  participant Sch as BaseSchema
+  participant Ca as Case
+  Py->>Pl: collect / parametrize
+  Pl->>Sch: 枚举 operations
+  loop 每个用例
+    Pl->>Ca: call_and_validate
+  end
+  </pre></div>
+  <p class="seq-table-caption"><strong>调用链步骤对照表</strong>（对应上图 Py→Pl→Sch→Ca 循环；<strong>所在文件</strong>列可点击在 GitHub 中打开）</p>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>技能 / 函数·动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>pytest 发现</td><td>收集阶段钩子 / 模块扫描</td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span></td><td>发现带 <code>@schema.parametrize</code> 或 schema fixture 的测试函数</td><td>与 conftest、import 顺序、markers 组合</td></tr>
+      <tr><td>2</td><td>参数化展开</td><td><code>SchemathesisCase</code> / Metafunc 路径</td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span></td><td>对 <code>BaseSchema</code> 枚举 <span class="term-link" data-term="APIOperation">operations</span>，生成多个 <code>SchemathesisFunction</code> 节点</td><td>node id 稳定性；<code>pytest-xdist</code> 下分发与缓存</td></tr>
+      <tr><td>3</td><td>执行单例</td><td>Hypothesis <code>@given</code> 合并 → <code>call_and_validate</code></td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span> · <span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td><td>每轮 draw 得到 <code>Case</code>，发请求并跑与 CLI 相同的 checks</td><td>健康检查、<code>Unsatisfiable</code>、与用户 <code>@given</code> 合并规则</td></tr>
+      <tr><td>4</td><td>pytest 语义收尾</td><td>失败归并、子测、可选报告 writer</td><td><span class="file-link" data-file="src/schemathesis/pytest/plugin.py" data-label="plugin.py">pytest/plugin.py</span> 等</td><td>把 Schemathesis 异常映射为 pytest 报告；可选对接 JUnit/HAR/Allure</td><td>与 CLI「事件流」形态不同，调试用 pytest 原生栈</td></tr>
+    </tbody>
+  </table>
+
+  <h4 id="section-5-2-3">5.2.3 Stateful：状态机链</h4>
+  <p>当规范具备 links（或启用推断）时，<span class="file-link" data-file="src/schemathesis/generation/stateful/state_machine.py" data-label="state_machine.py">APIStateMachine</span> 将多步操作编码为状态迁移；测试类由 <code>as_state_machine().TestCase</code> 生成。链路与单步 fuzz 的区别在于：<strong>后续请求的参数可依赖前序响应</strong>，用于抓「单接口都好、串起来就挂」的缺陷。</p>
+  <div class="diagram-container"><pre class="mermaid">
+sequenceDiagram
+  participant SM as StateMachine
+  participant Op1 as Operation A
+  participant Op2 as Operation B
+  SM->>Op1: 第一步 Case
+  Op1-->>SM: Response / 状态
+  SM->>Op2: 依赖上步的 Case
+  </pre></div>
+  <p class="seq-table-caption"><strong>调用链步骤对照表</strong>（对应上图 SM↔Op 多步；<strong>所在文件</strong>列可点击在 GitHub 中打开）</p>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>技能 / 函数·动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>状态机入口</td><td><code>as_state_machine()</code> → <code>TestCase</code> 类</td><td><span class="file-link" data-file="src/schemathesis/schemas.py" data-label="schemas.py">schemas.py</span></td><td>从 <code>BaseSchema</code> 得到可挂到 pytest 的 <span class="term-link" data-term="Stateful">APIStateMachine</span> 子类</td><td>无 links / 未开推断时入口不适用或能力受限</td></tr>
+      <tr><td>2</td><td>迁移选择</td><td>合法迁移、draw 下一步 operation</td><td><span class="file-link" data-file="src/schemathesis/generation/stateful/state_machine.py" data-label="state_machine.py">generation/stateful/state_machine.py</span></td><td>在多个 <span class="term-link" data-term="APIOperation">Operation</span> 间选下一条边，形成多步序列</td><td>状态空间爆炸 → 需限制深度、预算与配置开关</td></tr>
+      <tr><td>3</td><td>单步派发</td><td>构造 <code>Case</code> → prepare → HTTP</td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span> · <span class="file-link" data-file="src/schemathesis/core/transport.py" data-label="transport.py">core/transport.py</span></td><td>每步仍走与单接口 fuzz 相同的传输与序列化路径</td><td>参数可依赖前序响应；异步与会话 cookie 增加不确定性</td></tr>
+      <tr><td>4</td><td>观测写回</td><td>响应进入状态 / 供下一步读取</td><td><span class="file-link" data-file="src/schemathesis/generation/stateful/state_machine.py" data-label="state_machine.py">generation/stateful/state_machine.py</span></td><td>把 <code>Response</code> 写回状态机上下文，驱动后续 draw</td><td>links 质量与规范不完整时易出现「走不通」或假阴性</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 关键机制拆解</h3>
+  <p>在 §5.1–5.2 的骨架之上，下面两节对应「最值得读源码的旋钮」：<strong>阶段编排</strong>与<strong>策略生成</strong>。pytest 集成与报告消费见 <a href="#section-5-2-2">§5.2.2</a> 及 <code>src/schemathesis/reporting/</code>。</p>
+
+  <div class="module-item" id="section-5-3-1">
+    <div class="module-meta"><span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="core.py">engine/core.py</span> · Engine · phases</div>
+    <h4>要解决的问题</h4>
+    <p>统一编排多阶段测试，并在特性缺失或配置关闭时给出明确 <code>skip_reason</code>。</p>
+    <h4>解决方案</h4>
+    <p><code>Engine.execute()</code> 构建 <code>ExecutionPlan</code>（<code>PROBING</code> … <code>STATEFUL_TESTING</code>）；<code>fuzz()</code> 走 <code>fuzz.execute</code>。stateful 与 schema 统计中的 links 数量相关。</p>
+    <p class="diagram-caption">图 5-2：阶段计划（逻辑）</p>
+    <div class="diagram-container"><pre class="mermaid">
+sequenceDiagram
+      participant E as Engine
+      participant P as ExecutionPlan
+      E->>P: _create_execution_plan
+      P-->>E: phases[]
+    </pre></div>
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-2 各消息步骤）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><span class="term-link" data-term="Engine">Engine</span></td><td><span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="core.py">engine/core.py</span></td><td>执行计划构建路径</td><td><code>_create_execution_plan()</code></td><td>按 <span class="file-link" data-file="ARCHITECTURE.md" data-label="ARCHITECTURE.md">ARCHITECTURE</span> 所述特性位与配置，决定各 Phase 启用或 <code>skip_reason</code></td></tr>
+        <tr><td>2</td><td><span class="term-link" data-term="Engine">Engine</span></td><td><span class="file-link" data-file="src/schemathesis/engine/core.py" data-label="core.py">engine/core.py</span></td><td>Phase 执行器 / <code>fuzz</code> 路径</td><td><code>execute()</code> / <code>fuzz()</code> 产出 <code>EventStream</code></td><td>顺序驱动各阶段并把结果流式交给 CLI / Rich / 报告；调试以事件为线索</td></tr>
+      </tbody>
+    </table>
+    <h4>设计代价</h4>
+    <p>调试需跟事件流而非单栈栈帧；auth 等全局状态在阶段间共享，容易出现「上一阶段留下的隐式副作用」类问题。</p>
+  </div>
+
+  <div class="module-item" id="section-5-3-2">
+    <div class="module-meta"><span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">hypothesis/builder.py</span> + <span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></div>
+    <h4>要解决的问题</h4>
+    <p>把 JSON Schema、参数位置、媒体类型编译为可序列化 HTTP 请求，并在失败时给出可复现信息。</p>
+    <h4>解决方案</h4>
+    <p><code>@dataclass Case</code>；<code>call_and_validate</code> 调 transport 与 checks。<code>builder.py</code> 负责 Hypothesis phases、覆盖与 given 合并。</p>
+    <p class="diagram-caption">图 5-3：strategy → Case</p>
+    <div class="diagram-container"><pre class="mermaid">
+sequenceDiagram
+      participant H as Hypothesis
+      participant B as builder
+      participant C as Case
+      H->>B: draw
+      B->>C: 构造
+      C->>C: call_and_validate
+    </pre></div>
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-3 各消息步骤）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Hypothesis 运行时</td><td>（<code>hypothesis</code> 库）</td><td><code>builder</code></td><td><code>draw</code> / 策略取值</td><td>在 Phase、模式与合并 <code>@given</code> 约束下取下一轮值；失败时进入 shrink</td></tr>
+        <tr><td>2</td><td><code>builder</code></td><td><span class="file-link" data-file="src/schemathesis/generation/hypothesis/builder.py" data-label="builder.py">generation/hypothesis/builder.py</span></td><td><span class="term-link" data-term="Case">Case</span></td><td>字段实例化</td><td>把 operation + drawn 值折叠为 path/query/header/cookie/body 等可序列化字段</td></tr>
+        <tr><td>3</td><td><span class="term-link" data-term="Case">Case</span></td><td><span class="file-link" data-file="src/schemathesis/generation/case.py" data-label="case.py">generation/case.py</span></td><td>transport + <span class="file-link" data-file="src/schemathesis/checks.py" data-label="checks.py">checks</span></td><td><code>call_and_validate()</code></td><td>先发真实请求，再跑与生成模式解耦的 checks；图中自调用表示同一对象上的执行闭环</td></tr>
+      </tbody>
+    </table>
+    <h4>设计代价</h4>
+    <p>极大 schema 或深组合约束下，策略编译可能 <code>Unsatisfiable</code> 或显著变慢——这是「把 JSON Schema 编译进 Hypothesis」 expressive power 的反面账单。</p>
+  </div>
+
+  <h2 id="section-6">6 方案评价</h2>
+  <h3 id="section-6-1">6.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength"><h4>规范深度利用</h4><p>examples、coverage、negative、links 与 Engine 绑定，而非散落的脚本请求。</p></div>
+    <div class="eval-card strength"><h4>Python 测试栈原生</h4><p>Hypothesis + pytest 是企业主流组合。</p></div>
+    <div class="eval-card strength"><h4>可扩展</h4><p>hooks、checks、auth、transport 路径丰富。</p></div>
+    <div class="eval-card strength"><h4>文档与社区</h4><p>Read the Docs、Discord、GitHub Action。</p></div>
+  </div>
+  <h3 id="section-6-2">6.2 局限分析（架构代价）</h3>
+  <p>下列不是「使用小贴士」，而是<strong>与核心设计绑定的 trade-off</strong>：选择了某种能力，就必然支付对应账单。</p>
+  <div class="eval-grid">
+    <div class="eval-card weakness"><h4>规范即生成器 = 规范错误即测试空间错误</h4><p>把 OpenAPI 当真理来源，意味着 <strong>schema 与实现脱节</strong> 时，你会系统性测「错误链路」或系统性漏测；这不是运维疏忽，而是<strong>把规范抬升为生成器</strong>这一架构决策的直接代价。</p></div>
+    <div class="eval-card weakness"><h4>生成数据增多 = 写路径增加与数据风险面</h4><p>unhappy用例 与 fuzz 会命中写接口；这是「测试空间包含非法与边界输入」后的<strong>必然物理后果</strong>，只能靠隔离库、事务回滚、速率限制等工程手段对冲，无法从架构上「免费消除」。</p></div>
+    <div class="eval-card weakness"><h4>Stateful = 组合场景爆炸</h4><p>多步依赖把单接口的复杂度<strong>做乘法</strong>；links 推断与观测越多，越接近状态空间爆炸——因此 stateful 在默认配置、超时与采样上必须保守，这是<strong>表达能力 ↔ 可控成本</strong>的经典交换。</p></div>
+  </div>
+  <p>换句话说：<strong>Schemathesis 用更强的「从规范派生测试空间」的能力，交换来了对 schema 质量、隔离环境与执行预算的更高要求。</strong>只要团队愿意把规范当一等公民、为写路径准备沙箱，并愿意为 stateful 付组合成本，这套账单仍然是<strong>划算</strong>的——否则应收敛 phases 或缩小 API 面，而不是否定工具本身。</p>
+
+  <h2 id="section-7">7 版本化维护区</h2>
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文对路径与 API 的描述以开源仓库 <a href="https://github.com/schemathesis/schemathesis" target="_blank" rel="noopener">https://github.com/schemathesis/schemathesis</a> 的 <strong>master</strong> 分支为参照；基线日期 <strong>2026-04-14</strong>；<span class="file-link" data-file="pyproject.toml" data-label="pyproject.toml">pyproject.toml</span> 中 <code>[project] version</code> 为 <strong>4.15.1</strong>（随上游变化）。官方文档：<a href="https://schemathesis.readthedocs.io/en/stable/" target="_blank" rel="noopener">schemathesis.readthedocs.io</a>。除另行说明外，正文各章所引路径、分层与版本表述均与本节基线一致。</p>
+
+</main>
+
+
+
+
+
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack"  title="上一页" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"   title="下一页" disabled>›</button>
+    <span class="code-panel-path" id="panelPath"></span>
+    <span class="code-panel-badge" id="panelBadge">GitHub</span>
+    <a class="panel-gh-link" id="panelGhLink" href="#" target="_blank" rel="noopener">在 GitHub 打开 ↗</a>
+    <button class="panel-pin-btn" id="panelPinBtn" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader"><div class="iframe-spin"></div><span>加载中…</span></div>
+    <iframe id="panelIframe" title="Source viewer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
+</script>
+<script>
+(function () {
+  const GH_REPO = 'schemathesis/schemathesis';
+  const BRANCH  = 'master';
+  const GH   = 'https://github.com/'   + GH_REPO;
+  const GH1S = 'https://github1s.com/' + GH_REPO;
+
+  const FILE_MAP = {
+    'pyproject.toml':                              'pyproject.toml',
+    'README.md':                                 'README.md',
+    'ARCHITECTURE.md':                           'ARCHITECTURE.md',
+    'src/schemathesis/cli/commands/__init__.py': 'src/schemathesis/cli/commands/__init__.py',
+    'src/schemathesis/cli/commands/run/__init__.py': 'src/schemathesis/cli/commands/run/__init__.py',
+    'src/schemathesis/cli/commands/run/executor.py': 'src/schemathesis/cli/commands/run/executor.py',
+    'src/schemathesis/cli/loaders.py':             'src/schemathesis/cli/loaders.py',
+    'src/schemathesis/cli/executor.py':            'src/schemathesis/cli/executor.py',
+    'src/schemathesis/engine/__init__.py':         'src/schemathesis/engine/__init__.py',
+    'src/schemathesis/engine/core.py':           'src/schemathesis/engine/core.py',
+    'src/schemathesis/generation/case.py':       'src/schemathesis/generation/case.py',
+    'src/schemathesis/generation/hypothesis/builder.py': 'src/schemathesis/generation/hypothesis/builder.py',
+    'src/schemathesis/schemas.py':               'src/schemathesis/schemas.py',
+    'src/schemathesis/pytest/plugin.py':         'src/schemathesis/pytest/plugin.py',
+    'src/schemathesis/openapi/__init__.py':      'src/schemathesis/openapi/__init__.py',
+    'src/schemathesis/generation/stateful/state_machine.py': 'src/schemathesis/generation/stateful/state_machine.py',
+    'src/schemathesis/reporting/junitxml.py':      'src/schemathesis/reporting/junitxml.py',
+    'src/schemathesis/checks.py':                'src/schemathesis/checks.py',
+    'src/schemathesis/core/transport.py':       'src/schemathesis/core/transport.py',
+    'src/schemathesis/specs/openapi/schemas.py': 'src/schemathesis/specs/openapi/schemas.py',
+  };
+
+  const PROJECT_TERMS = {
+    'Schemathesis': {
+      tags: ['总览', '测试'],
+      def: '<strong>schemathesis/schemathesis</strong>：基于 <strong>OpenAPI / GraphQL</strong> 规范自动生成大量用例，做属性测试与模糊测试；标语 <em>Catch API bugs before your users do</em>。默认分支 <strong>master</strong>；Python 包入口 <code>schemathesis</code> / <code>st</code>。',
+      mechanics: ['Click CLI', 'pytest 插件 entry point', 'Hypothesis 策略生成'],
+      related: ['Hypothesis', 'Engine', 'Case'],
+      patterns: ['Schemathesis', 'schemathesis run'],
+      files: ['README.md', 'pyproject.toml'],
+    },
+    'Hypothesis': {
+      tags: ['生成', 'PBT'],
+      def: '底层使用 <strong>Hypothesis</strong> 做随机与收缩；<code>hypothesis_jsonschema</code>、<code>hypothesis_graphql</code> 等约束从 schema 派生策略。',
+      mechanics: ['Phase、Verbosity、strategies', '与 pytest 深度集成'],
+      related: ['Case', 'Generation'],
+      patterns: ['Hypothesis', 'hypothesis'],
+      files: ['src/schemathesis/generation/hypothesis/builder.py'],
+    },
+    'Engine': {
+      tags: ['编排', '阶段'],
+      def: '<code>Engine</code> 按配置串联<strong>测试阶段</strong>：探测、schema 分析、examples、coverage、fuzzing、stateful；产出事件流供 CLI / 报告消费。',
+      mechanics: ['ExecutionPlan', 'PhaseName', 'EventStream'],
+      related: ['Schemathesis', 'Case'],
+      patterns: ['Engine', 'execute()', 'fuzz()'],
+      files: ['src/schemathesis/engine/core.py', 'ARCHITECTURE.md'],
+    },
+    'Case': {
+      tags: ['数据', '请求'],
+      def: '单次 API 调用的<strong>结构化载荷</strong>：<code>Case</code> 持有 operation、method、path、path/query/header/body 等；<code>call_and_validate()</code> 发请求并跑 checks。',
+      mechanics: ['jsonschema_rs 校验', 'transport.prepare'],
+      related: ['APIOperation', 'Hypothesis'],
+      patterns: ['Case', 'call_and_validate'],
+      files: ['src/schemathesis/generation/case.py'],
+    },
+    'APIOperation': {
+      tags: ['规格', '端点'],
+      def: '从 schema 解析出的<strong>单个操作</strong>（方法 + 路径 + 参数模型）；生成层按 operation 构造 Case。',
+      mechanics: ['OpenAPI adapter', 'GraphQL nodes'],
+      related: ['Specs 层', 'Case'],
+      patterns: ['APIOperation', 'operation'],
+      files: ['src/schemathesis/schemas.py'],
+    },
+    'Specs 层': {
+      tags: ['解析', 'OpenAPI'],
+      def: '<code>ARCHITECTURE.md</code>：将 OpenAPI/GraphQL 解析为 <code>APIOperation</code>；含 negative mutations、stateful links、表达式等子系统。',
+      mechanics: ['specs/openapi', 'specs/graphql'],
+      related: ['APIOperation', 'Schemathesis'],
+      patterns: ['Specs', 'OpenAPI'],
+      files: ['ARCHITECTURE.md'],
+    },
+    'CLI (Click)': {
+      tags: ['入口', '命令行'],
+      def: '<code>cli/commands/__init__.py</code> 注册 <code>schemathesis</code> 根组：<code>run</code>、<code>fuzz</code> 等；支持 <code>schemathesis.toml</code>、彩色输出与分组选项。',
+      mechanics: ['StyledGroup', 'GroupedOption'],
+      related: ['Engine', 'pytest 插件'],
+      patterns: ['st run', 'Click'],
+      files: ['src/schemathesis/cli/commands/__init__.py'],
+    },
+    'pytest 插件': {
+      tags: ['集成', '测试'],
+      def: '<code>project.entry-points.pytest11</code> 注册 <code>schemathesis</code>；<code>@schema.parametrize()</code> 为每个 operation 生成测试；处理 Hypothesis 健康检查与 stateful 标记。',
+      mechanics: ['Metafunc', 'hypothesis given 合并'],
+      related: ['Hypothesis', 'schemas.py'],
+      patterns: ['parametrize', 'pytest'],
+      files: ['src/schemathesis/pytest/plugin.py'],
+    },
+    'Stateful': {
+      tags: ['工作流', '链接'],
+      def: '多步序列测试：利用 OpenAPI <strong>links</strong> 或推断依赖，<code>as_state_machine()</code> 生成 <code>APIStateMachine</code> 的 TestCase 类。',
+      mechanics: ['specs/openapi/stateful', 'generation/stateful'],
+      related: ['Engine', 'APIOperation'],
+      patterns: ['stateful', 'StateMachine'],
+      files: ['src/schemathesis/generation/stateful/state_machine.py'],
+    },
+    'Reporting': {
+      tags: ['可观测', 'CI'],
+      def: '将 <strong>Engine 事件流</strong> 转为 JUnit、Allure、HAR、NDJSON 等产物，供 CI 门禁与人工复盘。',
+      mechanics: ['junitxml', 'har', 'allure 可选'],
+      related: ['Engine', 'Schemathesis'],
+      patterns: ['JUnit', 'reporting', 'HAR'],
+      files: ['src/schemathesis/reporting/junitxml.py'],
+    },
+    'Generation': {
+      tags: ['生成', '模式'],
+      def: '正例 / 负例模式、coverage 与 fuzz 策略；<code>builder.py</code> 将 schema 约束编译为 Hypothesis strategies。',
+      mechanics: ['GenerationMode', 'coverage.py'],
+      related: ['Hypothesis', 'Case'],
+      patterns: ['Generation', 'builder'],
+      files: ['src/schemathesis/generation/hypothesis/builder.py'],
+    },
+  };
+
+
+
+  const panel      = document.getElementById('codePanel');
+  const backdrop   = document.getElementById('codeBackdrop');
+  const closeBtn   = document.getElementById('codePanelClose');
+  const pathEl     = document.getElementById('panelPath');
+  const badgeEl    = document.getElementById('panelBadge');
+  const ghLink     = document.getElementById('panelGhLink');
+  const iframeBody = document.getElementById('iframePanelBody');
+  const iframeEl   = document.getElementById('panelIframe');
+  const iframeLoader = document.getElementById('iframeLoader');
+  const termBody   = document.getElementById('termPanelBody');
+  const navBack    = document.getElementById('panelNavBack');
+  const navFwd     = document.getElementById('panelNavFwd');
+  const pinBtn     = document.getElementById('panelPinBtn');
+
+  let pinned = false;
+  let navStack = [], navIdx = -1;
+
+  function openPanel() {
+    panel.classList.add('open');
+    if (!pinned) backdrop.classList.add('open');
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+  closeBtn.addEventListener('click', closePanel);
+  backdrop.addEventListener('click', closePanel);
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    panel.classList.toggle('pinned', pinned);
+    backdrop.classList.toggle('open', !pinned && panel.classList.contains('open'));
+  });
+
+  function pushNav(entry) {
+    navStack = navStack.slice(0, navIdx + 1);
+    navStack.push(entry);
+    navIdx = navStack.length - 1;
+    updateNavBtns();
+  }
+  function updateNavBtns() {
+    navBack.disabled = navIdx <= 0;
+    navFwd.disabled  = navIdx >= navStack.length - 1;
+  }
+  navBack.addEventListener('click', () => { if (navIdx > 0) { navIdx--; restoreNav(navStack[navIdx]); updateNavBtns(); } });
+  navFwd.addEventListener('click',  () => { if (navIdx < navStack.length - 1) { navIdx++; restoreNav(navStack[navIdx]); updateNavBtns(); } });
+  function restoreNav(e) {
+    if (e.type === 'file')     _openGitHubPanelInternal(e.path, e.label);
+    else if (e.type === 'term') _openTermPanel(e.key);
+    else if (e.type === 'reporoot') _openRepoBrowserInternal();
+  }
+
+  const grip = document.getElementById('panelResizeGrip');
+  let resizing = false, startX = 0, startW = 0;
+  grip.addEventListener('mousedown', e => {
+    resizing = true; startX = e.clientX; startW = panel.offsetWidth;
+    grip.classList.add('dragging');
+    const shield = document.createElement('div');
+    shield.id = 'resize-shield';
+    shield.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:ew-resize;';
+    document.body.appendChild(shield);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const delta = startX - e.clientX;
+    panel.style.width = Math.max(300, Math.min(window.innerWidth * 0.92, startW + delta)) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizing) return;
+    resizing = false;
+    grip.classList.remove('dragging');
+    const shield = document.getElementById('resize-shield');
+    if (shield) shield.remove();
+  });
+
+  function _openGitHubPanelInternal(ghPath, label) {
+    panel.dataset.type   = 'file';
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'GitHub';
+    ghLink.href          = GH + '/blob/' + BRANCH + '/' + ghPath;
+    ghLink.style.display = 'inline-block';
+    iframeBody.style.display = 'flex';
+    termBody.style.display   = 'none';
+    iframeEl.style.display   = 'none';
+    iframeEl.style.flex      = '';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>加载中…</span>';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + GH + '/blob/' + BRANCH + '/' + ghPath + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/blob/' + BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) {
+    pushNav({ type: 'file', path: ghPath, label });
+    _openGitHubPanelInternal(ghPath, label);
+  }
+
+  function _openRepoBrowserInternal() {
+    panel.dataset.type   = 'file';
+    pathEl.textContent   = GH_REPO;
+    badgeEl.textContent  = 'GitHub';
+    ghLink.href          = GH + '/tree/' + BRANCH;
+    ghLink.style.display = 'inline-block';
+    iframeBody.style.display = 'flex';
+    termBody.style.display   = 'none';
+    iframeEl.style.display   = 'none';
+    iframeEl.style.flex      = '';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>加载中…</span>';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + GH + '/tree/' + BRANCH + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/tree/' + BRANCH;
+    }, 60);
+  }
+  function openRepoBrowser() {
+    pushNav({ type: 'reporoot' });
+    _openRepoBrowserInternal();
+  }
+
+  function renderTermHTML(key) {
+    const t = PROJECT_TERMS[key]; if (!t) return '';
+    const tags  = (t.tags  || []).map(g => '<span class="term-tag">'  + g + '</span>').join('');
+    const mech  = (t.mechanics || []).map(m => '<li>' + m + '</li>').join('');
+    const rels  = (t.related || []).map(r => '<button class="term-rel-btn" data-term="' + r + '">' + r + '</button>').join('');
+    const files = (t.files  || []).filter(f => FILE_MAP[f]).map(f =>
+      '<button class="term-file-btn" data-file="' + FILE_MAP[f] + '">' + f + '</button>').join('');
+    return '<div class="term-tags">' + tags + '</div>' +
+      '<div class="term-title-h">' + key + '</div>' +
+      '<div class="term-def">'  + t.def + '</div>' +
+      (mech  ? '<div class="term-sec">实现机制</div><ul class="term-mechanics">' + mech + '</ul>' : '') +
+      (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
+      (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
+  }
+  function _openTermPanel(key) {
+    panel.dataset.type   = 'term';
+    pathEl.textContent   = key;
+    badgeEl.textContent  = '术语解释';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'flex';
+    termBody.style.flexDirection = 'column';
+    termBody.innerHTML = renderTermHTML(key);
+    termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+      btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+    termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+      btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+    openPanel();
+  }
+  function openTermPanel(key) {
+    if (!PROJECT_TERMS[key]) return;
+    pushNav({ type: 'term', key });
+    _openTermPanel(key);
+  }
+
+  document.addEventListener('click', function (e) {
+    const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+    const termEl = e.target.closest('.term-link[data-term]');
+    if (fileEl && fileEl.dataset.file) {
+      e.preventDefault();
+      openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+      e.preventDefault();
+      openTermPanel(termEl.dataset.term);
+    }
+  });
+
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.classList.contains('file-link')) return;
+    const raw = el.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (ghPath) {
+      el.classList.add('file-link');
+      el.dataset.file  = ghPath;
+      el.dataset.label = raw.replace(/^★\s*/, '');
+      el.title = '在 GitHub 中查看';
+    }
+  });
+
+  const termPatterns = [];
+  for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+    for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+  }
+  termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+
+  const TERM_RE = new RegExp(
+    termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+
+  const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+    'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+
+  function tagTermsInDocument() {
+    const content = document.querySelector('.content');
+    if (!content) return;
+    const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p = node.parentNode;
+        while (p && p !== content) {
+          if (SKIP_TAGS.has(p.tagName) ||
+              p.classList.contains('term-link') ||
+              p.classList.contains('file-link') ||
+              p.classList.contains('mermaid') ||
+              p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = []; let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(textNode => {
+      const text = textNode.textContent;
+      TERM_RE.lastIndex = 0;
+      if (!TERM_RE.test(text)) return;
+      TERM_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = TERM_RE.exec(text)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const key = PAT_KEY[m[0]];
+        if (key) {
+          const sp = document.createElement('span');
+          sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+          frag.appendChild(sp);
+        } else {
+          frag.appendChild(document.createTextNode(m[0]));
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  tagTermsInDocument();
+  window.openRepoBrowser = openRepoBrowser;
+
+  (function () {
+    const toc     = document.getElementById('tocNav');
+    const btn     = document.getElementById('tocToggle');
+    const content = document.querySelector('.content');
+    if (!toc || !btn) return;
+    let collapsed = false;
+    btn.addEventListener('click', () => {
+      collapsed = !collapsed;
+      toc.classList.toggle('collapsed', collapsed);
+      content.classList.toggle('toc-collapsed', collapsed);
+      btn.textContent = collapsed ? '▶' : '◀';
+      btn.title       = collapsed ? '展开目录' : '收起目录';
+    });
+  })();
+
+  (function () {
+    document.querySelectorAll('.diagram-container').forEach(container => {
+      const zoomBtn = document.createElement('button');
+      zoomBtn.className   = 'diagram-zoom-btn';
+      zoomBtn.title       = '放大查看';
+      zoomBtn.textContent = '⤢';
+      container.appendChild(zoomBtn);
+      function openLightbox() {
+        const svg = container.querySelector('.mermaid svg');
+        if (!svg) return;
+        const rect = svg.getBoundingClientRect();
+        const w = rect.width  * 1.5;
+        const h = rect.height * 1.5;
+        const lightbox = document.createElement('div');
+        lightbox.className = 'diagram-lightbox';
+        const inner = document.createElement('div');
+        inner.className   = 'diagram-lightbox-inner';
+        inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+        inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+        inner.style.overflow = 'auto';
+        inner.style.padding  = '20px';
+        const cloneSvg = svg.cloneNode(true);
+        cloneSvg.setAttribute('width',  w);
+        cloneSvg.setAttribute('height', h);
+        cloneSvg.style.display = 'block';
+        function close() { lightbox.remove(); }
+        lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+        document.addEventListener('keydown', function esc(e) {
+          if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+        });
+        inner.appendChild(cloneSvg);
+        lightbox.appendChild(inner);
+        document.body.appendChild(lightbox);
+      }
+      zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+      container.addEventListener('click', openLightbox);
+    });
+  })();
+})();
+
+</script>
+</body>
+</html>

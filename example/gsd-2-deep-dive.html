@@ -127,8 +127,7 @@
   tr:nth-child(even) td { background: var(--bg-alt); }
 
   /* --- Module Card --- */
-  .module-card { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; }
-  .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); }
+  .module-meta { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 8px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
 
   /* --- Diagram Container --- */
   .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
@@ -170,6 +169,9 @@
   .fit-card.unfit { background: #fff7ed; border: 1px solid #fdba74; }
   .fit-card.unfit h4 { color: var(--warning); }
 
+  /* --- 4.1 示例链路引导 --- */
+  .section-lead { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px; line-height: 1.6; }
+
   /* --- Timeline --- */
   .timeline { margin: 20px 0; }
   .timeline-step { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
@@ -183,19 +185,41 @@
   .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
   .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 220px; }
   .chain-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
-  .chain-table th { background: var(--accent); color: #fff; font-weight: 600; text-align: left; padding: 8px 10px; border: 1px solid var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  .chain-table th { background: var(--accent-light); color: #1e3a6e; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #bfdbfe; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
   .chain-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
   .chain-table tr:nth-child(even) td { background: var(--bg-alt); }
   .chain-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 30px; white-space: nowrap; }
   .chain-table td:nth-child(2) { white-space: nowrap; font-weight: 600; font-size: 12px; }
   .chain-table td:nth-child(3) code, .chain-table td:nth-child(4) code { font-size: 11px; color: #c7254e; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
-  .chain-table td:nth-child(5) { font-size: 12px; color: var(--text-secondary); }
-  .chain-table td:nth-child(6) { font-size: 12px; }
+  .chain-table td:nth-child(5) { font-size: 12px; }
+  .chain-table td:nth-child(6) { font-size: 12px; color: #6d28d9; font-weight: 500; }
+  /* 4.3 时序图对照表（6 列：发起方所在模块可点开源） */
+  .seq-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  .seq-table th { background: var(--accent-light); color: #1e3a6e; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #bfdbfe; font-size: 11px; letter-spacing: 0.3px; white-space: nowrap; }
+  .seq-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 34px; white-space: nowrap; }
+  .seq-table td:nth-child(2), .seq-table td:nth-child(4) { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .seq-table td:nth-child(3) code { font-size: 11px; color: #c7254e; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+  .seq-table td:nth-child(5) { font-size: 12px; }
+  .seq-table td:nth-child(5) code { font-size: 11px; color: #c7254e; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; }
+  .seq-table td:nth-child(6) { font-size: 12px; color: var(--text-secondary); }
+  .seq-table-caption { font-size: 12px; color: var(--text-secondary); margin: 0 0 10px; line-height: 1.5; }
   .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
   .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
   .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
-  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 70px; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 80px; }
+  .arch-read-table td:last-child { white-space: nowrap; width: 200px; font-size: 12px; }
   .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+
+  /* --- Schema Tables (3.2 字段定义) --- */
+  .schema-obj-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 24px 0 6px; padding-left: 2px; border-left: 3px solid var(--accent); padding-left: 10px; line-height: 1.5; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 12.5px; }
+  .schema-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 10px; border: 1px solid var(--border); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #374151; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 170px; font-weight: 600; }
+  .schema-table td:nth-child(2) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #6d28d9; white-space: nowrap; width: 160px; }
+  .schema-table tr:nth-child(even) td { background: var(--bg-alt); }
   .module-item { display: block; padding: 2px 0; white-space: nowrap; }
 
   /* --- Directory Group Rationale --- */
@@ -296,26 +320,34 @@
   <a href="#section-2" class="toc-h2">2 项目设计理念</a>
   <a href="#section-2-1" class="toc-h3">2.1 磁盘驱动状态机</a>
   <a href="#section-2-2" class="toc-h3">2.2 每单元新鲜会话</a>
-  <a href="#section-2-3" class="toc-h3">2.3 竞品横向对比</a>
-  <a href="#section-3" class="toc-h2">3 使用方式与执行链路</a>
-  <a href="#section-3-1" class="toc-h3">3.1 适合解决什么问题</a>
-  <a href="#section-3-2" class="toc-h3">3.2 最小可运行路径</a>
-  <a href="#section-3-3" class="toc-h3">3.3 核心使用模式</a>
-  <a href="#section-4" class="toc-h2">4 系统详细设计</a>
-  <a href="#section-4-1" class="toc-h3">4.1 系统架构设计</a>
-  <a href="#section-4-1-1" class="toc-h4">4.1.1 架构图</a>
-  <a href="#section-4-2" class="toc-h3">4.2 核心使用模式调用链</a>
-  <a href="#section-4-2-1" class="toc-h4">4.2.1 Step 模式（交互逐步）</a>
-  <a href="#section-4-2-2" class="toc-h4">4.2.2 Auto 模式（无人值守）</a>
-  <a href="#section-4-2-3" class="toc-h4">4.2.3 Headless 模式（CI/CD）</a>
-  <a href="#section-4-3" class="toc-h3">4.3 关键模块实现细节</a>
-  <a href="#section-4-3-1" class="toc-h4">4.3.1 声明式调度管道</a>
-  <a href="#section-4-3-2" class="toc-h4">4.3.2 复杂度分级器</a>
-  <a href="#section-4-3-3" class="toc-h4">4.3.3 崩溃恢复机制</a>
-  <a href="#section-4-3-4" class="toc-h4">4.3.4 分层上下文注入</a>
-  <a href="#section-5" class="toc-h2">5 方案评价</a>
-  <a href="#section-5-1" class="toc-h3">5.1 优势分析</a>
-  <a href="#section-5-2" class="toc-h3">5.2 局限分析</a>
+  <a href="#section-2-3" class="toc-h3">2.3 声明式架构（竞品对比）</a>
+  <a href="#section-2-4" class="toc-h3">2.4 当前适合解决什么问题</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 状态存储载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的一次完整过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 核心使用模式调用链</a>
+  <a href="#section-5-2-1" class="toc-h4">5.2.1 Step 模式（交互逐步）</a>
+  <a href="#section-5-2-2" class="toc-h4">5.2.2 Auto 模式（无人值守）</a>
+  <a href="#section-5-2-3" class="toc-h4">5.2.3 Headless 模式（CI/CD）</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 声明式调度管道</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 复杂度分级器</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 崩溃恢复机制</a>
+  <a href="#section-5-3-4" class="toc-h4">5.3.4 分层上下文注入</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  <a href="#section-7-1" class="toc-h4">7.1 本文观察基线</a>
   </div><!-- .toc-links -->
 </nav>
 
@@ -416,10 +448,7 @@
   </table>
   <p><strong>GSD 的核心赢面</strong>：在"无人值守长期推进复杂需求"这个场景无对手；<strong>输面</strong>：日常快问快答和小修改场景下，启动一个 Milestone 太重，不如 Claude Code 直接。</p>
 
-  <!-- Section 3: 使用方式与执行链路 -->
-  <h2 id="section-3">3 项目使用方式与执行链路</h2>
-
-  <h3 id="section-3-1">3.1 当前适合解决什么问题</h3>
+  <h3 id="section-2-4">2.4 当前适合解决什么问题</h3>
 
   <div class="fit-grid">
     <div class="fit-card fit">
@@ -443,7 +472,199 @@
     </div>
   </div>
 
-  <h3 id="section-3-2">3.2 最小可运行路径</h3>
+  <h2 id="section-3">3 核心对象与术语</h2>
+
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <p>统一定义下列词（及表中扩展条目），后文各章在相同语义下使用，避免「同名不同义」。</p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>术语</th><th>定义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Milestone</span></td><td>面向交付的顶层工作包：对应一条独立的产品目标（通常含 ROADMAP、独立 <span class="term-link" data-term="Worktree Isolation">git worktree</span> 与分支），完成后再合并回主线。</td></tr>
+      <tr><td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Slice</span></td><td>在一个 Milestone 之下、按主题或时间切分的<strong>工作切片</strong>；把大目标拆成可顺序或并行推进的子计划，各自有 SLICE 级状态与 SUMMARY。</td></tr>
+      <tr><td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Task</span></td><td>落在某个 Slice 内的<strong>具体实施项</strong>（文件/接口级的改动清单）；调度器按 Task 粒度决定下一步要跑哪种 Unit。</td></tr>
+      <tr><td><span class="file-link" data-file="src/resources/extensions/gsd/auto/run-unit.ts" data-label="run-unit.ts" title="在 GitHub 中查看 run-unit.ts">Unit</span></td><td><strong>最小可调度运行单元</strong>：一次 <span class="term-link" data-term="Declarative Dispatch Pipeline">dispatch</span> 决策后，在一个<strong>全新 LLM 会话</strong>里跑完的一步（如 discuss / plan / execute / verify）；不是「任意一句聊天」。</td></tr>
+      <tr><td><span class="term-link" data-term="Fresh Session Per Unit">SUMMARY</span></td><td>某个 Unit 结束时由 Agent 写出的<strong>压缩记忆</strong>（Markdown）；下一 Unit 通过 Prompt 注入引用它，而不是复用整段对话历史。</td></tr>
+      <tr><td><span class="term-link" data-term="Tiered Context Injection">inline_level</span></td><td>在 <code>auto-prompts.ts</code> 中控制历史文档注入详略的配置：<code>full</code> / <code>references</code> / <code>compressed</code>，与 context budget 一起决定 Prompt 多长。</td></tr>
+      <tr><td><span class="file-link" data-file="src/resources/extensions/gsd/auto.ts" data-label="auto.ts" title="在 GitHub 中查看 auto.ts">stepMode</span></td><td>Auto 会话布尔标记；为 <code>true</code> 时（<code>/gsd step</code>）每跑完一个 Unit 即 <code>pauseAuto</code>，等人再次触发，再进入下一轮 <code>autoLoop</code>。</td></tr>
+      <tr><td><span class="term-link" data-term="Declarative Dispatch Pipeline">dispatch</span></td><td>声明式<strong>调度</strong>：由 <code>DispatchRule[]</code> 顺序求值，返回下一步 <code>unitType</code> 或 stop/skip；取代巨型 if-else。</td></tr>
+      <tr><td><span class="term-link" data-term="Worktree Isolation">worktree</span></td><td>Git 为单个 Milestone 提供的<strong>隔离工作目录 + 分支</strong>；Agent 在 worktree 内改代码，完成后 squash-merge 回主分支，减少文件冲突。</td></tr>
+      <tr><td><span class="term-link" data-term="Pi SDK">Pi SDK</span></td><td>GSD 依赖的底层 LLM 与工具运行时（如 <code>@gsd/pi-coding-agent</code> 等闭源包）：负责会话、工具调用与模型路由，GSD 在其之上做工作流与磁盘状态机。</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>对象</th><th>定义</th><th>分属模块</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Milestone</span></td>
+        <td>锁定「要交付什么」与「何时算完成」；承载 ROADMAP、预算与 worktree 边界，是权限与范围的最大容器。每个 Milestone 对应一个独立的 git worktree 与分支，完成后合并回主线。</td>
+        <td><code class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts">state.ts</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Slice</span></td>
+        <td>在 Milestone 目标之下，按功能主题、风险或并行度把工作切成多个 Slice；每个 Slice 有自己的计划文档（SLICE.md）与执行节奏，便于分阶段验收与回滚。</td>
+        <td><code class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts">state.ts</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts" title="在 GitHub 中查看 state.ts">Task</span></td>
+        <td>把 Slice 里的计划落成可执行的条目（文件级改动清单）；调度器根据当前磁盘状态选中 Task 后，映射为若干 Unit（不同类型的一次 LLM 会话），每步写回 TASK / SUMMARY 等产物。</td>
+        <td><code class="file-link" data-file="src/resources/extensions/gsd/state.ts" data-label="state.ts">state.ts</code></td>
+      </tr>
+      <tr>
+        <td><span class="file-link" data-file="src/resources/extensions/gsd/auto/run-unit.ts" data-label="run-unit.ts" title="在 GitHub 中查看 run-unit.ts">Unit</span></td>
+        <td>最小运行单元：<span class="term-link" data-term="Fresh Session Per Unit">新鲜会话</span>与<span class="term-link" data-term="Declarative Dispatch Pipeline">声明式调度</span>都以 Unit 为边界——每 Unit 一次模型上下文、一次 <code>dispatch</code> 决策、一次可观测的落盘结果；比它更细会破坏「状态可恢复 / 可重试」的粒度。</td>
+        <td><code class="file-link" data-file="src/resources/extensions/gsd/auto/run-unit.ts" data-label="run-unit.ts">auto/run-unit.ts</code> · <code class="file-link" data-file="src/resources/extensions/gsd/auto-dispatch.ts" data-label="auto-dispatch.ts">auto-dispatch.ts</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:13px;color:var(--text-secondary);margin:16px 0 8px">以下字段定义直接来自源码 <code class="file-link" data-file="src/resources/extensions/gsd/gsd-db.ts" data-label="gsd-db.ts">gsd-db.ts</code>（SQLite 行）与 <code class="file-link" data-file="src/resources/extensions/gsd/types.ts" data-label="types.ts">types.ts</code>（TypeScript 接口），所有字段均已确认。</p>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="src/resources/extensions/gsd/gsd-db.ts" data-label="gsd-db.ts">MilestoneRow</span> — Milestone 的 SQLite 行结构</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>TEXT PK</td><td>Milestone 编号，如 <code>"M01"</code></td></tr>
+      <tr><td>title</td><td>TEXT</td><td>Milestone 标题</td></tr>
+      <tr><td>status</td><td>TEXT</td><td>当前状态：<code>active</code> / <code>pending</code> / <code>complete</code> / <code>parked</code></td></tr>
+      <tr><td>depends_on</td><td>TEXT[]</td><td>前置 Milestone ID 列表；本 Milestone 须等前置全部 complete 才能变 active</td></tr>
+      <tr><td>created_at</td><td>TEXT</td><td>创建时间（ISO 8601）</td></tr>
+      <tr><td>completed_at</td><td>TEXT | null</td><td>完成时间；未完成为 null</td></tr>
+      <tr><td>vision</td><td>TEXT</td><td>愿景描述——这个 Milestone 要达成的业务/产品目标</td></tr>
+      <tr><td>success_criteria</td><td>TEXT[]</td><td>成功标准清单；所有条目满足才可 complete</td></tr>
+      <tr><td>key_risks</td><td>Array&lt;{risk, whyItMatters}&gt;</td><td>关键风险列表，每项含风险描述与重要性说明</td></tr>
+      <tr><td>proof_strategy</td><td>Array&lt;{riskOrUnknown, retireIn, whatWillBeProven}&gt;</td><td>风险消解策略：在哪个 Slice 退出、通过什么来证明</td></tr>
+      <tr><td>verification_contract</td><td>TEXT</td><td>契约测试要求（API/接口契约层面的验收条件）</td></tr>
+      <tr><td>verification_integration</td><td>TEXT</td><td>集成测试要求（跨模块联调的验收条件）</td></tr>
+      <tr><td>verification_operational</td><td>TEXT</td><td>运营就绪检验标准（监控/告警/回滚就绪度）</td></tr>
+      <tr><td>verification_uat</td><td>TEXT</td><td>用户验收测试（UAT）标准；由 <code>run-uat</code> Unit 核对</td></tr>
+      <tr><td>definition_of_done</td><td>TEXT[]</td><td>完成定义清单；Agent 完成所有 Slice 后按此逐项核查</td></tr>
+      <tr><td>requirement_coverage</td><td>TEXT</td><td>需求覆盖说明（哪些需求被此 Milestone 交付）</td></tr>
+      <tr><td>boundary_map_markdown</td><td>TEXT</td><td>Slice 间接口边界图，Markdown 格式；描述各 Slice 的 produces / consumes</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="src/resources/extensions/gsd/gsd-db.ts" data-label="gsd-db.ts">SliceRow</span> — Slice 的 SQLite 行结构</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>milestone_id</td><td>TEXT FK</td><td>所属 Milestone 编号</td></tr>
+      <tr><td>id</td><td>TEXT PK</td><td>Slice 编号，如 <code>"S01"</code></td></tr>
+      <tr><td>title</td><td>TEXT</td><td>Slice 标题</td></tr>
+      <tr><td>status</td><td>TEXT</td><td><code>pending</code> / <code>active</code> / <code>complete</code> / <code>blocked</code> / <code>deferred</code> 等</td></tr>
+      <tr><td>risk</td><td>TEXT</td><td>风险等级：<code>low</code> / <code>medium</code> / <code>high</code></td></tr>
+      <tr><td>depends</td><td>TEXT[]</td><td>前置 Slice ID 列表；未完成时本 Slice 不可启动</td></tr>
+      <tr><td>demo</td><td>TEXT</td><td>「完成后能演示什么」的一句话描述（产品可见价值）</td></tr>
+      <tr><td>goal</td><td>TEXT</td><td>目标叙述；从 SLICE.md 解析，用于 Prompt 注入</td></tr>
+      <tr><td>success_criteria</td><td>TEXT</td><td>本 Slice 的验收标准</td></tr>
+      <tr><td>proof_level</td><td>TEXT</td><td>证明等级要求（e.g. unit-test / integration / uat）</td></tr>
+      <tr><td>integration_closure</td><td>TEXT</td><td>与其他 Slice 的集成收口说明：本 Slice 完成后须交付哪些接口给下游</td></tr>
+      <tr><td>observability_impact</td><td>TEXT</td><td>完成后对可观测性（日志/指标/链路追踪）的影响描述</td></tr>
+      <tr><td>full_summary_md</td><td>TEXT</td><td>Slice SUMMARY 全文（Markdown）；完成后写入，供下一 Slice 的 Prompt inline</td></tr>
+      <tr><td>full_uat_md</td><td>TEXT</td><td>Slice UAT 报告全文（Markdown）；由 <code>run-uat</code> Unit 写入</td></tr>
+      <tr><td>sequence</td><td>INTEGER</td><td>执行顺序提示；工具可设置以控制 Slice 执行顺序</td></tr>
+      <tr><td>created_at / completed_at</td><td>TEXT</td><td>创建/完成时间戳；完成后 <code>completed_at</code> 被写入</td></tr>
+      <tr><td>replan_triggered_at</td><td>TEXT | null</td><td>最近触发重规划（replan）的时间；null 表示从未重规划</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="src/resources/extensions/gsd/gsd-db.ts" data-label="gsd-db.ts">TaskRow</span> — Task 的 SQLite 行结构</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>milestone_id / slice_id</td><td>TEXT FK</td><td>所属 Milestone 与 Slice 编号（复合主键的前两段）</td></tr>
+      <tr><td>id</td><td>TEXT PK</td><td>Task 编号，如 <code>"T01"</code></td></tr>
+      <tr><td>title</td><td>TEXT</td><td>Task 标题</td></tr>
+      <tr><td>status</td><td>TEXT</td><td><code>pending</code> / <code>active</code> / <code>complete</code> / <code>blocked</code> / <code>skipped</code> 等</td></tr>
+      <tr><td>description</td><td>TEXT</td><td>任务描述（来自 SLICE.md 计划条目）</td></tr>
+      <tr><td>estimate</td><td>TEXT</td><td>时间估算，如 <code>"30m"</code>、<code>"2h"</code>——仅供参考，不影响调度</td></tr>
+      <tr><td>files</td><td>TEXT[]</td><td>预期涉及的文件路径列表（plan 阶段填写）</td></tr>
+      <tr><td>verify</td><td>TEXT</td><td>验证方式说明（如 <code>"run tests"</code>）</td></tr>
+      <tr><td>inputs</td><td>TEXT[]</td><td>输入文件路径；用于响应式并行调度的依赖图推导</td></tr>
+      <tr><td>expected_output</td><td>TEXT[]</td><td>预期输出文件；与其他 Task 的 <code>inputs</code> 求交集得到依赖边</td></tr>
+      <tr><td>one_liner</td><td>TEXT</td><td>Task 完成后由 Agent 写入的一句话摘要</td></tr>
+      <tr><td>narrative</td><td>TEXT</td><td>详细执行叙述（Agent 完成后写入，记录做了什么）</td></tr>
+      <tr><td>verification_result</td><td>TEXT</td><td>验证结果摘要（PASS / FAIL + 说明）</td></tr>
+      <tr><td>duration</td><td>TEXT</td><td>实际耗时（如 <code>"3m 42s"</code>）</td></tr>
+      <tr><td>blocker_discovered</td><td>BOOLEAN</td><td>执行中是否发现阻塞问题；为 true 时触发 blocked 流程</td></tr>
+      <tr><td>deviations</td><td>TEXT</td><td>偏离原计划之处（Agent 自述）</td></tr>
+      <tr><td>known_issues</td><td>TEXT</td><td>已知遗留问题或技术债（Agent 自述）</td></tr>
+      <tr><td>key_files</td><td>TEXT[]</td><td>关键文件路径；写入 SUMMARY，供后续 Slice inline 引用</td></tr>
+      <tr><td>key_decisions</td><td>TEXT[]</td><td>关键决策列表；写入 SUMMARY，供后续 Slice inline 引用</td></tr>
+      <tr><td>observability_impact</td><td>TEXT</td><td>本 Task 对可观测性的影响（监控/日志变化）</td></tr>
+      <tr><td>full_summary_md</td><td>TEXT</td><td>Task SUMMARY 全文（Markdown）；由 <code>complete-task</code> 工具调用后写入</td></tr>
+      <tr><td>full_plan_md</td><td>TEXT</td><td>Task PLAN 全文（Markdown）；由 <code>plan-slice</code> 阶段写入</td></tr>
+      <tr><td>sequence</td><td>INTEGER</td><td>执行顺序提示；响应式并行调度优先按此排序</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title"><span class="file-link" data-file="src/resources/extensions/gsd/auto/run-unit.ts" data-label="run-unit.ts">Unit</span> — 运行时调度概念（无独立 DB 表）</p>
+  <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 10px;line-height:1.65">Unit 不是一行数据库记录，而是 <span class="term-link" data-term="Declarative Dispatch Pipeline">dispatch</span> 每轮决策后交给 <code>run-unit.ts</code> 执行的一次 LLM 会话。它的「形状」来自调度器返回的动作对象：</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>unitType</td><td>string</td><td>本次会话的类型，决定用哪个 Prompt 模板。常见值：<code>discuss-milestone</code> / <code>plan-milestone</code> / <code>plan-slice</code> / <code>execute-task</code> / <code>run-uat</code> / <code>complete-task</code> / <code>complete-slice</code> / <code>verify-milestone</code></td></tr>
+      <tr><td>milestoneId</td><td>string</td><td>本 Unit 操作的 Milestone 编号</td></tr>
+      <tr><td>sliceId</td><td>string | null</td><td>本 Unit 操作的 Slice 编号（plan-milestone 等顶层 Unit 无 Slice）</td></tr>
+      <tr><td>taskId</td><td>string | null</td><td>本 Unit 操作的 Task 编号（仅 execute-task / complete-task 有）</td></tr>
+      <tr><td>model</td><td>string | null</td><td>动态路由或 hook 覆盖后选定的 LLM model ID；null 时由 Pi SDK 取默认</td></tr>
+      <tr><td>prompt</td><td>string</td><td>由 <code class="file-link" data-file="src/resources/extensions/gsd/auto-prompts.ts" data-label="auto-prompts.ts">auto-prompts.ts</code> 按 <code>inline_level</code> 构建的完整 Prompt 字符串</td></tr>
+      <tr><td>matchedRule</td><td>string</td><td>命中的调度规则名称；用于日志追踪与决策可解释性</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 状态存储载体</h3>
+  <p><strong>Markdown（<code>.gsd/</code> 下 ROADMAP / SLICE / TASK 等）</strong>：人类可读、可 Git diff、可手工改写的<strong>主叙事与进度真相</strong>；适合作为跨 Unit 的契约与审查材料。</p>
+  <p><strong>SQLite（<code>gsd-db</code> 等）</strong>：对同一状态做<strong>结构化索引与快速查询</strong>（关系、时间序、关联 ID）；引擎频繁读盘时走 DB，避免每次都全文扫 Markdown。</p>
+  <p><strong>runtime 文件（如 <code>.gsd/runtime/auto.lock</code>、session 路径记录）</strong>：承载<strong>进程级瞬时信号</strong>——谁在跑、PID 是否存活、崩溃现场指向哪个 JSONL；不参与产品功能的长期叙事，但决定「能否安全继续跑」。</p>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <ul>
+    <li><strong>GSD 不是普通聊天式 coding assistant</strong>：核心是磁盘状态机 + 调度循环，对话只是其中一个 I/O 形态；长任务靠落盘与 Unit，不靠堆消息。</li>
+    <li><strong>GSD 不是单纯任务清单工具</strong>：清单（Task）之下还有自动执行、模型路由、验证门与崩溃恢复；会改代码、会跑工具、会消费预算。</li>
+    <li><strong>SUMMARY 不是完整历史</strong>：它只是<strong>压缩记忆</strong>，用于跨 Unit 传递要点；细节仍在 TASK / SLICE / 代码与 Git 里，需要时应让 Agent 用工具读原文。</li>
+  </ul>
+
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p class="section-lead">以「为现有系统新增用户登录失败次数限制」为例，追踪一次完整的 GSD 执行链路：</p>
+
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="step-title">① 用户提出目标</div>
+      <div class="step-desc">用户执行 <code>/gsd discuss "为登录接口添加失败次数限制，5次后锁定15分钟"</code>。GSD 启动 <code>discuss-milestone</code> 类 Unit，与用户澄清边界：计数放在 Redis 还是数据库？锁定是软锁还是硬锁？</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② Plan Milestone</div>
+      <div class="step-desc"><code>discuss</code> 完成后自动进入 <code>plan-milestone</code> Unit。Agent 读取讨论结论，生成包含若干 Slice 的 <code>ROADMAP.md</code>（例如「数据模型变更」「接口逻辑实现」「联调测试」）。状态写入 <code>.gsd/milestones/M01/ROADMAP.md</code> 与 <strong>SQLite</strong>。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ Plan Slice（逐个）</div>
+      <div class="step-desc">对每个 Slice，GSD 分配<strong style="color:#6d28d9;font-weight:600">全新会话</strong>执行 <code>plan-slice</code>：Agent 读 ROADMAP、将其 inline 进 Prompt，输出 <code>SLICE.md</code>——文件级任务列表，例如「修改 User 表增加 <code>login_attempt_count</code> 字段」。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ Execute Tasks（新鲜上下文）</div>
+      <div class="step-desc">每个 Task 在独立新会话中执行。<code>auto-prompts.ts</code> 按 <code>inline_level</code> 配置决定把多少 SLICE 内容放进 Prompt（full / references / compressed）。<strong style="color:#6d28d9;font-weight:600">复杂度分级器</strong>决定本轮用 Sonnet 还是 Opus 执行。代码变更直接落在该 Milestone 专属的 <code>git worktree</code> 上。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ Run UAT / 写入 SUMMARY</div>
+      <div class="step-desc">全部 Task 完成后，<code>run-uat</code> Unit 跑测试命令并写入结论（PASS / FAIL）。Slice 收尾时生成 <code>SUMMARY.md</code>，作为下一 Slice 的「压缩历史记忆」。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑥ Worktree Merge + 继续</div>
+      <div class="step-desc">所有 Slice 通过后，将该 Milestone 的 <code>git worktree</code> <code>squash-merge</code> 回主线；调度器自动推进下一 Milestone，或在信息级别提示全部完成。用户可随时中断；下次 <code>/gsd auto</code> 会依据<strong style="color:#6d28d9;font-weight:600">磁盘状态</strong>准确续跑。</div>
+    </div>
+  </div>
+
+  <p style="font-size:14px;color:var(--text-secondary);margin-top:8px;line-height:1.75">同一条链路在 <strong>Headless</strong> 下逻辑不变，人机交互由 stdin 答案与 stdout JSON 事件替代；在 <strong>Step</strong> 下每个 Unit 末尾可插入人工审查点。最短命令路径见 <a href="#section-4-2">4.2</a>，三种运行形态差异见 <a href="#section-4-3">4.3</a>。</p>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
   <p>从零开始，用 GSD 完成第一个自主任务只需 5 步：</p>
 
   <div class="cmd-flow">
@@ -459,18 +680,7 @@
     <div class="cmd-line">gsd web   # 打开浏览器 Dashboard</div>
   </div>
 
-  <div class="diagram-container">
-    <div class="mermaid">
-graph LR
-    A["npm install -g gsd-pi\n安装"] --> B["gsd\nonboarding 配置 API Key"]
-    B --> C["/gsd discuss\n创建 Milestone"]
-    C --> D["/gsd auto\n自主执行循环"]
-    D --> E["gsd web\n查看进度 & 结果"]
-    </div>
-    <div class="caption">图 3-1: 最小可运行路径（5 步从零到自主 Agent）</div>
-  </div>
-
-  <h3 id="section-3-3">3.3 核心使用模式</h3>
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
 
   <div class="usage-grid">
     <div class="usage-card">
@@ -520,20 +730,20 @@ graph LR
     </div>
   </div>
 
-  <!-- Section 4: 系统详细设计 -->
-  <h2 id="section-4">4 系统详细设计</h2>
+  <!-- Section 5: 系统详细设计 -->
+  <h2 id="section-5">5 系统详细设计</h2>
 
-  <h3 id="section-4-1">4.1 系统架构设计</h3>
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
 
-  <h4 id="section-4-1-1">4.1.1 系统架构图</h4>
+  <h4 id="section-5-1-1">5.1.1 系统架构图</h4>
 
   <!-- Directory Tree -->
-  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录</a>结构了解项目的整体轮廓（<code>★</code> 为关键入口文件，<span style="color:#2563eb;font-weight:600">蓝色</span>为目录，<span style="color:#c7254e;font-weight:600">红色</span>为入口文件）——</p>
+  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录结构</a>了解项目的整体轮廓。</p>
   <div class="dir-tree">
     <pre><span class="tree-root">gsd-2/</span>
 <span class="tree-branch">├── </span><span class="tree-dir">src/</span>                                 <span class="tree-comment">← 核心应用层：启动引导、CLI 分发、扩展注册</span>
-<span class="tree-branch">│   ├── </span><span class="tree-entry">loader.ts ★</span>                     <span class="tree-comment">← 最先执行，在 SDK 求值前预设所有环境变量</span>
-<span class="tree-branch">│   ├── </span><span class="tree-entry">cli.ts ★</span>                        <span class="tree-comment">← 主 CLI 入口，解析命令参数并分发到各模式</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="src/loader.ts" data-label="loader.ts" title="在右侧面板查看源码">loader.ts ★</span>                     <span class="tree-comment">← 最先执行，在 SDK 求值前预设所有环境变量</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="src/cli.ts" data-label="cli.ts" title="在右侧面板查看源码">cli.ts ★</span>                        <span class="tree-comment">← 主 CLI 入口，解析命令参数并分发到各模式</span>
 <span class="tree-branch">│   ├── </span><span class="tree-dir">resources/extensions/gsd/</span>       <span class="tree-comment">← GSD 工作流引擎核心（auto / dispatch / prompts）</span>
 <span class="tree-branch">│   ├── </span><span class="tree-dir">web/</span>                             <span class="tree-comment">← Web 服务层：Bridge、Dashboard、Settings API</span>
 <span class="tree-branch">│   └── </span><span class="tree-dir">headless*.ts</span>                    <span class="tree-comment">← 无头模式（CI/CD）：无 TTY 环境的自动执行器</span>
@@ -577,7 +787,7 @@ graph TD
       Prompt --> Native["native/ Rust 引擎\ngrep/glob/AST/git"]
     end
     </div>
-    <div class="caption">图 4-1: GSD 2 系统架构图（按职责层分组）</div>
+    <div class="caption">图 5-1: GSD 2 系统架构图（按职责层分组）</div>
   </div>
 
   <p><strong>如何读这张图：</strong></p>
@@ -631,86 +841,155 @@ graph TD
     </tbody>
   </table>
 
-  <h3 id="section-4-2">4.2 核心使用模式调用链</h3>
-  <p>呼应 <a href="#section-3-3">3.3 核心使用模式</a>，按三种模式分别追踪从命令入口到循环结束的完整函数跳转链，<strong>所在模块</strong>列点击可在右侧面板查看源文件。</p>
+  <h3 id="section-5-2">5.2 核心使用模式调用链</h3>
+  <p>呼应 <a href="#section-4-3">4.3 核心使用模式</a>，按三种模式分别追踪从命令入口到循环结束的完整函数跳转链，<strong>所在模块</strong>列点击可在右侧面板查看源文件。</p>
 
-  <h4 id="section-4-2-1">4.2.1 🪜 Step 模式（交互逐步）</h4>
-  <p>用户通过 <code>/gsd step</code> 每次推进一个 Unit，执行完毕后系统暂停等待下次触发，适合首次使用或需要审查每步输出的场景。</p>
+  <h4 id="section-5-2-1">5.2.1 🪜 Step 模式（交互逐步）</h4>
+
+  <p><code>/gsd step</code> 是 GSD 的<strong>交互逐步</strong>执行模式。每次运行只推进一个 Unit（计划/执行/验证中的某一步），完成后立即暂停并将结果展示给用户，由用户确认后再手动触发下一步。适合首次接触新 Milestone、需要审查 AI 决策质量，或处于敏感代码区域不想放任自主执行的场景。</p>
+
+  <p><strong>与其他模式的核心区别：</strong>Step 模式与 Auto 模式共享同一套 <code>autoLoop</code> 执行引擎，关键差异仅在启动时传入 <strong><code>options.step = true</code></strong>。这会使 <code>bootstrapAutoSession</code> 将 <code>s.stepMode</code> 置为 <code>true</code>，<code>autoLoop</code> 在每次完成一个 Unit 后调用 <code>pauseAuto</code> 将 <code>s.active = false</code>，循环自然退出挂起。用户审查输出后再次执行 <code>/gsd step</code> 才重新激活 —— 人始终在回路中，每步可审查、可回退，但代价是不能无人值守。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["gsd step\n用户触发"]) --> B["handleStepCommand\ncommands/handlers/step.ts"]
+    B --> C["startAuto\nstep=true"]
+    C --> D["bootstrapAutoSession\ns.stepMode=true"]
+    D --> E["autoLoop\nauto/loop.ts"]
+    E --> F["runPreDispatch\nrunDispatch"]
+    F --> G["runUnit\nvia Pi SDK"]
+    G --> H["runFinalize\n+ verify"]
+    H --> I["pauseAuto\ns.active=false"]
+    I --> J(["用户审查输出"])
+    J -->|"再次 gsd step"| E
+    style I fill:#fee2e2,stroke:#dc2626,color:#1f2937
+    style J fill:#fef3c7,stroke:#d97706,color:#1f2937
+    </div>
+    <div class="caption">图 5-2: Step 模式调用链（每次用户触发推进一个 Unit，执行后挂起）</div>
+  </div>
+
   <table class="chain-table">
     <thead>
-      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
+      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>作用简述</th><th>与 Auto 的差异</th></tr>
     </thead>
     <tbody>
-      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td><code>args</code>："/gsd step" 后的参数字符串；<code>ctx</code>：ExtensionCommandContext</td><td>注册 /gsd 命令并路由到分发器</td></tr>
-      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td><code>args</code>；<code>ctx</code>；<code>pi</code>：ExtensionAPI</td><td>按优先级尝试各子处理器，匹配到 step</td></tr>
-      <tr><td>3</td><td>Step 子命令</td><td><code>handleStepCommand</code></td><td><code>commands/handlers/step.ts</code></td><td><code>trimmed</code>：已 trim 参数（如 step、step M001）；<code>ctx</code>、<code>pi</code></td><td>携带 <code>options.step = true</code> 调用 startAuto</td></tr>
-      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/step.ts</code></td><td><code>milestoneId?</code>：目标 Milestone ID；<code>fn</code>：包裹 startAuto 的异步函数</td><td>限定 GSD_MILESTONE_LOCK，隔离单 Milestone 派生范围</td></tr>
-      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td><code>ctx</code>；<code>pi</code>；<code>base</code>；<code>options.step = true</code>：单步模式标记</td><td>恢复或新起会话，以 stepMode 进入 autoLoop</td></tr>
-      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td><code>s</code>：AutoSession；<code>ctx</code>、<code>pi</code>；<code>requestedStepMode = true</code>；<code>deps</code>：BootstrapDeps</td><td>初始化锁 / git / DB / worktree，设置 s.stepMode</td></tr>
-      <tr><td>7</td><td>单步循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>ctx</code>；<code>s</code>（s.stepMode=true）；<code>deps</code>：LoopDeps</td><td><code>while (s.active)</code>，每次迭代后遇 stepMode 将 s.active=false 挂起</td></tr>
-      <tr><td>8</td><td>预派发</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：IterationContext；<code>loopState</code></td><td>deriveState + 健康检查；单步模式下不做并行 slice 预取</td></tr>
-      <tr><td>9</td><td>派发 + 执行</td><td><code>runDispatch → runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td>同 Auto 模式</td><td>执行单个 Unit，向 LLM 发送 Prompt 并等待 agent_end</td></tr>
-      <tr><td>10</td><td>步骤暂停</td><td><code>pauseAuto</code></td><td><code>auto.ts</code></td><td><code>reason: "step_complete"</code>；<code>s</code>：AutoSession</td><td>设 s.active = false，挂起循环；等待用户下次 /gsd step 重新激活</td></tr>
+      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td>注册 /gsd 命令并路由到分发器</td><td>—</td></tr>
+      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td>按优先级尝试各子处理器，匹配到 step</td><td>—</td></tr>
+      <tr><td>3</td><td>Step 子命令</td><td><code>handleStepCommand</code></td><td><code>commands/handlers/step.ts</code></td><td>携带 <code>options.step = true</code> 调用 startAuto</td><td>★ 入口函数不同（<code>handleAutoCommand</code> vs <code>handleStepCommand</code>）</td></tr>
+      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/step.ts</code></td><td>限定 GSD_MILESTONE_LOCK，隔离单 Milestone 派生范围</td><td>—</td></tr>
+      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td>恢复或新起会话，以 stepMode 进入 autoLoop</td><td>★ <code>options.step=true</code> 而非 false</td></tr>
+      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td>初始化锁 / git / DB / worktree，设置 s.stepMode</td><td>★ 设置 <code>s.stepMode = true</code></td></tr>
+      <tr><td>7</td><td>单步循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td>每次迭代后遇 stepMode 将 s.active=false 挂起</td><td>★ 每个 Unit 后自动挂起（Auto 不挂起）</td></tr>
+      <tr><td>8</td><td>预派发</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td>deriveState + 健康检查；不做并行 slice 预取</td><td>—</td></tr>
+      <tr><td>9</td><td>派发 + 执行</td><td><code>runDispatch → runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td>执行单个 Unit，向 LLM 发送 Prompt 并等待 agent_end</td><td>—</td></tr>
+      <tr><td>10</td><td>步骤暂停</td><td><code>pauseAuto</code></td><td><code>auto.ts</code></td><td>设 s.active=false 挂起；等待用户下次 /gsd step 重新激活</td><td>★ Step 模式独有，Auto 无此步骤</td></tr>
     </tbody>
   </table>
 
-  <h4 id="section-4-2-2">4.2.2 🤖 Auto 模式（无人值守）</h4>
-  <p>用户通过 <code>/gsd auto</code> 启动，Agent 自动循环推进所有 Unit 直至 Milestone 完成或遇到阻塞，是 GSD 最核心的使用路径。</p>
+  <h4 id="section-5-2-2">5.2.2 🤖 Auto 模式（无人值守）</h4>
+
+  <p><code>/gsd auto</code> 是 GSD 的<strong>核心全自动</strong>执行模式。Agent 接管完整循环 —— 从规划、执行到验证 —— 全程无需用户干预，直到所有 Milestone 完成或遇到无法自动解决的阻塞才退出。适合任务规划清晰、测试覆盖充分、信任 AI 代理质量的场景，是日常开发中效率最高的运行方式。</p>
+
+  <p><strong>与其他模式的核心区别：</strong>Auto 模式是 GSD 最完整的执行路径，<strong><code>s.stepMode = false</code></strong>，<code>autoLoop</code> 持续运行 <code>while (s.active)</code> 无需任何用户干预。调度器（<code>resolveDispatch</code>）全自动按规则表确定下一 Unit，<code>complexity-classifier</code> 动态评级模型成本，崩溃守卫实时写锁保障可恢复性 —— 只有遇到真正的阻塞（预算超限、守卫拦截、所有 Milestone 完成）才会 <code>stop</code> 退出。与 Step 模式相比无暂停点；与 Headless 模式相比仍有 TUI 交互界面可实时查看进度。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["gsd auto\n用户触发"]) --> B["handleAutoCommand\ncommands/handlers/auto.ts"]
+    B --> C["startAuto\nstep=false"]
+    C --> D["bootstrapAutoSession\ns.stepMode=false"]
+    D --> E["autoLoop\nwhile s.active"]
+    E --> F["runPreDispatch\nderiveState"]
+    F --> G["resolveDispatch\nnext unitType"]
+    G --> H["runUnit\nvia Pi SDK"]
+    H --> I["runFinalize\n+ verify"]
+    I --> J["postUnit\nDB write + hooks"]
+    J -->|"自动下一轮"| E
+    E -->|"stop 条件"| K(["完成或阻塞"])
+    style E fill:#dcfce7,stroke:#16a34a,color:#1f2937
+    style J fill:#dcfce7,stroke:#16a34a,color:#1f2937
+    </div>
+    <div class="caption">图 5-3: Auto 模式调用链（全自动持续推进，无暂停点）</div>
+  </div>
+
   <table class="chain-table">
     <thead>
-      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
+      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>作用简述</th><th>与 Step 的差异</th></tr>
     </thead>
     <tbody>
-      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td><code>args</code>："/gsd auto" 后的参数字符串；<code>ctx</code>：ExtensionCommandContext</td><td>把 /gsd 交给分发器处理</td></tr>
-      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td><code>args</code>；<code>ctx</code>；<code>pi</code>：ExtensionAPI</td><td>按顺序尝试各子处理器</td></tr>
-      <tr><td>3</td><td>Auto 子命令</td><td><code>handleAutoCommand</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>trimmed</code>：已 trim 参数（如 auto M001 --verbose）；<code>ctx</code>、<code>pi</code></td><td>解析 auto 变体后调用 startAuto</td></tr>
-      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/auto.ts</code></td><td><code>milestoneId?</code>：目标 Milestone ID；<code>fn</code>：包裹 startAuto 的异步函数</td><td>设置 GSD_MILESTONE_LOCK，限定派生状态范围</td></tr>
-      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td><code>ctx</code>；<code>pi</code>；<code>base</code>：项目根路径；<code>verboseMode</code>；<code>options?.step = false</code></td><td>恢复或新起会话，进入 autoLoop（持续模式）</td></tr>
-      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td><code>s</code>：AutoSession；<code>ctx</code>、<code>pi</code>；<code>deps</code>：BootstrapDeps（锁路径、worktree 策略等）</td><td>初始化锁 / git / 迁移 / crash 检测 / worktree / DB</td></tr>
-      <tr><td>7</td><td>主循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>ctx</code>；<code>s</code>（s.stepMode=false）；<code>deps</code>：LoopDeps</td><td><code>while (s.active)</code> 持续驱动迭代，不主动挂起</td></tr>
-      <tr><td>8</td><td>阶段 1</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td><code>ic</code>：IterationContext；<code>loopState</code></td><td>健康/资源检查、deriveState、并行 slice 预取、里程碑终端逻辑</td></tr>
-      <tr><td>9</td><td>阶段 2–3</td><td><code>runGuards → runDispatch → resolveDispatch</code></td><td><code>auto/phases.ts</code> / <code>auto-dispatch.ts</code></td><td><code>ic</code>；<code>preData</code>：mid、state；<code>loopState</code></td><td>守卫检查 → 规则表匹配 → 确定下一 unitType</td></tr>
-      <tr><td>10</td><td>阶段 4</td><td><code>runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td><code>ic</code>；<code>iterData</code>：unitType、unitId、prompt 等</td><td>构建 Prompt → 新起 Pi 会话 → 发送消息 → 等待 agent_end</td></tr>
-      <tr><td>11</td><td>Pi 事件</td><td><code>pi.on("agent_end") → handleAgentEnd → resolveAgentEnd</code></td><td><code>bootstrap/register-hooks.ts</code> / <code>bootstrap/agent-end-recovery.ts</code> / <code>auto/resolve.ts</code></td><td><code>event</code>：AgentEndEvent（messages、status）</td><td>分类 abort/error/成功，解开 runUnit 挂起的 Promise</td></tr>
-      <tr><td>12</td><td>阶段 5</td><td><code>runFinalize → postUnitPreVerification → runPostUnitVerification</code></td><td><code>auto/phases.ts</code> / <code>auto-post-unit.ts</code> / <code>auto-verification.ts</code></td><td><code>ic</code>；<code>pctx</code>：PostUnitContext</td><td>缓存失效、可选延迟、提交、UAT 验证门</td></tr>
-      <tr><td>13</td><td>后处理</td><td><code>postUnitPostVerification</code></td><td><code>auto-post-unit.ts</code></td><td><code>pctx</code>：PostUnitContext</td><td>DB 双写、完成钩子等；回到步骤 8 继续循环</td></tr>
-      <tr><td>14</td><td>循环结束</td><td><code>cleanupAfterLoopExit</code></td><td><code>auto.ts</code></td><td><code>ctx</code>：ExtensionContext</td><td>清 currentUnit / active / 锁 / UI 状态</td></tr>
-      <tr><td>—</td><td>LLM 工具（旁路）</td><td><code>complete_slice / complete_milestone</code> 等</td><td><code>auto-dispatch.ts</code></td><td>LLM 工具调用（各工具自有 schema）</td><td>写 SUMMARY / 改 DB；状态由下轮 deriveState 消费</td></tr>
+      <tr><td>1</td><td>命令注册</td><td><code>registerGSDCommand → handler</code></td><td><code>commands/index.ts</code></td><td>把 /gsd 交给分发器处理</td><td>—</td></tr>
+      <tr><td>2</td><td>分发</td><td><code>handleGSDCommand</code></td><td><code>commands/dispatcher.ts</code></td><td>按顺序尝试各子处理器</td><td>—</td></tr>
+      <tr><td>3</td><td>Auto 子命令</td><td><code>handleAutoCommand</code></td><td><code>commands/handlers/auto.ts</code></td><td>解析 auto 变体后调用 startAuto</td><td>★ 入口函数不同（<code>handleAutoCommand</code>）</td></tr>
+      <tr><td>4</td><td>可选锁</td><td><code>withMilestoneLock</code></td><td><code>commands/handlers/auto.ts</code></td><td>设置 GSD_MILESTONE_LOCK，限定派生状态范围</td><td>—</td></tr>
+      <tr><td>5</td><td>会话入口</td><td><code>startAuto</code></td><td><code>auto.ts</code></td><td>恢复或新起会话，进入 autoLoop 持续模式</td><td>★ <code>options.step=false</code></td></tr>
+      <tr><td>6</td><td>引导</td><td><code>bootstrapAutoSession</code></td><td><code>auto-start.ts</code></td><td>初始化锁 / git / 迁移 / crash / worktree / DB</td><td>★ s.stepMode 不设置（false）</td></tr>
+      <tr><td>7</td><td>主循环</td><td><code>autoLoop</code></td><td><code>auto/loop.ts</code></td><td><code>while (s.active)</code> 持续驱动，不主动挂起</td><td>★ 无暂停点，全自动推进</td></tr>
+      <tr><td>8</td><td>阶段 1</td><td><code>runPreDispatch</code></td><td><code>auto/phases.ts</code></td><td>健康检查、deriveState、并行 slice 预取、里程碑终端逻辑</td><td>★ 支持并行 slice 预取（Step 不做）</td></tr>
+      <tr><td>9</td><td>阶段 2–3</td><td><code>runGuards → runDispatch → resolveDispatch</code></td><td><code>auto/phases.ts</code> / <code>auto-dispatch.ts</code></td><td>守卫检查 → 规则表匹配 → 确定下一 unitType</td><td>—</td></tr>
+      <tr><td>10</td><td>阶段 4</td><td><code>runUnitPhase → runUnit</code></td><td><code>auto/phases.ts</code> / <code>auto/run-unit.ts</code></td><td>构建 Prompt → 新起 Pi 会话 → 发送消息 → 等待 agent_end</td><td>—</td></tr>
+      <tr><td>11</td><td>Pi 事件</td><td><code>pi.on("agent_end") → handleAgentEnd → resolveAgentEnd</code></td><td><code>bootstrap/register-hooks.ts</code> / <code>bootstrap/agent-end-recovery.ts</code> / <code>auto/resolve.ts</code></td><td>分类 abort/error/成功，解开 runUnit 挂起的 Promise</td><td>—</td></tr>
+      <tr><td>12</td><td>阶段 5</td><td><code>runFinalize → postUnitPreVerification → runPostUnitVerification</code></td><td><code>auto/phases.ts</code> / <code>auto-post-unit.ts</code> / <code>auto-verification.ts</code></td><td>缓存失效、提交、UAT 验证门</td><td>—</td></tr>
+      <tr><td>13</td><td>后处理</td><td><code>postUnitPostVerification</code></td><td><code>auto-post-unit.ts</code></td><td>DB 双写、完成钩子；回到步骤 8 继续循环</td><td>★ 直接进入下一轮（Step 会先挂起）</td></tr>
+      <tr><td>14</td><td>循环结束</td><td><code>cleanupAfterLoopExit</code></td><td><code>auto.ts</code></td><td>清 currentUnit / active / 锁 / UI 状态</td><td>—</td></tr>
     </tbody>
   </table>
 
-  <h4 id="section-4-2-3">4.2.3 🔧 Headless 模式（CI/CD）</h4>
-  <p>通过 <code>gsd --headless auto</code> 在无 TTY 环境（GitHub Actions / 定时脚本）中运行，所有交互问题由 stdin JSON 预置答案自动回答，输出结构化 JSON 事件流。</p>
+  <h4 id="section-5-2-3">5.2.3 🔧 Headless 模式（CI/CD）</h4>
+
+  <p><code>gsd --headless auto</code> 是 GSD 的 <strong>CI/CD 专用</strong>模式。在无 TTY 环境（如 GitHub Actions、定时任务脚本、Docker 容器）中运行时，所有终端 UI 交互被完全禁用：输入来自 stdin JSON 预置答案，输出为结构化 JSON 事件流，进程以标准退出码结束（0=成功，1=失败）。整个过程无需人工介入，机器可直接解析执行结果。</p>
+
+  <p><strong>与其他模式的核心区别：</strong>Headless 模式的入口完全不同 —— 通过 CLI 的 <strong><code>--headless</code> 标志</strong>而非 <code>/gsd</code> 命令触发，在进入 <code>autoLoop</code> 之前需要完成两件准备工作：① <code>loadHeadlessAnswers</code> 从 stdin 读取 JSON 预置答案映射，用于拦截所有交互确认；② <code>setupHeadlessEvents</code> 将所有 TUI 事件注册为 JSON 序列化输出到 stdout。一旦进入 <code>autoLoop</code>，执行逻辑与 Auto 模式<strong>完全相同</strong>，区别仅在于 I/O 层：没有终端 UI，没有颜色输出，只有机器可读的 JSON 事件流和最终退出码。这使 CI/CD 系统可以无摩擦地消费 GSD 的执行结果。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    A(["CI: gsd --headless auto\nstdin JSON 预置答案"]) --> B["loader.ts\n检测 --headless 标志"]
+    B --> C["runHeadlessMode\nheadless.ts"]
+    C --> D["loadHeadlessAnswers\n解析 stdin JSON 缓存答案"]
+    D --> E["setupHeadlessEvents\nTUI 事件转 JSON 输出到 stdout"]
+    E --> F["startAuto\nautoLoop 逻辑与 Auto 完全相同"]
+    F --> G{"交互问题?"}
+    G -->|"有问题"| H["HeadlessAnswerProvider\n从缓存取预置答案"]
+    H --> F
+    G -->|"无问题，产生事件"| I["emitHeadlessEvent\nJSON 写入 stdout"]
+    I --> F
+    F -->|"结束"| J(["process.exit\n0=成功  1=失败"])
+    style D fill:#ede9fe,stroke:#7c3aed,color:#1f2937
+    style E fill:#ede9fe,stroke:#7c3aed,color:#1f2937
+    </div>
+    <div class="caption">图 5-4: Headless 模式调用链（I/O 重定向为 JSON，CI 友好）</div>
+  </div>
+
   <table class="chain-table">
     <thead>
-      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>入参介绍</th><th>作用简述</th></tr>
+      <tr><th>#</th><th>阶段</th><th>函数 / 钩子</th><th>所在模块</th><th>作用简述</th><th>与 Auto 的差异</th></tr>
     </thead>
     <tbody>
-      <tr><td>1</td><td>CLI 启动</td><td><code>loader.ts</code> → <code>cli.ts</code>（<code>--headless</code> 检测）</td><td><code>loader.ts</code> / <code>cli.ts</code></td><td><code>process.argv</code>：含 --headless 标志</td><td>环境变量预注入；检测 --headless 标志，跳过 TUI 初始化</td></tr>
-      <tr><td>2</td><td>无头模式分支</td><td><code>runHeadlessMode</code></td><td><code>headless.ts</code></td><td><code>ctx</code>：HeadlessContext（含 stdinData、outputStream）</td><td>绕过 TUI 组件，建立无头执行上下文；注册事件序列化器</td></tr>
-      <tr><td>3</td><td>答案预加载</td><td><code>loadHeadlessAnswers</code></td><td><code>headless-answers.ts</code></td><td><code>stdinJson</code>：从 stdin 读取的 JSON 字符串（问题 → 答案映射）</td><td>解析并缓存预置答案；后续交互问题从缓存自动回答</td></tr>
-      <tr><td>4</td><td>事件序列化</td><td><code>setupHeadlessEvents</code></td><td><code>headless-events.ts</code></td><td><code>ctx</code>：HeadlessContext；<code>outputStream</code>：目标输出流（默认 stdout）</td><td>注册所有 TUI 事件监听器，将事件转为结构化 JSON 输出</td></tr>
-      <tr><td>5</td><td>Auto 主循环</td><td><code>startAuto</code> → <code>autoLoop</code></td><td><code>auto.ts</code> / <code>auto/loop.ts</code></td><td>同 Auto 模式；额外标记 <code>headless = true</code> 禁用所有 TUI 提示</td><td>与 Auto 模式完全相同的执行路径，I/O 已重定向到无头上下文</td></tr>
-      <tr><td>6</td><td>交互拦截</td><td><code>HeadlessAnswerProvider.answer()</code></td><td><code>headless-answers.ts</code></td><td><code>question</code>：交互问题文本；<code>options</code>：可选选项列表</td><td>从预置缓存查找匹配答案；未命中时抛出错误并输出 JSON 错误事件</td></tr>
-      <tr><td>7</td><td>JSON 事件输出</td><td><code>emitHeadlessEvent</code></td><td><code>headless-events.ts</code></td><td><code>event</code>：HeadlessEvent（含 type、payload、timestamp）</td><td>序列化 JSON 写入 stdout；每行一个事件，可被 CI 系统逐行消费</td></tr>
-      <tr><td>8</td><td>退出码</td><td><code>handleHeadlessExit</code></td><td><code>headless.ts</code></td><td><code>exitCode</code>：0（全部完成）/ 1（失败或阻塞）</td><td>调用 <code>process.exit(code)</code>；CI 系统通过退出码判断 pass/fail</td></tr>
+      <tr><td>1</td><td>CLI 启动</td><td><code>loader.ts</code> → <code>cli.ts</code></td><td><code>loader.ts</code> / <code>cli.ts</code></td><td>环境变量预注入；检测 --headless，跳过 TUI 初始化</td><td>★ 命令行入口不同（<code>gsd --headless</code> 而非 <code>/gsd auto</code>）</td></tr>
+      <tr><td>2</td><td>无头模式分支</td><td><code>runHeadlessMode</code></td><td><code>headless.ts</code></td><td>绕过 TUI，建立无头执行上下文</td><td>★ Headless 独有，Auto 无此步骤</td></tr>
+      <tr><td>3</td><td>答案预加载</td><td><code>loadHeadlessAnswers</code></td><td><code>headless-answers.ts</code></td><td>解析并缓存预置答案，供后续交互问题自动回答</td><td>★ Headless 独有，Auto 交互问题由 TUI 展示给用户</td></tr>
+      <tr><td>4</td><td>事件序列化</td><td><code>setupHeadlessEvents</code></td><td><code>headless-events.ts</code></td><td>注册所有 TUI 事件监听器，转为结构化 JSON 输出</td><td>★ Headless 独有，所有 UI 输出重定向为 JSON 事件流</td></tr>
+      <tr><td>5</td><td>Auto 主循环</td><td><code>startAuto</code> → <code>autoLoop</code></td><td><code>auto.ts</code> / <code>auto/loop.ts</code></td><td>与 Auto 模式完全相同的执行逻辑，I/O 已被重定向</td><td>—（执行逻辑与 Auto 完全一致）</td></tr>
+      <tr><td>6</td><td>交互拦截</td><td><code>HeadlessAnswerProvider.answer()</code></td><td><code>headless-answers.ts</code></td><td>从缓存查找匹配答案；未命中时抛错并输出 JSON 错误事件</td><td>★ Headless 独有，Auto 会弹出 TUI 对话框等待用户输入</td></tr>
+      <tr><td>7</td><td>JSON 事件输出</td><td><code>emitHeadlessEvent</code></td><td><code>headless-events.ts</code></td><td>序列化 JSON 写入 stdout；每行一个事件，可被 CI 逐行消费</td><td>★ Headless 独有，Auto 用 TUI 实时渲染进度</td></tr>
+      <tr><td>8</td><td>退出码</td><td><code>handleHeadlessExit</code></td><td><code>headless.ts</code></td><td>调用 process.exit(code)；CI 通过退出码判断 pass/fail</td><td>★ Headless 独有，Auto 以 TUI 消息通知用户</td></tr>
     </tbody>
   </table>
 
-  <h3 id="section-4-3">4.3 关键模块实现细节</h3>
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
 
   <!-- Module 1: 声明式调度管道 -->
-  <h4 id="section-4-3-1">4.3.1 关键模块一：声明式调度管道（auto-dispatch.ts）</h4>
-  <div class="module-card">
-    <div class="module-meta">
-      <span>📁 src/resources/extensions/gsd/auto-dispatch.ts</span>
-      <span>🏷️ 规则表模式（Chain of Responsibility 变体）</span>
-    </div>
-    <p><strong>要解决的问题</strong>：GSD 的工作流有 10+ 种 Unit 类型（discuss / plan / execute / uat / complete 等），决定"下一步该执行哪个"需要考虑当前 Milestone 状态、Slice 状态、是否有崩溃残留、预算是否超限……用命令式 if-else 实现会产生一个数百行的怪兽函数，无法单独测试每条规则，添加新规则会引入隐患。</p>
-    <p><strong>解决方案</strong>：把所有调度逻辑提取为一张有序的 <code>DispatchRule[]</code> 数组，每条规则有 name 和 async match 函数。match 返回 <code>DispatchAction</code>（dispatch / stop / skip）或 null（不匹配，继续下一条）。调度引擎只需顺序评估规则表，第一条返回非 null 的规则获胜。</p>
+  <h4 id="section-5-3-1">5.3.1 关键模块一：声明式调度管道（auto-dispatch.ts）</h4>
+  <div class="module-meta">
+    <span>📁 src/resources/extensions/gsd/auto-dispatch.ts</span>
+    <span>🏷️ 规则表模式（Chain of Responsibility 变体）</span>
+  </div>
+  <p><strong>要解决的问题</strong>：GSD 的工作流有 10+ 种 Unit 类型（discuss / plan / execute / uat / complete 等），决定"下一步该执行哪个"需要考虑当前 Milestone 状态、Slice 状态、是否有崩溃残留、预算是否超限……用命令式 if-else 实现会产生一个数百行的怪兽函数，无法单独测试每条规则，添加新规则会引入隐患。</p>
+  <p><strong>解决方案</strong>：把所有调度逻辑提取为一张有序的 <code>DispatchRule[]</code> 数组，每条规则有 name 和 async match 函数。match 返回 <code>DispatchAction</code>（dispatch / stop / skip）或 null（不匹配，继续下一条）。调度引擎只需顺序评估规则表，第一条返回非 null 的规则获胜。</p>
 
-    <div class="diagram-container">
-      <div class="mermaid">
+  <div class="diagram-container">
+    <div class="mermaid">
 sequenceDiagram
     participant Auto as auto.ts 主循环
     participant State as state.ts 状态读取
@@ -732,25 +1011,39 @@ sequenceDiagram
     Dispatch-->>Auto: DispatchAction
     Auto->>Prompt: buildExecuteTaskPrompt(...)
     Prompt-->>Auto: 构建好的 Prompt
-      </div>
-      <div class="caption">图 4-2: 声明式调度管道执行流程</div>
     </div>
-
-    <p><strong>代价与局限</strong>：规则的顺序本身就是隐式的业务逻辑，乱序会导致静默错误（如崩溃检测放在预算检测后面会漏掉崩溃场景）。规则条数增多后，调试"为什么选了这条规则"需要靠日志中的 <code>matchedRule</code> 字段追溯。</p>
+    <div class="caption">图 5-5: 声明式调度管道执行流程</div>
   </div>
 
-  <!-- Module 2: 复杂度分级器 -->
-  <h4 id="section-4-3-2">4.3.2 关键模块二：复杂度分级器（complexity-classifier.ts）</h4>
-  <div class="module-card">
-    <div class="module-meta">
-      <span>📁 src/resources/extensions/gsd/complexity-classifier.ts</span>
-      <span>🏷️ 启发式分级 + 自适应学习</span>
-    </div>
-    <p><strong>要解决的问题</strong>：模型路由需要知道"这个 Task 有多难"，但用 LLM 来判断难度有明显的自我矛盾（贵的 LLM 才能判准难度，用了就没省到）。需要一个零 LLM 调用的快速分级器。</p>
-    <p><strong>解决方案</strong>：两阶段判断。第一阶段按 unit 类型给默认分级（plan-milestone = heavy, complete-slice = light）；第二阶段对 execute-task 类型做元数据分析：读取 TASK.md 的文件引用数、依赖数、代码块数量、复杂度关键词，并结合历史失败率做自适应上调；最后用当前 budget 使用率做一次强制降级（90%+ 时 heavy → light）。</p>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（列名对齐上图参与者与消息；与 <a href="#section-5-2">5.2</a> 调用链表的「阶段/模块」列不同）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在模块</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>auto.ts 主循环</td><td><code>auto.ts</code></td><td>state.ts 状态读取</td><td><code>deriveState(basePath)</code> → <code>GSDState</code>（返回）</td><td>从磁盘聚合当前工作流上下文，供后续规则求值</td></tr>
+      <tr><td>2</td><td>auto.ts 主循环</td><td><code>auto.ts</code></td><td>auto-dispatch.ts 规则表</td><td><code>evaluateRules(ctx)</code></td><td>进入声明式引擎：按数组顺序逐条调用各规则的 <code>match</code></td></tr>
+      <tr><td>3</td><td>auto-dispatch.ts 规则表</td><td><code>auto-dispatch.ts</code></td><td>check-crash-recovery</td><td><code>match(ctx)</code> → <code>null</code>（无崩溃）</td><td>首条守卫规则未命中，继续下一条</td></tr>
+      <tr><td>4</td><td>auto-dispatch.ts 规则表</td><td><code>auto-dispatch.ts</code></td><td>check-budget-ceiling</td><td><code>match(ctx)</code> → <code>null</code>（预算正常）</td><td>预算相关规则未命中，继续下一条</td></tr>
+      <tr><td>5</td><td>auto-dispatch.ts 规则表</td><td><code>auto-dispatch.ts</code></td><td>execute-next-task</td><td><code>match(ctx)</code> → <code>{ action:"dispatch", unitType:"execute-task" }</code></td><td>示例业务规则命中，产生可执行的 <code>DispatchAction</code></td></tr>
+      <tr><td>6</td><td>auto-dispatch.ts 规则表</td><td><code>auto-dispatch.ts</code></td><td>auto.ts 主循环</td><td>返回 <code>DispatchAction</code></td><td>将胜出动作交回主循环，驱动后续 Phase</td></tr>
+      <tr><td>7</td><td>auto.ts 主循环</td><td><code>auto.ts</code></td><td>auto-prompts.ts</td><td><code>buildExecuteTaskPrompt(...)</code> → 构建好的 Prompt（返回）</td><td>按 <code>unitType</code> 拼装模板与上下文，供 <code>runUnit</code> 使用</td></tr>
+    </tbody>
+  </table>
 
-    <div class="diagram-container">
-      <div class="mermaid">
+  <p><strong>代价与局限</strong>：规则的顺序本身就是隐式的业务逻辑，乱序会导致静默错误（如崩溃检测放在预算检测后面会漏掉崩溃场景）。规则条数增多后，调试"为什么选了这条规则"需要靠日志中的 <code>matchedRule</code> 字段追溯。</p>
+
+  <!-- Module 2: 复杂度分级器 -->
+  <h4 id="section-5-3-2">5.3.2 关键模块二：复杂度分级器（complexity-classifier.ts）</h4>
+  <div class="module-meta">
+    <span>📁 src/resources/extensions/gsd/complexity-classifier.ts</span>
+    <span>🏷️ 启发式分级 + 自适应学习</span>
+  </div>
+  <p><strong>要解决的问题</strong>：模型路由需要知道"这个 Task 有多难"，但用 LLM 来判断难度有明显的自我矛盾（贵的 LLM 才能判准难度，用了就没省到）。需要一个零 LLM 调用的快速分级器。</p>
+  <p><strong>解决方案</strong>：两阶段判断。第一阶段按 unit 类型给默认分级（plan-milestone = heavy, complete-slice = light）；第二阶段对 execute-task 类型做元数据分析：读取 TASK.md 的文件引用数、依赖数、代码块数量、复杂度关键词，并结合历史失败率做自适应上调；最后用当前 budget 使用率做一次强制降级（90%+ 时 heavy → light）。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
 sequenceDiagram
     participant Router as 模型路由器
     participant Classifier as complexity-classifier.ts
@@ -768,25 +1061,39 @@ sequenceDiagram
     History-->>Classifier: 历史高失败率 → 上调
     Classifier->>Classifier: applyBudgetPressure(budgetPct) 强制降级
     Classifier-->>Router: {tier: "standard", reason: "...", downgraded: false}
-      </div>
-      <div class="caption">图 4-3: 复杂度分级器决策流程</div>
     </div>
-
-    <p><strong>代价与局限</strong>：启发式规则会有误判——一个关键词很少但实际上修改面很广的重构任务可能被错误分为 light。自适应学习的粒度是 unit 类型级别，无法区分同一类型内不同任务的差异。</p>
+    <div class="caption">图 5-6: 复杂度分级器决策流程</div>
   </div>
 
-  <!-- Module 3: 崩溃恢复机制 -->
-  <h4 id="section-4-3-3">4.3.3 关键模块三：崩溃恢复机制（crash-recovery.ts）</h4>
-  <div class="module-card">
-    <div class="module-meta">
-      <span>📁 src/resources/extensions/gsd/crash-recovery.ts + session-forensics.ts</span>
-      <span>🏷️ 心跳锁文件 + JSONL 取证</span>
-    </div>
-    <p><strong>要解决的问题</strong>：auto 模式的单个 Unit 执行可能持续数分钟到数十分钟。网络中断、内存溢出、用户强制关闭都会导致进程非正常退出。如何在下次启动时让用户无缝感知到"上次崩溃了"并提供恢复选项？</p>
-    <p><strong>解决方案</strong>：三层嵌套保护。第一层：每次 Unit 开始前在 <code>.gsd/runtime/auto.lock</code> 写入含 PID + sessionFile 路径的 JSON 锁文件，正常退出时删除；下次启动检测到锁文件且 PID 进程已不存在 → 判定崩溃。第二层：从崩溃时的 Pi session JSONL 文件读取已完成的工具调用，重建崩溃前状态摘要（session-forensics）。第三层：OS 级 flock 互斥锁防止并发执行。</p>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 <code>Router → Classifier → Meta/History</code> 与自调用分支）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在模块</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>模型路由器</td><td><code>auto-model-selection.ts</code></td><td>complexity-classifier.ts</td><td><code>classifyUnit(unitType, unitId, budgetPct)</code></td><td>入口：带上预算占用率，请求最终 tier</td></tr>
+      <tr><td>2</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>（内部）</td><td>查 <code>UNIT_TYPE_TIERS</code> 得默认 tier</td><td>零 LLM 的类型档粗分</td></tr>
+      <tr><td>3</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>TASK.md 元数据</td><td><code>extractTaskMetadata(unitId)</code> → <code>fileCount, depCount, keywords…</code>（返回）</td><td>图中 <code>alt execute-task</code> 分支：拉任务侧信号</td></tr>
+      <tr><td>4</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>（内部）</td><td><code>analyzeTaskComplexity()</code> 上调 tier</td><td>元数据分析后可能抬高难度档</td></tr>
+      <tr><td>5</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>routing-history.ts 失败率</td><td><code>getAdaptiveTierAdjustment(unitType, tier)</code> → 历史高失败率 → 上调（返回）</td><td>用历史路由结果微调保守程度</td></tr>
+      <tr><td>6</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>（内部）</td><td><code>applyBudgetPressure(budgetPct)</code> 强制降级</td><td>预算吃紧时再压一档，控制成本</td></tr>
+      <tr><td>7</td><td>complexity-classifier.ts</td><td><code>complexity-classifier.ts</code></td><td>模型路由器</td><td>返回 <code>{ tier, reason, …, downgraded }</code></td><td>闭环输出，供后续模型路由使用</td></tr>
+    </tbody>
+  </table>
 
-    <div class="diagram-container">
-      <div class="mermaid">
+  <p><strong>代价与局限</strong>：启发式规则会有误判——一个关键词很少但实际上修改面很广的重构任务可能被错误分为 light。自适应学习的粒度是 unit 类型级别，无法区分同一类型内不同任务的差异。</p>
+
+  <!-- Module 3: 崩溃恢复机制 -->
+  <h4 id="section-5-3-3">5.3.3 关键模块三：崩溃恢复机制（crash-recovery.ts）</h4>
+  <div class="module-meta">
+    <span>📁 src/resources/extensions/gsd/crash-recovery.ts + session-forensics.ts</span>
+    <span>🏷️ 心跳锁文件 + JSONL 取证</span>
+  </div>
+  <p><strong>要解决的问题</strong>：auto 模式的单个 Unit 执行可能持续数分钟到数十分钟。网络中断、内存溢出、用户强制关闭都会导致进程非正常退出。如何在下次启动时让用户无缝感知到"上次崩溃了"并提供恢复选项？</p>
+  <p><strong>解决方案</strong>：三层嵌套保护。第一层：每次 Unit 开始前在 <code>.gsd/runtime/auto.lock</code> 写入含 PID + sessionFile 路径的 JSON 锁文件，正常退出时删除；下次启动检测到锁文件且 PID 进程已不存在 → 判定崩溃。第二层：从崩溃时的 Pi session JSONL 文件读取已完成的工具调用，重建崩溃前状态摘要（session-forensics）。第三层：OS 级 flock 互斥锁防止并发执行。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
 sequenceDiagram
     participant Auto as auto.ts
     participant Lock as crash-recovery.ts
@@ -808,25 +1115,40 @@ sequenceDiagram
     Forensics->>Forensics: 解析 JSONL，提取已完成工具调用
     Forensics-->>Auto: 崩溃摘要
     Auto->>User: "上次在执行 execute-task 时崩溃，是否继续？"
-      </div>
-      <div class="caption">图 4-4: 崩溃恢复三层保护机制</div>
     </div>
-
-    <p><strong>代价与局限</strong>：锁文件的 PID 检测在分布式环境（多台机器共享 .gsd/ 目录的场景）下不可靠，但 GSD 主要针对单机开发场景，这个限制可接受。Session JSONL 取证的质量依赖 Pi SDK 的日志完整性。</p>
+    <div class="caption">图 5-7: 崩溃恢复三层保护机制</div>
   </div>
 
-  <!-- Module 4: 分层上下文注入 -->
-  <h4 id="section-4-3-4">4.3.4 关键模块四：分层上下文注入（auto-prompts.ts）</h4>
-  <div class="module-card">
-    <div class="module-meta">
-      <span>📁 src/resources/extensions/gsd/auto-prompts.ts</span>
-      <span>🏷️ 分层预算分配 + 优雅降级</span>
-    </div>
-    <p><strong>要解决的问题</strong>：每个 Unit 在独立新会话执行，但它需要了解当前任务的上下文——所在 Milestone 的目标、所属 Slice 的计划、关联 Task 的详情。把所有历史文档全部 inline 会超出 context window；什么都不 inline 则 Agent 缺乏背景会走弯路。</p>
-    <p><strong>解决方案</strong>：三档 inline_level 配置（full / references / compressed）+ 30k 字符 preamble 上限的自动裁剪。full 模式把完整 Markdown 文件 inline；references 模式只 inline 文件路径（告诉 Agent "去读这个文件"）；compressed 模式只 inline 文件的关键摘要段落。超出 30k 上限时自动按章节边界截断，而不是硬截字符。</p>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 <code>Note</code> 与自调用为图中注释，表中归纳为「内部」步骤）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在模块</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>auto.ts</td><td><code>auto.ts</code></td><td>session-lock.ts（flock）</td><td><code>acquireLock(basePath)</code> → 互斥锁获取成功（返回）</td><td>OS 级互斥，避免并发写同一 <code>.gsd</code> 树</td></tr>
+      <tr><td>2</td><td>auto.ts</td><td><code>auto.ts</code></td><td>crash-recovery.ts</td><td><code>writeLock(basePath, unitType, unitId, sessionFile)</code>；Note：写入 <code>.gsd/runtime/auto.lock</code></td><td>心跳锁落盘，记录 PID 与 session 路径</td></tr>
+      <tr><td>3</td><td>auto.ts</td><td><code>auto.ts</code></td><td>auto.ts（自执行）</td><td>执行 Unit（可能崩溃）；Note：进程崩溃则锁文件未删除</td><td>对应图中长耗时执行段与异常路径</td></tr>
+      <tr><td>4</td><td>auto.ts</td><td><code>auto.ts</code></td><td>crash-recovery.ts</td><td><code>detectCrash(basePath)</code>；内部：读取锁文件、检查 PID 是否存活</td><td>判定是否遗留崩溃现场</td></tr>
+      <tr><td>5</td><td>crash-recovery.ts</td><td><code>crash-recovery.ts</code></td><td>auto.ts</td><td>返回 <code>{ crashed: true, unitType, sessionFile }</code></td><td>将崩溃元数据交回主循环</td></tr>
+      <tr><td>6</td><td>auto.ts</td><td><code>auto.ts</code></td><td>session-forensics.ts</td><td><code>synthesizeCrashRecovery(sessionFile)</code>；内部：解析 JSONL、提取已完成工具调用</td><td>JSONL 取证，生成可展示的崩溃摘要</td></tr>
+      <tr><td>7</td><td>session-forensics.ts</td><td><code>session-forensics.ts</code></td><td>auto.ts</td><td>崩溃摘要（返回）</td><td>供后续 UI/日志分支消费</td></tr>
+      <tr><td>8</td><td>auto.ts</td><td><code>auto.ts</code></td><td>用户终端</td><td>提示「上次在执行 execute-task 时崩溃，是否继续？」</td><td>交互恢复；Headless 路径无此 UI，由预置答案与退出码承接</td></tr>
+    </tbody>
+  </table>
 
-    <div class="diagram-container">
-      <div class="mermaid">
+  <p><strong>代价与局限</strong>：锁文件的 PID 检测在分布式环境（多台机器共享 .gsd/ 目录的场景）下不可靠，但 GSD 主要针对单机开发场景，这个限制可接受。Session JSONL 取证的质量依赖 Pi SDK 的日志完整性。</p>
+
+  <!-- Module 4: 分层上下文注入 -->
+  <h4 id="section-5-3-4">5.3.4 关键模块四：分层上下文注入（auto-prompts.ts）</h4>
+  <div class="module-meta">
+    <span>📁 src/resources/extensions/gsd/auto-prompts.ts</span>
+    <span>🏷️ 分层预算分配 + 优雅降级</span>
+  </div>
+  <p><strong>要解决的问题</strong>：每个 Unit 在独立新会话执行，但它需要了解当前任务的上下文——所在 Milestone 的目标、所属 Slice 的计划、关联 Task 的详情。把所有历史文档全部 inline 会超出 context window；什么都不 inline 则 Agent 缺乏背景会走弯路。</p>
+  <p><strong>解决方案</strong>：三档 inline_level 配置（full / references / compressed）+ 30k 字符 preamble 上限的自动裁剪。full 模式把完整 Markdown 文件 inline；references 模式只 inline 文件路径（告诉 Agent "去读这个文件"）；compressed 模式只 inline 文件的关键摘要段落。超出 30k 上限时自动按章节边界截断，而不是硬截字符。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
 sequenceDiagram
     participant Dispatch as 调度器
     participant Prompts as auto-prompts.ts
@@ -846,19 +1168,34 @@ sequenceDiagram
     Prompts->>Prompts: capPreamble(preamble, 30000)
     Note over Prompts: 按章节边界智能截断，不硬截字符
     Prompts-->>Dispatch: 裁剪后的完整 Prompt
-      </div>
-      <div class="caption">图 4-5: 分层上下文注入流程</div>
     </div>
-
-    <p><strong>代价与局限</strong>：inline_level = "references" 要求 Agent 有足够的工具调用能力主动去读文件；如果 Agent 不读或读错，任务质量会下降。compressed 模式的摘要质量依赖于 SUMMARY 文件是否准确，而 SUMMARY 本身是之前 Agent 生成的——存在"错误传播"的风险。</p>
+    <div class="caption">图 5-8: 分层上下文注入流程</div>
   </div>
 
-  <!-- Section 5: 方案评价 -->
-  <h2 id="section-5">5 方案评价</h2>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 <code>Dispatch → Prompts → Prefs / Budget / Files</code> 与自调用）</p>
+  <table class="seq-table">
+    <thead>
+      <tr><th>#</th><th>发起方</th><th>发起方所在模块</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>调度器</td><td><code>auto/phases.ts</code></td><td>auto-prompts.ts</td><td><code>buildExecuteTaskPrompt(ctx)</code></td><td>入口：由派发结果触发 Prompt 构建</td></tr>
+      <tr><td>2</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>preferences.ts</td><td><code>loadEffectiveGSDPreferences()</code> → <code>{ inline_level, context_window, … }</code>（返回）</td><td>决定 full / references / compressed 与窗口上限</td></tr>
+      <tr><td>3</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>context-budget.ts</td><td><code>computeBudgets(windowTokens)</code> → <code>{ preambleChars, inlineContextChars }</code>（返回）</td><td>把 token 预算切成 preamble 与 inline 两段字符配额</td></tr>
+      <tr><td>4</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>.gsd/ 磁盘文件</td><td><code>loadFile(MILESTONE.md)</code> → milestone 内容（返回）</td><td>按 ctx 拉取里程碑文档</td></tr>
+      <tr><td>5</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>.gsd/ 磁盘文件</td><td><code>loadFile(SLICE.md)</code> → slice 内容（返回）</td><td>继续拼装 Slice 侧上下文</td></tr>
+      <tr><td>6</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>（内部）</td><td><code>capPreamble(preamble, 30000)</code>；Note：按章节边界智能截断</td><td>硬上限内尽量保持语义完整</td></tr>
+      <tr><td>7</td><td>auto-prompts.ts</td><td><code>auto-prompts.ts</code></td><td>调度器</td><td>裁剪后的完整 Prompt（返回）</td><td>交回主循环，进入 <code>runUnit</code> 发送给模型</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限</strong>：inline_level = "references" 要求 Agent 有足够的工具调用能力主动去读文件；如果 Agent 不读或读错，任务质量会下降。compressed 模式的摘要质量依赖于 SUMMARY 文件是否准确，而 SUMMARY 本身是之前 Agent 生成的——存在"错误传播"的风险。</p>
+
+  <!-- Section 6: 方案评价 -->
+  <h2 id="section-6">6 方案评价</h2>
 
   <div class="eval-grid">
     <div class="eval-card strength">
-      <h4 id="section-5-1">5.1 优势分析</h4>
+      <h4 id="section-6-1">6.1 优势分析</h4>
       <ul>
         <li><strong>磁盘状态机是真正的差异化</strong>：目前市场上很少有工具能做到跨会话、跨终端、跨崩溃的持久状态，这是 GSD 在"长任务可靠执行"场景的根本护城河</li>
         <li><strong>声明式调度的工程严谨性</strong>：把调度逻辑变成可测试的规则表，每条规则独立，可以 unit test，这在同类工具中罕见</li>
@@ -868,7 +1205,7 @@ sequenceDiagram
       </ul>
     </div>
     <div class="eval-card weakness">
-      <h4 id="section-5-2">5.2 局限分析</h4>
+      <h4 id="section-6-2">6.2 局限分析</h4>
       <ul>
         <li><strong>依赖闭源 Pi SDK</strong>：核心 Agent 运行时（会话管理、工具执行、LLM 路由）封装在 <code>@gsd/pi-coding-agent</code> 里，这是一个闭源包，限制了社区贡献和问题排查深度</li>
         <li><strong>初始学习曲线陡峭</strong>：Milestone / Slice / Task 三层结构对于"只想快速执行一个命令"的用户来说过重；onboarding 文档对新用户不够友好</li>
@@ -878,6 +1215,11 @@ sequenceDiagram
       </ul>
     </div>
   </div>
+
+  <h2 id="section-7">7 版本化维护区</h2>
+
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文对源码路径、调用链与行为语义的描述，以开源仓库 <a href="https://github.com/gsd-build/gsd-2" target="_blank" rel="noopener">https://github.com/gsd-build/gsd-2</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-04-14</strong>（与文档撰写环境一致）。</p>
 
 </main>
 
@@ -1018,7 +1360,11 @@ sequenceDiagram
   const FILE_MAP = {
     'src/loader.ts':                  'src/loader.ts',
     '★ src/loader.ts':               'src/loader.ts',
+    'loader.ts':                      'src/loader.ts',
+    '★ loader.ts':                    'src/loader.ts',
     'src/cli.ts':                     'src/cli.ts',
+    'cli.ts':                         'src/cli.ts',
+    '★ cli.ts':                       'src/cli.ts',
     'src/resource-loader.ts':         'src/resource-loader.ts',
     'src/tool-bootstrap.ts':          'src/tool-bootstrap.ts',
     'src/headless.ts':                'src/headless.ts',
@@ -1473,7 +1819,9 @@ sequenceDiagram
         while (p && p !== content) {
           if (SKIP_TAGS.has(p.tagName) ||
               p.classList.contains('term-link') ||
-              p.classList.contains('file-link')) return NodeFilter.FILTER_REJECT;
+              p.classList.contains('file-link') ||
+              p.classList.contains('mermaid') ||
+              p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
           p = p.parentNode;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -1507,6 +1855,9 @@ sequenceDiagram
   }
 
   tagTermsInDocument();
+
+  // Inline onclick="openRepoBrowser()" needs a global reference (IIFE scope is not global).
+  window.openRepoBrowser = openRepoBrowser;
 })();
 </script>
 </body>

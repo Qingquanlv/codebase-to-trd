@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ralph 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --bg-alt: #f8f9fa; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2563eb; --accent-light: #dbeafe; --border: #e5e7eb;
+    --success: #059669; --warning: #d97706; --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; color: var(--text); background: var(--bg); line-height: 1.8; display: flex; }
+  .toc { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 24px 16px; background: var(--bg-alt); border-right: 1px solid var(--border); font-size: 13px; z-index: 100; transition: width 0.25s ease, padding 0.25s ease; }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+  /* Diagram container with zoom */
+  .diagram-container { position: relative; cursor: zoom-in; margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; }
+  .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: white; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,.4); max-width: 92vw; max-height: 90vh; }
+  /* Eval / Fit grids */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #86efac; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness { background: #fff7ed; border-color: #fdba74; }
+  .eval-card.weakness h4 { color: var(--warning); }
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .fit-card { padding: 16px 20px; border-radius: 10px; border: 1px solid var(--border); }
+  .fit-card.fit { background: #f0fdf4; border-color: #bbf7d0; }
+  .fit-card.unfit { background: #fef9f0; border-color: #fed7aa; }
+  .fit-card h4 { margin: 0 0 10px; font-size: 14px; }
+  .fit-card.fit h4 { color: var(--success); }
+  .fit-card.unfit h4 { color: var(--warning); }
+  .fit-card ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  /* Usage grid */
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 20px 0; }
+  .usage-card { padding: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .usage-card .usage-title { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .usage-card .usage-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .usage-card .usage-label { color: var(--text-secondary); min-width: 52px; font-weight: 500; }
+  /* Timeline */
+  .timeline { margin: 20px 0; position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+  .timeline-step { position: relative; margin-bottom: 20px; }
+  .timeline-step::before { content: ''; position: absolute; left: -22px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid white; box-shadow: 0 0 0 2px var(--accent); }
+  .timeline-step .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .timeline-step .step-desc { font-size: 13px; color: var(--text-secondary); }
+  /* Code / cmd */
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+  /* Dir tree */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+  /* Arch read table */
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 80px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 200px; }
+  .arch-read-table tr:nth-child(even) td { background: var(--bg-alt); }
+  /* Chain / seq tables */
+  .chain-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  .chain-table th { background: var(--accent-light); color: #1e3a6e; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #bfdbfe; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  .chain-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .chain-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .chain-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 28px; }
+  .chain-table td:nth-child(2) { white-space: nowrap; font-weight: 600; font-size: 12px; }
+  .chain-table td:nth-child(5) { font-size: 12px; }
+  .chain-table td:nth-child(6) { font-size: 12px; color: #6d28d9; font-weight: 500; }
+  .seq-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13px; }
+  .seq-table th { background: var(--accent-light); color: #1e3a6e; font-weight: 700; text-align: left; padding: 8px 10px; border: 1px solid #bfdbfe; font-size: 11px; letter-spacing: 0.3px; white-space: nowrap; }
+  .seq-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table td:first-child { font-weight: 700; color: var(--accent); text-align: center; width: 28px; }
+  .seq-table-caption { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; }
+  /* Schema table */
+  .schema-obj-title { font-size: 13px; font-weight: 700; margin: 20px 0 6px; padding-left: 10px; border-left: 3px solid var(--accent); line-height: 1.5; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 12.5px; }
+  .schema-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 10px; border: 1px solid var(--border); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #374151; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 140px; font-weight: 600; }
+  .schema-table td:nth-child(2) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11px; color: #6d28d9; white-space: nowrap; width: 120px; }
+  .schema-table tr:nth-child(even) td { background: var(--bg-alt); }
+  /* Module meta */
+  .module-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 6px 0 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
+  .section-lead { font-size: 15px; font-weight: 600; margin: 0 0 16px; line-height: 1.6; }
+  .tip-box { margin: 16px 0; padding: 12px 16px 14px; background: #fefce8; border: 1px solid #facc15; border-radius: 8px; font-size: 13px; line-height: 1.65; }
+  .tip-box strong { color: #854d0e; }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .fit-grid { grid-template-columns: 1fr; }
+  }
+  /* ─── Interactive Panel System ─── */
+  .code-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.38); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .code-backdrop.open { opacity:1; pointer-events:auto; }
+  .code-panel { position:fixed; top:0; right:0; height:100vh; width:min(820px,65vw); min-width:300px; max-width:96vw; background:#1e1e2e; color:#cdd6f4; transform:translateX(100%); transition:transform .26s cubic-bezier(.4,0,.2,1); z-index:201; display:flex; flex-direction:column; box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute; left:0; top:0; width:6px; height:100%; cursor:ew-resize; z-index:10; background:transparent; border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; height:48px; border-bottom:1px solid #313244; flex-shrink:0; background:#181825; overflow:hidden; }
+  .code-panel-path { font-size:13px; font-family:'JetBrains Mono',Consolas,monospace; color:#cdd6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .code-panel-badge { font-size:11px; padding:2px 8px; border-radius:4px; background:#313244; color:#89b4fa; white-space:nowrap; flex-shrink:0; }
+  .panel-gh-link { font-size:12px; color:#89b4fa; text-decoration:none; white-space:nowrap; border:1px solid #89b4fa44; padding:2px 9px; border-radius:4px; flex-shrink:0; transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px; height:28px; border:none; background:transparent; color:#9399b2; cursor:pointer; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all .15s; flex-shrink:0; }
+  .code-panel-close:hover { background:#313244; color:#cdd6f4; }
+  #iframePanelBody { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  #iframePanelBody iframe { width:100%; flex:1; border:none; display:none; }
+  .iframe-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:#6c7086; gap:12px; font-size:14px; }
+  .iframe-spin { width:32px; height:32px; border:3px solid #313244; border-top-color:#89b4fa; border-radius:50%; animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  #termPanelBody { display:none; flex:1; overflow-y:auto; padding:20px 22px 32px; }
+  .term-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .term-tag { font-size:11px; padding:2px 8px; border-radius:12px; background:#313244; color:#89b4fa; }
+  .term-title-h { font-size:18px; font-weight:700; color:#cdd6f4; margin-bottom:12px; }
+  .term-def { font-size:14px; line-height:1.75; color:#bac2de; margin-bottom:16px; padding:12px 14px; background:#181825; border-left:3px solid #89b4fa; border-radius:0 6px 6px 0; }
+  .term-def code,.term-mechanics code { background:#313244; color:#f38ba8; padding:1px 5px; border-radius:3px; font-size:12px; }
+  .term-sec { font-size:11px; font-weight:700; color:#89b4fa; text-transform:uppercase; letter-spacing:.5px; margin:14px 0 8px; }
+  .term-mechanics { list-style:none; padding:0; margin:0; }
+  .term-mechanics li { font-size:13px; color:#bac2de; padding:6px 0 6px 18px; position:relative; border-bottom:1px solid #313244; line-height:1.6; }
+  .term-mechanics li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-related-list { display:flex; gap:8px; flex-wrap:wrap; }
+  .term-rel-btn { font-size:12px; padding:3px 10px; border-radius:4px; background:#313244; color:#a6e3a1; border:1px solid #45475a; cursor:pointer; transition:all .15s; }
+  .term-rel-btn:hover { background:#45475a; }
+  .term-files-list { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+  .term-file-btn { font-size:12px; font-family:'JetBrains Mono',Consolas,monospace; padding:5px 10px; background:#181825; color:#89b4fa; border:1px solid #313244; border-radius:4px; cursor:pointer; text-align:left; transition:all .15s; }
+  .term-file-btn:hover { background:#313244; }
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; font-weight: 500; }
+  .term-link:hover { color:#6d28d9; }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起/展开目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 全新实例隔离上下文</a>
+  <a href="#section-2-2" class="toc-h3">2.2 文件即状态机</a>
+  <a href="#section-2-3" class="toc-h3">2.3 竞品横向对比</a>
+  <a href="#section-2-4" class="toc-h3">2.4 适合解决什么问题</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 状态存储载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的完整过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 关键执行链路</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 主循环状态机</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 智能体指令协议</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 Archive 归档机制</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  </div>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Ralph 深度解读</h1>
+    <div class="subtitle">不到 100 行 Bash 实现的自主编程 Agent 循环 — 让 Amp 或 Claude Code 按 PRD 反复执行直到完成所有需求</div>
+    <div class="lead">
+      <strong><a href="https://github.com/snarktank/ralph" target="_blank" rel="noopener" style="color:var(--accent)">snarktank/ralph</a></strong>
+      它是一个基于 Geoffrey Huntley 的 Ralph 模式构建的极简自主 Agent 框架：先借助 LLM 将需求拆解为若干用户故事，并写入 prd.json；再通过循环脚本反复调用 Amp 或 Claude Code，逐个推进这些故事，直到全部完成。整套实现非常巧妙且轻量，核心目标是用“外部化状态 + 新鲜上下文 + 持续校验”的方式，缓解长上下文腐烂、经验难以沉淀，以及缺少反馈约束时 agent 容易跑偏的问题。    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>Shell 即编排层</strong> — <code>ralph.sh</code> 不到 100 行 Bash，是整个系统的唯一调度者；没有任何框架依赖，只要有 <code>jq</code> 和目标 AI 工具即可运行。</li>
+      <li><strong>文件即内存</strong> — <code>prd.json</code>（任务清单）+ <code>progress.txt</code>（学习日志）+ <code>git history</code>（代码快照）三件套完全替代对话历史，彻底消除长上下文导致的质量衰减。</li>
+      <li><strong>每次实例全新</strong> — 每个 Story 在独立的 AI 进程中完成，上下文污染从架构层面被切断，而非依赖 prompt 技巧去"压缩"历史。</li>
+      <li><strong>信号即停止条件</strong> — Agent 主动检查所有 Story 是否完成，通过输出 <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code> 优雅退出，无需外部监控或人工介入。</li>
+      <li><strong>双工具无缝切换</strong> — 同一套循环通过 <code>--tool amp|claude</code> 参数同时支持 Amp 和 Claude Code，AI 工具的替换成本为零。</li>
+    </ul>
+  </div>
+
+  <!-- Section 1 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>自主编程 Agent 在实践中面临两个根本性障碍：第一是<strong>上下文污染</strong>——当一次对话推进到第 20 轮时，LLM 的注意力被稀释，代码质量和指令遵循度都会下滑；第二是<strong>工具锁定</strong>——大多数 Agent 框架深度绑定特定模型或 SDK，切换成本高昂。</p>
+  <p>Ralph 的解法是回到最简单的工程原语：<strong>Bash 循环 + 文件 + git</strong>。每次循环都起一个全新的 AI 进程，AI 通过读文件获取上下文、写文件持久化状态，从而让任意支持 CLI 调用的 AI 工具都能被纳入同一个自主循环。</p>
+  <p><strong>技术栈：</strong>Bash（主循环）、<code>jq</code>（JSON 操作）、Amp CLI 或 Claude Code CLI（AI 执行层）、Git（代码状态持久化）。无需 Node.js、Python 或任何框架。<strong>目标用户：</strong>需要无人值守推进较大功能需求的独立开发者或小团队，有清晰的 PRD 文档和可运行的质量检查命令。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「AI 写到一半上下文撑不住」——全新会话隔离</h4>
+  <p>对话式 AI 工具在执行多步骤任务时，历史轮次越长质量越差。Ralph 将任务拆解为足够小的 User Story，每个 Story 在独立进程中完成，从不累积历史对话。跨 Story 的上下文通过 <code>progress.txt</code> 的结构化文件传递，而不是对话 token。</p>
+  <h4>1.2.2 「任务做到一半崩了要从头来」——磁盘持久状态</h4>
+  <p><code>prd.json</code> 中每个 Story 有独立的 <code>passes</code> 字段记录完成状态，git 历史记录每次提交的代码变更。任何时候重启 Ralph，它都能从上次完成的位置继续，而不是重头执行整个任务。</p>
+  <h4>1.2.3 「不知道 AI 做了什么、在哪里」——可观测的进度追踪</h4>
+  <p><code>progress.txt</code> 是追加写入的人类可读日志，每次迭代都记录实施内容、修改文件和 Learnings。通过 <code>cat prd.json | jq '.userStories[] | {id, title, passes}'</code> 随时查看哪些 Story 完成，<code>git log</code> 看完整的提交历史。</p>
+  <h4>1.2.4 「换一个 AI 工具得重写一套 Agent 逻辑」——工具无关的循环</h4>
+  <p>ralph.sh 将 AI 工具视为黑盒：Amp 用 <code>cat prompt.md | amp</code>，Claude Code 用 <code>claude --print &lt; CLAUDE.md</code>，输出只需包含完成信号即可被识别。未来换任何支持 CLI 的工具，只需修改一行 spawn 命令。</p>
+
+  <!-- Section 2 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 全新实例隔离上下文（Fresh Context Per Iteration）</h3>
+  <p>Ralph 最核心的设计决策是：<strong>永远不复用 AI 会话</strong>。每次迭代，ralph.sh 都重新 spawn 一个全新的 AI 进程，前一次迭代的对话历史对当前实例完全不可见。这不是工程偷懒，而是刻意的架构选择：LLM 的"注意力"在长对话中会发散，而新鲜的 context window 对每个 Story 都能给出全力专注的响应。</p>
+  <p>代价是：跨迭代的信息必须显式序列化到文件。这正是 <code>progress.txt</code> 中 <strong>Codebase Patterns</strong> 章节的意义——把隐性的上下文记忆提炼为显式的结构化知识，让每个新实例都能快速"热身"。</p>
+
+  <h3 id="section-2-2">2.2 文件即状态机（File-Driven State）</h3>
+  <p>Ralph 没有数据库、没有内存中的状态对象，所有状态都存储在三个文件中：<code>prd.json</code>（任务状态）、<code>progress.txt</code>（学习积累）、<code>git history</code>（代码快照）。这个选择带来的好处远超存储本身：</p>
+  <ul>
+    <li><strong>可恢复</strong>：进程崩溃后重启，从 prd.json 的 passes 字段断点续跑</li>
+    <li><strong>可观测</strong>：任何时刻 <code>cat prd.json</code> 即可了解全局进度</li>
+    <li><strong>可干预</strong>：用户可以手动编辑 prd.json 跳过某个 Story 或修改优先级</li>
+    <li><strong>可归档</strong>：不同特性的运行记录自动存入 <code>archive/</code> 目录，互不干扰</li>
+  </ul>
+
+  <h3 id="section-2-3">2.3 竞品横向对比</h3>
+  <p>Ralph 的定位是"最小可用的自主迭代循环"，与市场上其他 Agent 方案在架构复杂度与适用范围上有明显差异：</p>
+  <table>
+    <thead><tr><th>工具</th><th>核心定位</th><th>优势</th><th>劣势</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Ralph</strong></td>
+        <td>极简 Bash 循环驱动的自主迭代 Agent</td>
+        <td>零框架依赖、双工具支持、可恢复、PRD 驱动</td>
+        <td>无复杂度感知、无并行执行、无 UI、依赖预先写好的 PRD</td>
+      </tr>
+      <tr>
+        <td><strong>GSD 2</strong></td>
+        <td>磁盘状态机驱动的完整 Agent 编排框架</td>
+        <td>复杂度分级、模型动态路由、崩溃恢复、Git worktree 隔离</td>
+        <td>TypeScript 重型框架、初始学习成本高、依赖闭源 Pi SDK</td>
+      </tr>
+      <tr>
+        <td><strong>Aider</strong></td>
+        <td>Git-native 的交互式 AI 代码编辑</td>
+        <td>与 Git 天然结合、多模型支持、轻量</td>
+        <td>无自主循环、无任务拆解、每步需要人工驱动</td>
+      </tr>
+      <tr>
+        <td><strong>Claude Code</strong></td>
+        <td>Anthropic 官方交互式 AI 编程助手</td>
+        <td>工具调用能力强、与 Claude 深度整合、即时反馈</td>
+        <td>无持久状态、长任务上下文污染、无自主调度</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>Ralph 的核心赢面：</strong>需要无人值守推进一个已明确拆解好的需求列表时，Ralph 是成本最低的可用选项——不需要学框架，只需要一个写好的 <code>prd.json</code>。<strong>输面：</strong>任务拆解（PRD 准备）是用户责任，Ralph 不帮你思考做什么，只帮你做完你已经想清楚的事。</p>
+
+  <h3 id="section-2-4">2.4 适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✅ 适合的任务类型</h4>
+      <ul>
+        <li>已有清晰 PRD（User Stories + 验收标准）的功能开发</li>
+        <li>需要无人值守迭代推进的多步骤需求（超过 3 个 Story）</li>
+        <li>希望保持干净 git 历史（每个 Story 一次 commit）</li>
+        <li>需要在 CI/CD 中自动化执行的重复性开发任务</li>
+        <li>需要跨会话断点续跑（可能被中断的长期任务）</li>
+      </ul>
+    </div>
+    <div class="fit-card unfit">
+      <h4>⚠️ 不太适合的任务类型</h4>
+      <ul>
+        <li>10 分钟内可以手动完成的小改动（启动 Ralph 成本更高）</li>
+        <li>探索性研究或需要频繁人工交互的任务</li>
+        <li>PRD 尚未明确、需要边讨论边做的模糊需求</li>
+        <li>需要实时 UI 反馈或迭代设计决策的前端主导任务</li>
+        <li>项目完全没有质量检查命令（typecheck/test）的情况</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <h2 id="section-3">3 核心对象与术语</h2>
+
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="arch-read-table">
+    <thead><tr><th>术语</th><th>一句话</th><th>对应文件</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="term-link" data-term="prd.json">prd.json</span></td>
+        <td>Ralph 的唯一任务权威来源，记录所有 User Story 及其完成状态</td>
+        <td><span class="file-link" data-file="prd.json.example" data-label="prd.json.example">prd.json.example</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="progress.txt">progress.txt</span></td>
+        <td>追加写入的跨迭代学习日志，顶部的 Codebase Patterns 是累积知识库</td>
+        <td><span class="file-link" data-file="prompt.md" data-label="prompt.md">prompt.md</span>（格式定义）</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Completion Signal">Completion Signal</span></td>
+        <td>Agent 输出的 <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code> 信号，触发 ralph.sh 退出循环</td>
+        <td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Fresh Context">Fresh Context</span></td>
+        <td>每次迭代都 spawn 全新 AI 进程，永不复用历史会话，从源头切断上下文污染</td>
+        <td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Story Sizing">Story Sizing</span></td>
+        <td>每个 User Story 必须小到能在单次 AI context window 内完成</td>
+        <td><span class="file-link" data-file="skills/ralph/SKILL.md" data-label="skills/ralph/SKILL.md">skills/ralph/SKILL.md</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Archive Mechanism">Archive Mechanism</span></td>
+        <td>检测到 prd.json 的 branchName 变更时自动归档上一次运行的 prd.json 和 progress.txt</td>
+        <td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Quality Gate">Quality Gate</span></td>
+        <td>每个 Story 实现后必须通过 typecheck/lint/test 才能 commit 并标记 passes=true</td>
+        <td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="AGENTS.md">AGENTS.md</span></td>
+        <td>项目目录下的持久知识库，AI 工具启动时自动读取，每次迭代后更新可复用规律</td>
+        <td><span class="file-link" data-file="AGENTS.md" data-label="AGENTS.md">AGENTS.md</span></td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="PRD Skill">PRD Skill</span></td>
+        <td>内置 Amp/Claude Skill，接收特性描述 → 澄清问题 → 生成结构化 PRD 文档</td>
+        <td><span class="file-link" data-file="skills/prd/SKILL.md" data-label="skills/prd/SKILL.md">skills/prd/SKILL.md</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <p>Ralph 的核心数据流：<strong>PRD Skill 生成 PRD → Ralph Skill 转换为 prd.json → ralph.sh 循环消费 prd.json + progress.txt → AI 执行并写回 prd.json + progress.txt + git</strong>。</p>
+  <table>
+    <thead><tr><th>对象</th><th>一句话定义</th><th>对应文件</th></tr></thead>
+    <tbody>
+      <tr><td><strong>prd.json</strong></td><td>任务状态机，包含 branchName 和 userStories 列表，每个 Story 的 passes 字段是唯一的状态转换信号</td><td><span class="file-link" data-file="prd.json.example" data-label="prd.json.example">prd.json.example</span></td></tr>
+      <tr><td><strong>progress.txt</strong></td><td>追加写入的运行日志，顶部汇聚 Codebase Patterns，每迭代末尾追加实施记录</td><td><span class="file-link" data-file="prompt.md" data-label="prompt.md">prompt.md</span>（格式）</td></tr>
+      <tr><td><strong>ralph.sh</strong></td><td>Bash 主循环，唯一的 AI 进程调度者；解析参数、归档旧数据、spawn AI、检测 COMPLETE 信号</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td></tr>
+      <tr><td><strong>prompt.md / CLAUDE.md</strong></td><td>AI 每次迭代的完整指令文档，定义任务选取、质量检查、progress 写法、AGENTS.md 更新等协议</td><td><span class="file-link" data-file="prompt.md" data-label="prompt.md">prompt.md</span> / <span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td></tr>
+      <tr><td><strong>AGENTS.md</strong></td><td>项目级持久知识库，AI 工具启动时自动读取，沉淀跨 Story 的可复用规律</td><td><span class="file-link" data-file="AGENTS.md" data-label="AGENTS.md">AGENTS.md</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title" style="margin-top:24px">prd.md 示例（喂给 <code>/ralph</code> 技能后生成 prd.json）</p>
+  <pre style="background:#1e1e2e;color:#cdd6f4;font-size:12px;line-height:1.7;padding:18px 20px;border-radius:8px;overflow-x:auto;margin:0 0 20px;font-family:'JetBrains Mono','Fira Code',Consolas,monospace;white-space:pre"># PRD: User 相关结构补全 school 字段
+
+## Introduction
+
+用户（User）已通过 `school_class` 外键间接关联到学校（User → SchoolClass → School），
+服务层 `_enrich_user_school_class` 也已正确解析出 `school_id / school_name`，
+但以下层面仍缺少 school 字段的完整支持：
+
+1. `BaseUser` schema 缺少 `school_id / school_name / class_id / class_name`
+2. 用户列表 API 缺少 `school_id` 过滤参数
+3. `get_user_list` service 方法缺少 `school_id` 参数
+4. `_build_user_search_filters` 不支持按学校过滤
+
+本 PRD 的目标是在不改变数据模型（不新增 FK）的前提下，把 school 字段贯通到
+Schema → Service → API 三层。
+
+---
+
+## Goals
+
+- `BaseUser` schema 返回 `class_id / class_name / school_id / school_name`
+- 用户列表接口支持按 `school_id` 过滤
+- 全链路类型安全，ruff check 和 mypy 无新增错误
+- 不破坏现有的创建/更新/详情接口行为
+
+---
+
+## User Stories
+
+### US-001: BaseUser schema 补全 school/class 字段
+
+**Acceptance Criteria:**
+- [ ] `BaseUser`（`src/schemas/users.py`）新增 `class_id / class_name / school_id / school_name` 四个可选字段
+- [ ] 现有 `UserCreate` / `UserUpdate` 不受影响
+- [ ] `ruff check src/` 无新增错误；`uv run pytest` 通过
+
+### US-002: 用户列表 API 支持 school_id 过滤
+
+**Acceptance Criteria:**
+- [ ] `GET /api/v1/users/list` 新增可选查询参数 `school_id: int | None`
+- [ ] 传入 `school_id` 时，仅返回该学校下所有班级的用户
+- [ ] 与现有 `username / email` 过滤可组合使用
+
+### US-003: UserService.get_user_list 支持 school_id 参数
+
+**Acceptance Criteria:**
+- [ ] `get_user_list` 方法签名新增 `school_id: int | None = None`
+- [ ] `_build_user_search_filters` 通过 `Q(school_class__school_id=school_id)` 跨表过滤
+
+---
+
+## Non-Goals
+
+- 不在 User 模型上新增直接 `school` 外键
+- 不修改创建/更新用户时的 `school_id` 输入逻辑
+- 不增加按 `class_id` 过滤的 API（超出本次范围）</pre>
+
+  <p class="schema-obj-title">prd.json 顶层结构（来自 prd.json.example）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>project</td><td>string</td><td>项目名称，仅作标识</td></tr>
+      <tr><td>branchName</td><td>string</td><td>特性分支名（如 <code>ralph/task-priority</code>），变更时触发自动归档</td></tr>
+      <tr><td>description</td><td>string</td><td>本次特性的一句话描述</td></tr>
+      <tr><td>userStories</td><td>UserStory[]</td><td>有序任务列表，AI 按 priority 升序消费</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title" style="margin-top:24px">prd.json 示例（由 <code>/ralph</code> 技能将上方 prd.md 转换生成）</p>
+  <pre style="background:#1e1e2e;color:#cdd6f4;font-size:12px;line-height:1.7;padding:18px 20px;border-radius:8px;overflow-x:auto;margin:0 0 20px;font-family:'JetBrains Mono','Fira Code',Consolas,monospace;white-space:pre">{
+  "project": "FastAPI-Template",
+  "branchName": "ralph/user-school-field",
+  "description": "User 相关结构补全 school 字段 - 在不改数据模型的前提下，将 school 字段贯通到 Schema → Service → API 三层",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "BaseUser schema 补全 school/class 字段",
+      "description": "As a developer, I want BaseUser to expose school and class info so that API consumers can read them without extra requests.",
+      "acceptanceCriteria": [
+        "在 src/schemas/users.py 的 BaseUser 类中新增：class_id / class_name / school_id / school_name（均为 int|None 或 str|None，默认 None）",
+        "现有 UserCreate / UserUpdate 不受影响，仍只接受 class_id 输入",
+        "ruff check src/ 无新增错误",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "改动仅限 BaseUser，向后兼容（所有新字段默认 None）"
+    },
+    {
+      "id": "US-002",
+      "title": "UserService.get_user_list 及过滤器支持 school_id 参数",
+      "description": "As a developer, I want the service layer to accept a school_id filter so that it correctly queries users belonging to a given school.",
+      "acceptanceCriteria": [
+        "get_user_list 方法签名新增 school_id: int | None = None",
+        "_build_user_search_filters 新增 school_id 参数，非空时添加 Q(school_class__school_id=school_id)",
+        "不传 school_id 时行为与改动前完全一致",
+        "ruff check src/ 无新增错误；Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Tortoise ORM 跨表：Q(school_class__school_id=school_id)，school_class 为 null 时自动不匹配，行为正确"
+    },
+    {
+      "id": "US-003",
+      "title": "用户列表 API 增加 school_id 查询参数",
+      "description": "As an API consumer, I want to filter users by school so that I can retrieve only users belonging to a specific school.",
+      "acceptanceCriteria": [
+        "list_user 新增 school_id: int | None = Query(None) 并透传给 user_service.get_user_list",
+        "GET /api/v1/users/list?school_id=1 仅返回该学校用户",
+        "school_id 与 username / email 可组合过滤",
+        "ruff check src/ 无新增错误；Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "依赖 US-002 service 层先完成"
+    }
+  ]
+}</pre>
+
+  <p class="schema-obj-title">UserStory 结构（来自 prd.json.example）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>string</td><td>唯一标识，如 <code>US-001</code>，用于 commit message 和 progress 日志</td></tr>
+      <tr><td>title</td><td>string</td><td>Story 短标题，出现在 git commit message 中</td></tr>
+      <tr><td>description</td><td>string</td><td>User Story 格式描述："As a [user], I want [feature] so that [benefit]"</td></tr>
+      <tr><td>acceptanceCriteria</td><td>string[]</td><td>可验证的验收标准列表；最后一条必须是 "Typecheck passes"</td></tr>
+      <tr><td>priority</td><td>number</td><td>执行顺序（越小越先执行），按依赖关系排列：schema → backend → UI</td></tr>
+      <tr><td>passes</td><td>boolean</td><td>完成标志；初始 false，AI 成功提交后写回 true；是 Ralph 的唯一状态转换</td></tr>
+      <tr><td>notes</td><td>string</td><td>补充说明，初始为空，可由 AI 写入实施备注</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 状态存储载体</h3>
+  <table>
+    <thead><tr><th>载体</th><th>持久性</th><th>职责</th><th>谁写入</th></tr></thead>
+    <tbody>
+      <tr><td><code>prd.json</code></td><td>跨迭代永久</td><td>任务队列 + 完成状态（<strong>状态真相来源</strong>）</td><td>AI（更新 passes=true）+ 用户（初始创建）</td></tr>
+      <tr><td><code>progress.txt</code></td><td>跨迭代永久（追加）</td><td>学习日志 + Codebase Patterns 知识库</td><td>AI（每次迭代末尾追加）</td></tr>
+      <tr><td><code>git history</code></td><td>永久版本化</td><td>代码快照；每个 Story 一次 feat commit，可随时回滚</td><td>AI（提交）</td></tr>
+      <tr><td><code>AGENTS.md / CLAUDE.md</code></td><td>跨迭代永久</td><td>项目级知识库，AI 工具每次启动自动读取</td><td>AI（发现可复用规律后更新）</td></tr>
+      <tr><td><code>.last-branch</code></td><td>跨运行</td><td>记录上次 branchName，用于检测是否需要归档</td><td>ralph.sh（自动维护）</td></tr>
+      <tr><td><code>archive/</code></td><td>历史归档</td><td>上一次特性运行的 prd.json + progress.txt 快照</td><td>ralph.sh（分支变更时自动 cp）</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <table>
+    <thead><tr><th>误解</th><th>实际情况</th></tr></thead>
+    <tbody>
+      <tr><td>「Ralph 会自动拆解任务」</td><td>Ralph 只负责<strong>执行</strong>已拆解好的任务。任务拆解（写 PRD + 转 prd.json）是用户的职责，可借助内置的 <code>/prd</code> 和 <code>/ralph</code> Skill，但 Ralph 本身不生成 prd.json。</td></tr>
+      <tr><td>「多个 Story 可以同时执行」</td><td>Ralph 每次迭代只处理<strong>一个</strong> Story（priority 最小且 passes=false），严格串行执行。这是刻意设计——并发会带来代码冲突和 prd.json 写入竞争问题。</td></tr>
+      <tr><td>「progress.txt 越长 AI 越聪明」</td><td>AI 每次迭代<strong>优先读取</strong> Codebase Patterns 章节，而不是全文扫描。随着 progress.txt 增长，应定期将通用规律提炼到顶部章节，避免关键信息被"淹没"在迭代记录中。</td></tr>
+      <tr><td>「不需要质量检查命令也能用」</td><td>没有质量门控的 Ralph 会积累破损代码——错误的 Story 会被 commit 后标记为 passes=true，后续 Story 在错误基础上继续叠加。<code>typecheck</code>/<code>test</code> 是 Ralph 工作质量的最基本保障。</td></tr>
+      <tr><td>「完成信号等于任务正确完成」</td><td><code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code> 只表示所有 Story 的 passes=true，不保证代码正确性。质量由 Quality Gate（typecheck/test）保障，信号只是退出条件。</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 4 -->
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从需求到交付的完整过程</h3>
+  <p class="section-lead">以一个具体需求为例：<strong>为现有任务管理系统新增任务优先级功能（高/中/低三级，带筛选）</strong></p>
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="step-title">① 调用 PRD Skill 生成需求文档</div>
+      <div class="step-desc">在 Amp 或 Claude Code 中运行 <code>Load the prd skill and create a PRD for 任务优先级功能</code>，Skill 会提出 3-5 个澄清问题（如范围、用户群、成功指标），根据回答生成 <strong>Markdown PRD</strong> 并保存到 <code>tasks/prd-task-priority.md</code>。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② 调用 Ralph Skill 转换为 prd.json</div>
+      <div class="step-desc">运行 <code>Load the ralph skill and convert tasks/prd-task-priority.md to prd.json</code>，Skill 将 PRD 中的 User Stories 拆解为每个可在一次 context window 完成的原子 Story，生成 <code>prd.json</code>（含 branchName、优先级、验收标准）。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ 启动 Ralph 循环</div>
+      <div class="step-desc">执行 <code>./scripts/ralph/ralph.sh --tool claude 15</code>，Ralph 检查归档条件，启动最多 15 次迭代的循环。第一次迭代 spawn Claude Code，Claude 读取 prd.json + progress.txt，检出 <code>ralph/task-priority</code> 分支。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ AI 逐 Story 自主实现</div>
+      <div class="step-desc">Claude 选取 priority=1 的 Story（添加 DB 字段），实现并运行 <code>typecheck</code>，通过后提交 <code>feat: US-001 - Add priority field to database</code>，将 prd.json 中 US-001 的 passes 改为 true，追加学习记录到 progress.txt。ralph.sh 未检测到完成信号，继续下一迭代。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ 迭代直到所有 Story 完成</div>
+      <div class="step-desc">后续迭代依次完成 US-002（UI 组件）、US-003（编辑面板）、US-004（筛选功能）。每个 Story 独立验证、独立提交。UI Story 包含浏览器验证步骤。每次 ralph.sh 解析输出中是否含 COMPLETE 信号。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑥ 完成信号触发退出</div>
+      <div class="step-desc">最后一个 Story 完成后，Claude 检查 prd.json 中所有 passes=true，在输出中回复 <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code>。ralph.sh grep 检测到信号，打印 "Ralph completed all tasks! Completed at iteration X of 15"，<code>exit 0</code>。</div>
+    </div>
+  </div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>以下是从零开始使用 Ralph（以 Claude Code 为例）的最小步骤：</p>
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 1. 安装 Claude Code（需要 Node.js）</span><br>
+    <span class="cmd-line">npm install -g @anthropic-ai/claude-code</span><br><br>
+    <span class="cmd-comment"># 2. 克隆 Ralph 到项目目录（或 Option 1: 直接 cp）</span><br>
+    <span class="cmd-line">mkdir -p scripts/ralph &amp;&amp; cp /path/to/ralph/ralph.sh scripts/ralph/</span><br>
+    <span class="cmd-line">cp /path/to/ralph/CLAUDE.md scripts/ralph/CLAUDE.md</span><br>
+    <span class="cmd-line">chmod +x scripts/ralph/ralph.sh</span><br><br>
+    <span class="cmd-comment"># 3. 将 prd.json.example 复制并填写你的 User Stories</span><br>
+    <span class="cmd-line">cp prd.json.example scripts/ralph/prd.json  # 修改为你的任务</span><br><br>
+    <span class="cmd-comment"># 4. 启动 Ralph（最多 10 次迭代，使用 Claude Code）</span><br>
+    <span class="cmd-line">./scripts/ralph/ralph.sh --tool claude 10</span><br><br>
+    <span class="cmd-comment"># 5. 查看进度（任意时刻）</span><br>
+    <span class="cmd-line">cat scripts/ralph/prd.json | jq '.userStories[] | {id, title, passes}'</span><br>
+    <span class="cmd-line">git log --oneline -10</span>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A["准备 prd.json\n写好 User Stories"] --> B["./ralph.sh\n--tool claude 10"]
+    B --> C["AI spawn\n读 prd.json + progress"]
+    C --> D["实现一个 Story\ncommit + passes=true"]
+    D --> E{所有 passes=true?}
+    E -- 否 --> C
+    E -- 是 --> F["COMPLETE 信号\nexit 0"]
+    </div>
+    <p class="caption">图 4-1：Ralph 最小运行路径</p>
+  </div>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <div class="usage-title">模式一：Amp 无人值守模式</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">使用 Amp CLI，需要自动 handoff（context 用满后自动切换）</span></div>
+      <div class="usage-row"><span class="usage-label">命令</span><span class="usage-value"><code>./ralph.sh</code> 或 <code>./ralph.sh --tool amp 20</code></span></div>
+      <div class="usage-row"><span class="usage-label">特点</span><span class="usage-value">可配置 autoHandoff，支持大于单 context window 的 Story；Amp 原生 thread URL 写入 progress</span></div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">模式二：Claude Code 模式</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">使用 Claude Code，搭配 CLAUDE.md 和 dev-browser skill</span></div>
+      <div class="usage-row"><span class="usage-label">命令</span><span class="usage-value"><code>./ralph.sh --tool claude 15</code></span></div>
+      <div class="usage-row"><span class="usage-value">UI Story 支持 dev-browser skill 浏览器验证；Claude Code 自动读取 CLAUDE.md</span></div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">模式三：Marketplace Plugin 模式</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">在 Claude Code 中通过 Marketplace 安装，跨项目复用 /prd 和 /ralph Skill</span></div>
+      <div class="usage-row"><span class="usage-label">安装</span><span class="usage-value"><code>/plugin marketplace add snarktank/ralph</code></span></div>
+      <div class="usage-row"><span class="usage-value">全局可用 <code>/prd</code>（生成 PRD）和 <code>/ralph</code>（转 prd.json），无需每个项目复制 skills/</span></div>
+    </div>
+  </div>
+
+  <!-- Section 5 -->
+  <h2 id="section-5">5 系统详细设计</h2>
+
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>以下是 Ralph 仓库的完整目录结构（点击文件名可在 GitHub 中查看源码）：</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">ralph/</span>（<span class="file-link" data-file="AGENTS.md" data-label="AGENTS.md">AGENTS.md</span> 项目说明）
+<span class="tree-branch">├── </span><span class="tree-entry" data-file="ralph.sh" data-label="ralph.sh" class="file-link">ralph.sh ★</span>                        <span class="tree-comment">← 主循环：spawn AI、归档、检测 COMPLETE 信号</span>
+<span class="tree-branch">├── </span><span class="tree-entry" data-file="prompt.md" data-label="prompt.md" class="file-link">prompt.md ★</span>                       <span class="tree-comment">← Amp 实例的完整任务指令</span>
+<span class="tree-branch">├── </span><span class="tree-entry" data-file="CLAUDE.md" data-label="CLAUDE.md" class="file-link">CLAUDE.md ★</span>                        <span class="tree-comment">← Claude Code 实例的完整任务指令</span>
+<span class="tree-branch">├── </span><span class="tree-entry" data-file="prd.json.example" data-label="prd.json.example" class="file-link">prd.json.example</span>                  <span class="tree-comment">← prd.json 格式参考（运行时复制为 prd.json）</span>
+<span class="tree-branch">├── </span><span class="tree-file">prd.json</span>                             <span class="tree-comment">← 运行时生成，任务状态机（状态真相来源）</span>
+<span class="tree-branch">├── </span><span class="tree-file">progress.txt</span>                         <span class="tree-comment">← 运行时生成，追加写入的跨迭代学习日志</span>
+<span class="tree-branch">├── </span><span class="tree-dir">skills/</span>                              <span class="tree-comment">← 可安装到 Amp / Claude Code 的 Skill</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry" data-file="skills/prd/SKILL.md" data-label="skills/prd/SKILL.md" class="file-link">prd/SKILL.md ★</span>                 <span class="tree-comment">← /prd Skill: 接收描述 → 生成 PRD Markdown</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry" data-file="skills/ralph/SKILL.md" data-label="skills/ralph/SKILL.md" class="file-link">ralph/SKILL.md ★</span>               <span class="tree-comment">← /ralph Skill: PRD Markdown → prd.json</span>
+<span class="tree-branch">├── </span><span class="tree-dir">.claude-plugin/</span>                      <span class="tree-comment">← Claude Code Marketplace 插件清单</span>
+<span class="tree-branch">├── </span><span class="tree-dir">flowchart/</span>                           <span class="tree-comment">← 交互式 React Flow 流程图（演示用）</span>
+<span class="tree-branch">└── </span><span class="tree-dir">archive/</span>                             <span class="tree-comment">← 自动归档目录：archive/YYYY-MM-DD-feature/</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+%% 主链路: PRD Skill → Ralph Skill → prd.json → ralph.sh → AI Agent → git
+
+  subgraph prep["准备层（用户 / Skill）"]
+    PS["PRD Skill\n/prd 生成需求文档"]
+    RS["Ralph Skill\n/ralph 转 prd.json"]
+  end
+
+  subgraph orch["编排层（Bash 循环）"]
+    SH["ralph.sh ★\n主循环 + 归档 + 信号检测"]
+    ARC["Archive 机制\nbranchName 变更时归档"]
+  end
+
+  subgraph agent["执行层（AI 实例）"]
+    AMP["Amp 进程\n每次迭代全新实例"]
+    CCO["Claude Code 进程\n每次迭代全新实例"]
+  end
+
+  subgraph state["状态层（文件系统）"]
+    PRD["prd.json\n任务队列 + passes 状态"]
+    LOG["progress.txt\n学习日志 + Codebase Patterns"]
+    GIT["Git 仓库\n代码快照 + feat commits"]
+    AGM["AGENTS.md\n项目知识库"]
+  end
+
+  PS --> RS
+  RS --> PRD
+  PRD --> SH
+  SH --> ARC
+  SH --> AMP
+  SH --> CCO
+  AMP --> PRD
+  AMP --> LOG
+  AMP --> GIT
+  AMP --> AGM
+  CCO --> PRD
+  CCO --> LOG
+  CCO --> GIT
+  CCO --> AGM
+  LOG --> AMP
+  LOG --> CCO
+  PRD --> AMP
+  PRD --> CCO
+
+  style SH fill:#dbeafe,stroke:#2563eb,color:#1e3a6e
+  style PRD fill:#dcfce7,stroke:#16a34a,color:#14532d
+    </div>
+    <p class="caption">图 5-1：Ralph 系统架构（按责任层分组）</p>
+  </div>
+
+  <p><strong>如何读这张图：</strong></p>
+  <table class="arch-read-table">
+    <thead><tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>准备层</td>
+        <td>PRD Skill, Ralph Skill</td>
+        <td>将模糊的特性描述转化为结构化的 prd.json；用户手工触发，非循环参与者</td>
+        <td>→ 状态层（写入 prd.json）</td>
+      </tr>
+      <tr>
+        <td>编排层</td>
+        <td>ralph.sh, Archive 机制</td>
+        <td>唯一的进程调度者：循环 spawn AI、检测完成信号、归档历史运行数据</td>
+        <td>↔ 执行层（spawn/读 OUTPUT）</td>
+      </tr>
+      <tr>
+        <td>执行层</td>
+        <td>Amp 进程 / Claude Code 进程</td>
+        <td>每次迭代独立实例：读状态 → 实现一个 Story → 质量检查 → 提交 → 写回状态</td>
+        <td>↔ 状态层（读写所有文件）</td>
+      </tr>
+      <tr>
+        <td>状态层</td>
+        <td>prd.json, progress.txt, git, AGENTS.md</td>
+        <td>跨迭代的唯一信息持久化层；prd.json 是任务状态真相来源，git 是代码真相来源</td>
+        <td>↔ 执行层（被读写）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 关键执行链路</h3>
+  <p>以下序列图展示从用户触发 <code>./ralph.sh --tool claude 10</code> 到一个 Story 完成提交的完整调用链（含循环与停止条件）：</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant User as 用户/CI
+  participant SH as ralph.sh
+  participant ARC as Archive 检查
+  participant CC as Claude Code 进程
+  participant PRD as prd.json
+  participant LOG as progress.txt
+  participant GIT as Git 仓库
+
+  User->>SH: ./ralph.sh --tool claude 10
+  SH->>ARC: 读 prd.json.branchName vs .last-branch
+  ARC-->>SH: branchName 相同，跳过归档
+
+  loop 每次迭代（最多 10 次）
+    SH->>CC: spawn: claude --dangerously-skip-permissions --print < CLAUDE.md
+    CC->>PRD: 读取 userStories，找 priority 最小且 passes=false 的 Story
+    CC->>LOG: 读取 Codebase Patterns 章节
+    CC->>GIT: git checkout -b ralph/feature（若未存在）
+    CC->>CC: 实现 Story（编辑代码文件）
+    CC->>CC: 运行 typecheck / lint / test（Quality Gate）
+    CC->>GIT: git commit "feat: US-00X - Story Title"
+    CC->>PRD: 写回 passes=true（jq 更新字段）
+    CC->>LOG: 追加本次迭代记录 + Learnings
+    CC->>PRD: 检查所有 userStories.passes 是否为 true
+    alt 全部完成
+      CC-->>SH: 输出包含 &lt;promise&gt;COMPLETE&lt;/promise&gt;
+      SH->>SH: grep -q COMPLETE 匹配成功
+      SH-->>User: exit 0（成功退出）
+    else 仍有未完成 Story
+      CC-->>SH: 正常结束，无完成信号
+      SH->>SH: sleep 2，开始下一迭代
+    end
+  end
+
+  SH-->>User: exit 1（达到最大迭代次数）
+    </div>
+    <p class="caption">图 5-2：Ralph 主执行链路（从触发到完成信号）</p>
+  </div>
+
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>函数 / 动作</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>启动</td><td>解析 --tool / max_iterations 参数</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>支持 amp 和 claude 两种工具；默认 amp，默认 10 次迭代</td><td>工具参数非 amp/claude 时 exit 1</td></tr>
+      <tr><td>2</td><td>归档检查</td><td>比对 prd.json.branchName 与 .last-branch</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>branchName 变更时自动归档 prd.json + progress.txt 并重置日志</td><td>需要 jq 可用；.last-branch 不存在时跳过归档</td></tr>
+      <tr><td>3</td><td>迭代 spawn</td><td>for i in seq 1 max_iterations</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>每次迭代 spawn 全新 AI 进程；Amp 用 stdin pipe，Claude 用 --print 模式</td><td>tee /dev/stderr 使 OUTPUT 在实时打印同时被捕获</td></tr>
+      <tr><td>4</td><td>任务选取</td><td>读 prd.json，选最小 priority 且 passes=false</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span> / <span class="file-link" data-file="prompt.md" data-label="prompt.md">prompt.md</span></td><td>AI 按 priority 升序选取第一个未完成 Story；同时读取 Codebase Patterns</td><td>优先读 Codebase Patterns 章节以获取上下文热身</td></tr>
+      <tr><td>5</td><td>实现 + 质量检查</td><td>编辑代码 → 运行 typecheck/lint/test</td><td>AI 自主执行（依赖项目配置）</td><td>Quality Gate：检查必须通过才能进入提交步骤</td><td>失败时 AI 修复并重试；不跳过质量检查</td></tr>
+      <tr><td>6</td><td>提交 + 状态写回</td><td>git commit + 更新 prd.json passes=true</td><td>AI 执行；状态真相在 <span class="file-link" data-file="prd.json.example" data-label="prd.json.example">prd.json</span></td><td>commit message 格式：<code>feat: US-00X - Story Title</code></td><td>passes 写回和 progress.txt 追加是同一步骤的两个操作</td></tr>
+      <tr><td>7</td><td>完成检测</td><td>grep -q "&lt;promise&gt;COMPLETE&lt;/promise&gt;" OUTPUT</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>AI 在所有 passes=true 时主动输出完成信号；ralph.sh 每次迭代后检测</td><td>信号必须完整出现在 OUTPUT 中；不出现则继续下一迭代</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
+
+  <!-- Module 1 -->
+  <h4 id="section-5-3-1">5.3.1 关键模块一：主循环状态机（ralph.sh）</h4>
+  <div class="module-meta">
+    <span>📁 ralph.sh</span>
+    <span>🏷️ 编排层：Bash for 循环 + 信号检测</span>
+    <span>⚡ 触发时机：用户直接执行 ./ralph.sh</span>
+  </div>
+  <p><strong>要解决的问题：</strong>如何以最低依赖让 AI 工具持续执行多个独立任务，并在所有任务完成后自动退出？对话式 AI 工具本身没有"循环"概念——用户每次手工触发、手工判断是否继续，不适合无人值守的多 Story 场景。</p>
+  <p><strong>解决方案：</strong>用 Bash for 循环驱动 AI 进程，每次迭代完全重新 spawn，避免会话状态积累。完成判断不依赖外部监控，而是由 AI 自己在输出中嵌入信号串；ralph.sh 用 <code>grep -q</code> 解析每次迭代的 stdout，检测到信号立即 exit 0。这种"协议即信号"的模式是 Ralph 最核心的设计决策。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant SH as ralph.sh（主循环）
+  participant FS as 文件系统
+  participant AI as AI 进程
+
+  SH->>FS: 读取 prd.json.branchName
+  SH->>FS: 读取 .last-branch
+  SH->>SH: 比较 branchName，决定是否归档
+
+  loop for i in seq 1 MAX_ITERATIONS
+    SH->>AI: spawn 全新 AI 进程（注入指令文件）
+    AI-->>SH: OUTPUT（实时通过 tee 输出到 stderr）
+    SH->>SH: echo $OUTPUT | grep -q COMPLETE
+    alt 检测到完成信号
+      SH->>SH: exit 0
+    else 未检测到
+      SH->>SH: sleep 2，继续
+    end
+  end
+  SH->>SH: exit 1（超出最大迭代次数）
+    </div>
+    <p class="caption">图 5-3：ralph.sh 主循环时序（循环控制与信号检测）</p>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 SH → FS / AI 链路）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td>读取 prd.json → jq .branchName</td><td>获取本次特性分支名，用于与 .last-branch 比较</td></tr>
+      <tr><td>2</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td>读取 .last-branch</td><td>若不存在则视为首次运行，跳过归档</td></tr>
+      <tr><td>3</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>（内部）</td><td>比较两个 branchName，若不同则触发 Archive 机制</td><td>归档后重置 progress.txt，写入新 .last-branch</td></tr>
+      <tr><td>4</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>AI 进程</td><td>spawn：<code>claude --print &lt; CLAUDE.md</code> 或 <code>cat prompt.md | amp</code></td><td>--dangerously-skip-permissions 允许 Claude 自主操作文件系统；tee 同时捕获和打印</td></tr>
+      <tr><td>5</td><td>AI 进程</td><td>—</td><td>ralph.sh</td><td>OUTPUT（stdout + stderr 合并）</td><td>包含 AI 实施过程的所有输出；可能含有 COMPLETE 信号</td></tr>
+      <tr><td>6</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>（内部）</td><td><code>echo $OUTPUT | grep -q "&lt;promise&gt;COMPLETE&lt;/promise&gt;"</code></td><td>grep -q：匹配成功返回 0，不匹配返回 1；控制 exit 0 或 continue 循环</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong><code>OUTPUT</code> 通过 <code>tee /dev/stderr</code> 捕获，但如果 AI 进程的 stderr 产生 COMPLETE 信号，grep 可能漏检（信号字符串必须出现在 stdout）。另外 sleep 2 的固定间隔是粗糙的节流，高频使用时会有不必要的等待；没有指数退避或重试机制，AI 进程返回非零退出码时 ralph.sh 也会继续循环（<code>|| true</code> 吞掉了错误）。</p>
+
+  <!-- Module 2 -->
+  <h4 id="section-5-3-2">5.3.2 关键模块二：智能体指令协议（prompt.md / CLAUDE.md）</h4>
+  <div class="module-meta">
+    <span>📁 prompt.md · CLAUDE.md</span>
+    <span>🏷️ 执行层：每次迭代的完整行为规范</span>
+    <span>⚡ 触发时机：每次 AI 进程 spawn 时注入</span>
+  </div>
+  <p><strong>要解决的问题：</strong>每次迭代的 AI 实例没有记忆——它不知道前一次做了什么、当前项目有什么规范、任务从哪里来。如何在不依赖会话历史的前提下，让每个新实例都能准确完成当前任务？</p>
+  <p><strong>解决方案：</strong>prompt.md / CLAUDE.md 是一份完整的"行为契约文档"，明确规定了每个实例的完整工作流：先读哪些文件、如何选 Story、质量检查的要求、如何写 progress、何时输出完成信号。通过文件内容注入代替会话历史，实现"无记忆也能准确工作"。两份文件内容几乎相同，差异仅在于 AGENTS.md vs CLAUDE.md 的更新目标和 thread URL 记录（Amp 特有）。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant INST as 指令文件（CLAUDE.md）
+  participant AI as AI Agent
+  participant PRD as prd.json
+  participant LOG as progress.txt
+  participant GIT as Git
+
+  INST->>AI: 注入完整任务指令（每次迭代）
+  AI->>LOG: 读取 Codebase Patterns 章节（优先）
+  AI->>PRD: 读取 userStories，找最小 priority 且 passes=false
+  AI->>GIT: 检出 branchName 分支（若未在则创建）
+  AI->>AI: 实现 Story（编辑目标代码文件）
+  AI->>AI: 运行 typecheck / lint / test（Quality Gate）
+  AI->>GIT: git add . && git commit -m "feat: US-00X - Title"
+  AI->>PRD: 更新对应 Story 的 passes 为 true
+  AI->>LOG: 追加实施记录 + Learnings
+  AI->>AI: 检查所有 userStories.passes 是否为 true
+  alt 全部 passes=true
+    AI-->>ralph.sh: 输出 COMPLETE 信号
+  else 仍有未完成
+    AI-->>ralph.sh: 正常结束（无信号）
+  end
+    </div>
+    <p class="caption">图 5-4：AI 智能体每次迭代的执行协议（prompt.md / CLAUDE.md 约束的行为）</p>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 INST → AI → PRD / LOG / GIT 链路）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>AI Agent</td><td>注入 CLAUDE.md 作为 stdin 或 prompt</td><td>指令文件定义了本次迭代的全部行为规范；AI 无需历史对话</td></tr>
+      <tr><td>2</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>progress.txt</td><td>读取顶部 Codebase Patterns 章节</td><td>热身阶段：获取项目约定和已发现规律，避免重复犯错</td></tr>
+      <tr><td>3</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>prd.json</td><td>读取 userStories，按 priority 升序选第一个 passes=false</td><td>不跳过、不重排；priority 数值小的先执行</td></tr>
+      <tr><td>4</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>Git</td><td>git checkout -b branchName（若不在目标分支）</td><td>保证所有代码变更在正确的特性分支上</td></tr>
+      <tr><td>5</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>（内部）</td><td>实现 Story，运行 typecheck / lint / test</td><td>Quality Gate：任何检查失败则修复后重试，不跳过</td></tr>
+      <tr><td>6</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>Git + prd.json</td><td>git commit + 写回 passes=true</td><td>commit message 严格格式：<code>feat: US-00X - Story Title</code></td></tr>
+      <tr><td>7</td><td>AI Agent</td><td><span class="file-link" data-file="CLAUDE.md" data-label="CLAUDE.md">CLAUDE.md</span></td><td>progress.txt</td><td>追加迭代记录：Story ID、文件变更、Learnings</td><td>Amp 版本额外记录 thread URL，便于 read_thread 工具回溯</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong>指令文件的有效性强依赖 AI 工具的指令遵循能力——不同模型对"优先读 Codebase Patterns"或"只做一个 Story"的执行忠实度不同。prompt.md 和 CLAUDE.md 几乎重复，未来维护时需要同步两份文件（已是已知的 DRY 违反）。此外指令文件只能通过人工修改来调整 AI 行为，缺乏动态配置能力（如项目级自定义质量检查命令无法自动传入）。</p>
+
+  <!-- Module 3 -->
+  <h4 id="section-5-3-3">5.3.3 关键模块三：Archive 归档机制</h4>
+  <div class="module-meta">
+    <span>📁 ralph.sh（Archive 段）</span>
+    <span>🏷️ 编排层：多特性运行隔离</span>
+    <span>⚡ 触发时机：ralph.sh 启动时检测到 branchName 变更</span>
+  </div>
+  <p><strong>要解决的问题：</strong>当用户开始一个新特性（更换 prd.json）时，上一次运行的 prd.json 和 progress.txt 会被新内容覆盖，历史进度和学习记录丢失。同时 progress.txt 如果不清空，新特性的 AI 实例会读到大量与当前任务无关的旧记录。</p>
+  <p><strong>解决方案：</strong>在 ralph.sh 启动时比较当前 prd.json 的 branchName 与 <code>.last-branch</code> 文件的记录。若两者不同，说明用户切换了特性，自动将旧 prd.json 和 progress.txt 拷贝到 <code>archive/YYYY-MM-DD-feature-name/</code>，然后重置 progress.txt 为仅含头部的全新文件。这是一个纯 Bash 实现的轻量"状态隔离"机制，对用户完全透明。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant SH as ralph.sh
+  participant FS as 文件系统
+
+  SH->>FS: jq .branchName prd.json → CURRENT_BRANCH
+  SH->>FS: cat .last-branch → LAST_BRANCH
+  SH->>SH: 判断 CURRENT_BRANCH != LAST_BRANCH
+
+  alt 分支名不同（切换特性）
+    SH->>FS: mkdir -p archive/YYYY-MM-DD-feature-name/
+    SH->>FS: cp prd.json → archive/.../prd.json
+    SH->>FS: cp progress.txt → archive/.../progress.txt
+    SH->>FS: 重置 progress.txt（仅保留 "# Ralph Progress Log" 头部）
+    SH->>FS: echo CURRENT_BRANCH > .last-branch
+  else 分支名相同（同一特性继续）
+    SH->>SH: 跳过归档，直接进入主循环
+  end
+  SH->>FS: echo CURRENT_BRANCH > .last-branch（无论是否归档）
+    </div>
+    <p class="caption">图 5-5：Archive 归档时序（branchName 变更检测与历史数据隔离）</p>
+  </div>
+
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应上图 SH → FS 链路）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息 / 返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td><code>jq -r '.branchName // empty' prd.json</code></td><td>// empty 处理 branchName 不存在的情况；读取失败则视为空</td></tr>
+      <tr><td>2</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td><code>cat .last-branch</code> → LAST_BRANCH</td><td>.last-branch 不存在时返回空字符串，触发条件为假，跳过归档</td></tr>
+      <tr><td>3</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>（内部）</td><td>CURRENT_BRANCH != LAST_BRANCH && 两者非空</td><td>仅在两值都非空时才归档，避免首次运行误触发</td></tr>
+      <tr><td>4</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td>mkdir + cp prd.json + cp progress.txt</td><td>归档目录：<code>archive/YYYY-MM-DD-feature-name/</code>；strip "ralph/" 前缀作为 folder name</td></tr>
+      <tr><td>5</td><td>ralph.sh</td><td><span class="file-link" data-file="ralph.sh" data-label="ralph.sh">ralph.sh</span></td><td>文件系统</td><td>重置 progress.txt（echo + date）</td><td>新特性从干净的 progress.txt 开始；旧记录已在 archive/ 中保留</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>代价与局限：</strong>归档只在 ralph.sh <strong>启动时</strong>触发，如果用户在一次运行中途手动修改了 prd.json 的 branchName，当次运行不会触发归档，等到下次启动才会。Archive 机制不覆盖 git 分支管理——用户需要自己确保在正确的 git 分支上运行，ralph.sh 只做文件级归档，不做 git stash 或 branch 切换。</p>
+
+  <!-- Section 6 -->
+  <h2 id="section-6">6 方案评价</h2>
+
+  <h3 id="section-6-1">6.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>极简依赖，工具无关</h4>
+      <p>整个编排层是不到 100 行 Bash，唯一外部依赖是 <code>jq</code>。通过 <code>--tool</code> 参数轻松切换 Amp 和 Claude Code，不需要修改任何业务逻辑。未来接入新 AI 工具只需修改一行 spawn 命令。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>架构级上下文隔离</h4>
+      <p>不是通过 prompt 压缩历史，而是通过进程重启彻底切断上下文积累。每个 Story 得到完整的、干净的 context window，对话质量不随任务数增长而衰减。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>完全可观测可干预</h4>
+      <p>所有状态（任务进度、学习记录、代码变更）都是人类可读的文件。任何时候可以查看进度、手动修改 prd.json 跳过或修改 Story、用 git log 审查提交历史、或直接编辑 progress.txt 修正错误记录。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>断点续跑与自动归档</h4>
+      <p>进程崩溃后重启，自动从 prd.json 中最后一个 passes=false 的 Story 继续。切换特性时自动归档历史数据，不同特性的运行记录互不干扰。</p>
+    </div>
+  </div>
+
+  <h3 id="section-6-2">6.2 局限分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card weakness">
+      <h4>用户需要提前写好 PRD</h4>
+      <p>Ralph 不帮你思考"做什么"，只帮你做完"已经明确的事"。需求模糊、Story 拆解粗糙或验收标准不可验证，会直接导致 AI 实现偏差甚至死循环。PRD 准备质量是 Ralph 成败的关键前置条件。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>严格串行，无并发优化</h4>
+      <p>Story 按优先级串行执行，即使多个独立 Story 可以并行，Ralph 也不支持。大型 PRD（20+ Stories）需要数十次迭代才能完成，无法通过并发加速。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>无复杂度感知，无成本控制</h4>
+      <p>无论 Story 大小，每次迭代都用同一个 AI 工具和同等的 context budget。没有 GSD 2 那样的复杂度分级和模型动态路由，大量简单 Story 会产生不必要的成本。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>错误静默吞没</h4>
+      <p>ralph.sh 用 <code>|| true</code> 吞掉了 AI 进程的非零退出码，无法区分"AI 正常结束但未完成"和"AI 进程崩溃"两种情况。调试失败场景时需要手动阅读 stderr 输出，缺乏结构化错误处理。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>progress.txt 膨胀导致长上下文风险</h4>
+      <p><code>progress.txt</code> 采用 append-only 设计，迭代越多文件越长；每轮 AI 又被要求先读顶部的 Codebase Patterns，重复占用 token。若把大段 diff、详细日志写入，膨胀更快，最终可能触及模型上下文窗口上限。设计层面已有部分缓解手段：把可复用规律收入顶部 <code>## Codebase Patterns</code> 短列表；把目录约定写到 <code>AGENTS.md</code> / <code>CLAUDE.md</code> 减轻 progress 负担；换 <code>branchName</code> 时 ralph.sh 将旧文件归档到 <code>archive/</code> 并重置，等于阶段性清空记忆。自行维护时建议定期轮转或只保留最近 N 次迭代记录。</p>
+    </div>
+  </div>
+
+  <!-- Section 7 -->
+  <h2 id="section-7">7 版本化维护区</h2>
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文对文件结构、循环逻辑与 prompt 协议的描述，以开源仓库 <a href="https://github.com/snarktank/ralph" target="_blank" rel="noopener" style="color:var(--accent)">https://github.com/snarktank/ralph</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-04-15</strong>。仓库历史仅有约 20 次提交，结构相对稳定；如有变动请以 GitHub 仓库为准。</p>
+
+</main>
+
+<!-- Interactive Panel -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
+    <span class="code-panel-path" id="codePanelPath"></span>
+    <span class="code-panel-badge" id="codePanelBadge"></span>
+    <a id="panelGhLink" class="panel-gh-link" href="#" target="_blank" rel="noopener" style="display:none">⤢ 在浏览器中打开</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose" title="关闭 (Esc)">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader">
+      <div class="iframe-spin"></div>
+      <span>正在加载 GitHub 页面…</span>
+    </div>
+    <iframe id="githubIframe" src="" title="GitHub"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+document.addEventListener('DOMContentLoaded', function () {
+  if (window.hljs) hljs.highlightAll();
+  // TOC toggle
+  const tocNav = document.getElementById('tocNav');
+  const tocToggle = document.getElementById('tocToggle');
+  const content  = document.querySelector('.content');
+  if (tocToggle) {
+    tocToggle.addEventListener('click', () => {
+      const collapsed = tocNav.classList.toggle('collapsed');
+      content.classList.toggle('toc-collapsed', collapsed);
+      tocToggle.textContent = collapsed ? '▶' : '◀';
+    });
+  }
+  // TOC active highlight on scroll
+  const headings = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  const tocLinks = document.querySelectorAll('.toc a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector('.toc a[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -75% 0px' });
+  headings.forEach(h => observer.observe(h));
+});
+
+// ── Diagram zoom (lightbox) ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className   = 'diagram-zoom-btn';
+    zoomBtn.title       = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+
+    function openLightbox() {
+      const svg = container.querySelector('.mermaid svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const w = rect.width  * 1.5;
+      const h = rect.height * 1.5;
+      const lightbox = document.createElement('div');
+      lightbox.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className    = 'diagram-lightbox-inner';
+      inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+      inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+      inner.style.overflow = 'auto';
+      inner.style.padding  = '20px';
+      const cloneSvg = svg.cloneNode(true);
+      cloneSvg.setAttribute('width',  w);
+      cloneSvg.setAttribute('height', h);
+      cloneSvg.style.display = 'block';
+      function close() { lightbox.remove(); }
+      lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+      });
+      inner.appendChild(cloneSvg);
+      lightbox.appendChild(inner);
+      document.body.appendChild(lightbox);
+    }
+
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+});
+
+(function () {
+  'use strict';
+
+  const GH     = 'https://github.com/snarktank/ralph';
+  const GH1S   = 'https://github1s.com/snarktank/ralph';
+  const BRANCH = 'main';
+
+  // ─── FILE MAP ─────────────────────────────────────────────────────────────
+  const FILE_MAP = {
+    'ralph.sh':                'ralph.sh',
+    'prompt.md':               'prompt.md',
+    'CLAUDE.md':               'CLAUDE.md',
+    'AGENTS.md':               'AGENTS.md',
+    'prd.json.example':        'prd.json.example',
+    'prd.json':                'prd.json.example',
+    'skills/prd/SKILL.md':     'skills/prd/SKILL.md',
+    'skills/ralph/SKILL.md':   'skills/ralph/SKILL.md',
+    '.claude-plugin/':         '.claude-plugin',
+    'progress.txt':            'prompt.md',
+  };
+
+  // ─── PROJECT TERMS ────────────────────────────────────────────────────────
+  const PROJECT_TERMS = {
+    'prd.json': {
+      tags: ['核心状态', '任务队列', '状态真相来源'],
+      def: 'Ralph 的唯一任务权威来源（Source of Truth）。以 JSON 格式存储项目信息与所有 User Story，每个 Story 有 <code>passes</code> 字段标记完成状态。Ralph 每次迭代都读取它选择下一个要实现的 Story。',
+      mechanics: ['<code>branchName</code> 字段决定特性分支名，变更时触发自动归档', 'userStories 按 priority 升序排列，AI 按序执行', 'passes: false → true 是唯一的状态转换', '每次迭代完成一个 Story 后 AI 写回 passes: true'],
+      related: ['Completion Signal', 'Archive Mechanism', 'Story Sizing'],
+      files: ['prd.json.example'],
+      patterns: ['prd.json', 'PRD', 'userStories', 'branchName', 'passes: false', 'passes: true'],
+    },
+    'progress.txt': {
+      tags: ['跨迭代记忆', '累积学习', '可观测性'],
+      def: '追加写入（append-only）的进度与学习日志。顶部有 <code>## Codebase Patterns</code> 章节汇聚通用规律，每次迭代在末尾追加本次的实施记录和 Learnings。是 Agent 读取"前任"经验的唯一渠道。',
+      mechanics: ['顶部 Codebase Patterns 章节：跨 Story 的通用规律汇聚', '每次迭代追加 Story ID、实施内容、变更文件、学习要点', 'AI 在每次迭代开始时优先读 Codebase Patterns 章节', '新特性启动时通过 ralph.sh 自动重置，旧日志归档保留'],
+      related: ['prd.json', 'AGENTS.md', 'Archive Mechanism'],
+      files: ['prompt.md'],
+      patterns: ['progress.txt', 'Codebase Patterns', '进度日志', '学习记录', 'Learnings'],
+    },
+    'Completion Signal': {
+      tags: ['停止条件', '控制流', '信号机制'],
+      def: 'AI 在确认所有 Story 的 passes 均为 true 后，在输出中回复特定字符串 <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code>。ralph.sh 在每次迭代后用 <code>grep -q</code> 解析 OUTPUT，遇到此信号立即退出循环（exit 0）。',
+      mechanics: ['ralph.sh 用 grep -q 检测 OUTPUT 中是否含完成信号', 'AI 在实现并标记最后一个 Story 后主动发出信号', '不发信号时 ralph.sh 休眠 2 秒后继续下一迭代', '超过 max_iterations 时 ralph.sh exit 1 并提示检查 progress.txt'],
+      related: ['prd.json', 'Fresh Context'],
+      files: ['ralph.sh'],
+      patterns: ['COMPLETE', '完成信号', 'Completion Signal', 'exit 0', 'grep -q'],
+    },
+    'Fresh Context': {
+      tags: ['设计原则', '上下文隔离', '可靠性'],
+      def: '每次迭代都启动一个全新的 AI 实例（Amp 或 Claude Code），不复用上一次的对话历史。上下文污染被彻底切断：每个实例从干净状态出发，通过读取 prd.json 和 progress.txt 获得必要的上下文。',
+      mechanics: ['ralph.sh 每次迭代重新 spawn AI 进程，不复用会话', '跨迭代的"记忆"通过文件传递，而非对话历史', '避免长对话导致的注意力稀释与幻觉累积', '每次 spawn 读指令文件，行为由文件定义而非历史对话决定'],
+      related: ['progress.txt', 'prd.json'],
+      files: ['ralph.sh'],
+      patterns: ['Fresh Context', '新鲜实例', '全新实例', '每次迭代', 'spawn'],
+    },
+    'Archive Mechanism': {
+      tags: ['多特性管理', '状态隔离', '归档'],
+      def: '当 prd.json 中的 branchName 与上次运行记录（<code>.last-branch</code>）不同时，ralph.sh 自动将上一次的 prd.json 和 progress.txt 归档到 <code>archive/YYYY-MM-DD-feature-name/</code>，并重置 progress.txt。',
+      mechanics: ['.last-branch 文件记录上次的 branchName', '检测到 branchName 变更时自动触发归档（mkdir + cp）', '归档目录以日期 + feature 名命名，strip "ralph/" 前缀', 'progress.txt 被重置为仅含头部的全新文件'],
+      related: ['prd.json', 'progress.txt'],
+      files: ['ralph.sh'],
+      patterns: ['Archive', '归档', 'archive/', '.last-branch', 'branchName 变更'],
+    },
+    'Story Sizing': {
+      tags: ['任务拆解', '上下文预算', '质量保障'],
+      def: '每个 User Story 必须能在单次 AI 上下文窗口内完成。粒度过大会导致 AI 在耗尽 context 前无法提交，留下残破代码。Ralph 的 /ralph Skill 会强制把大 PRD 拆解为足够小的原子 Story。',
+      mechanics: ['原则：两三句话描述不完的改动太大，需拆分', '正确粒度：加一个 DB 字段迁移 / 加一个 UI 组件 / 改一个 server action', '依赖顺序：schema → backend → UI，前序先完成', 'UI Story 必须包含 "Verify in browser using dev-browser skill" 验收标准'],
+      related: ['prd.json', 'PRD Skill'],
+      files: ['skills/ralph/SKILL.md'],
+      patterns: ['Story Sizing', '任务粒度', 'context window', '原子 Story', '拆解'],
+    },
+    'Quality Gate': {
+      tags: ['质量保障', 'CI 守卫', '提交前检查'],
+      def: '每个 Story 实现完成后，AI 必须运行项目质量检查（typecheck / lint / test）。检查通过才能 commit 并将 passes 标记为 true。这是防止错误在迭代间累积的核心机制。',
+      mechanics: ['质量检查命令因项目而异，AI 根据项目配置判断', '每个 Story 的验收标准中都强制包含 "Typecheck passes"', 'UI Story 还必须通过浏览器验证（dev-browser skill）', '失败时 AI 修复后重试，不跳过质量检查'],
+      related: ['prd.json', 'progress.txt'],
+      files: ['CLAUDE.md', 'prompt.md'],
+      patterns: ['Quality Gate', '质量检查', 'typecheck', 'Typecheck passes', 'lint', 'test'],
+    },
+    'AGENTS.md': {
+      tags: ['持久知识库', '模式积累', '跨迭代学习'],
+      def: '存放在项目各目录中的知识库文件，Amp 在启动时自动读取；Claude Code 模式下对应 CLAUDE.md。每次迭代中 AI 发现可复用规律后会更新相关目录的 AGENTS.md，让未来迭代（和未来开发者）受益。',
+      mechanics: ['只写"真正可复用"的规律，不写 Story 细节', '按目录分布：根目录是全局规约，子目录是局部约定', '好的内容：API 约定、gotcha、文件依赖关系', '不要写：临时调试信息、Story 实施细节、已在 progress.txt 中的信息'],
+      related: ['progress.txt'],
+      files: ['AGENTS.md'],
+      patterns: ['AGENTS.md', '知识库', '代码模式', '可复用规律'],
+    },
+    'PRD Skill': {
+      tags: ['工具链', '需求工程', '入口 Skill'],
+      def: '内置 Amp/Claude Code Skill（<code>/prd</code>），接收特性描述 → 提出 3-5 个带字母选项的澄清问题 → 根据回答生成结构化 PRD（Markdown）保存到 <code>tasks/</code> 目录。不做任何实现，只输出需求文档。',
+      mechanics: ['提问格式：带字母选项（1A, 2B, 3C），用户快速回答', '生成标准 PRD 结构：Introduction / Goals / User Stories / Functional Requirements / Non-Goals', 'User Story 的验收标准必须可验证，不接受"Works correctly"类描述', 'UI Story 强制包含 "Verify in browser using dev-browser skill"'],
+      related: ['Story Sizing', 'prd.json'],
+      files: ['skills/prd/SKILL.md'],
+      patterns: ['/prd', 'PRD Skill', 'PRD Generator', '需求文档', 'tasks/prd-'],
+    },
+  };
+
+  // ─── DOM ──────────────────────────────────────────────────────────────────
+  const backdrop    = document.getElementById('codeBackdrop');
+  const panel       = document.getElementById('codePanel');
+  const closeBtn    = document.getElementById('codePanelClose');
+  const pathEl      = document.getElementById('codePanelPath');
+  const badgeEl     = document.getElementById('codePanelBadge');
+  const ghLink      = document.getElementById('panelGhLink');
+  const iframeBody  = document.getElementById('iframePanelBody');
+  const iframeLoader= document.getElementById('iframeLoader');
+  const iframeEl    = document.getElementById('githubIframe');
+  const termBody    = document.getElementById('termPanelBody');
+  const resizeGrip  = document.getElementById('panelResizeGrip');
+  const navBack     = document.getElementById('panelNavBack');
+  const navFwd      = document.getElementById('panelNavFwd');
+  const pinBtn      = document.getElementById('panelPin');
+
+  // ─── NAV HISTORY ─────────────────────────────────────────────────────────
+  const navHistory = [];
+  let navIndex = -1;
+  function updateNavBtns() {
+    navBack.disabled = navIndex <= 0;
+    navFwd.disabled  = navIndex >= navHistory.length - 1;
+  }
+  function pushNav(entry) {
+    navHistory.splice(navIndex + 1);
+    navHistory.push(entry);
+    navIndex = navHistory.length - 1;
+    updateNavBtns();
+  }
+  function _loadEntry(e) {
+    if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanelInternal(e.name);
+  }
+  navBack.addEventListener('click', () => { if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); } });
+  navFwd.addEventListener('click',  () => { if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); } });
+
+  // ─── PIN ──────────────────────────────────────────────────────────────────
+  let pinned = false;
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    pinBtn.title = pinned ? '取消固定' : '固定面板';
+    panel.classList.toggle('pinned', pinned);
+    if (pinned) { backdrop.classList.remove('open'); document.body.style.overflow = ''; }
+    else if (panel.classList.contains('open')) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  });
+
+  // ─── OPEN / CLOSE ─────────────────────────────────────────────────────────
+  function openPanel() { panel.classList.add('open'); if (!pinned) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; } }
+  function _doClose() {
+    panel.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow = '';
+    if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'none';
+    navHistory.length = 0; navIndex = -1; updateNavBtns();
+  }
+  function forceClose() { pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板'; panel.classList.remove('pinned'); _doClose(); }
+  closeBtn.addEventListener('click', forceClose);
+  backdrop.addEventListener('click', () => { if (!pinned) _doClose(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
+
+  // ─── RESIZE ───────────────────────────────────────────────────────────────
+  let resizing = false, rsX = 0, rsW = 0, rsOverlay = null;
+  resizeGrip.addEventListener('mousedown', e => {
+    resizing = true; rsX = e.clientX; rsW = panel.offsetWidth;
+    resizeGrip.classList.add('dragging'); document.body.style.userSelect = 'none'; document.body.style.cursor = 'ew-resize';
+    rsOverlay = document.createElement('div'); rsOverlay.style.cssText = 'position:absolute;inset:0;z-index:9999;cursor:ew-resize;'; panel.appendChild(rsOverlay);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => { if (!resizing) return; panel.style.width = Math.max(300, Math.min(window.innerWidth * 0.96, rsW + (rsX - e.clientX))) + 'px'; panel.style.transition = 'none'; });
+  document.addEventListener('mouseup', () => { if (!resizing) return; resizing = false; resizeGrip.classList.remove('dragging'); document.body.style.userSelect = ''; document.body.style.cursor = ''; panel.style.transition = ''; if (rsOverlay) { rsOverlay.remove(); rsOverlay = null; } });
+
+  // ─── GITHUB PANEL ─────────────────────────────────────────────────────────
+  function _openGitHubPanel(ghPath, label) {
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'github1s';
+    ghLink.href          = GH + '/blob/' + BRANCH + '/' + ghPath;
+    ghLink.style.display = '';
+    iframeBody.style.display = 'flex'; iframeBody.style.flexDirection = 'column';
+    termBody.style.display = 'none';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>正在加载 GitHub 页面…</span>';
+    iframeEl.style.display = 'none'; iframeEl.src = '';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML = '<div style="text-align:center;padding:24px"><p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + ghLink.href + '" target="_blank" rel="noopener" style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => { clearTimeout(tid); iframeLoader.style.display = 'none'; iframeEl.style.flex = '1'; iframeEl.style.display = 'block'; };
+      iframeEl.src = GH1S + '/blob/' + BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) { pushNav({ type: 'github', path: ghPath, label: label || ghPath }); _openGitHubPanel(ghPath, label); }
+
+  // ─── TERM PANEL ───────────────────────────────────────────────────────────
+  function renderTermHTML(name) {
+    const t = PROJECT_TERMS[name]; if (!t) return '';
+    const tags  = (t.tags  || []).map(g => '<span class="term-tag">' + g + '</span>').join('');
+    const mech  = (t.mechanics || []).map(m => '<li>' + m + '</li>').join('');
+    const rels  = (t.related  || []).map(r => '<button class="term-rel-btn" data-term="' + r + '">' + r + '</button>').join('');
+    const files = (t.files    || []).filter(f => FILE_MAP[f]).map(f =>
+      '<button class="term-file-btn" data-file="' + FILE_MAP[f] + '">' + f + '</button>').join('');
+    return '<div class="term-tags">' + tags + '</div>' +
+      '<div class="term-title-h">' + name + '</div>' +
+      '<div class="term-def">' + t.def + '</div>' +
+      (mech  ? '<div class="term-sec">实现机制</div><ul class="term-mechanics">' + mech + '</ul>' : '') +
+      (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
+      (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
+  }
+  function _openTermPanelInternal(name) {
+    pathEl.textContent   = name;
+    badgeEl.textContent  = '术语解释';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'flex';
+    termBody.style.flexDirection = 'column';
+    termBody.innerHTML = renderTermHTML(name);
+    termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+      btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+    termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+      btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+    openPanel();
+  }
+  function openTermPanel(name) {
+    if (!PROJECT_TERMS[name]) return;
+    pushNav({ type: 'term', name });
+    _openTermPanelInternal(name);
+  }
+
+  // ─── CLICK HANDLER ────────────────────────────────────────────────────────
+  document.addEventListener('click', function (e) {
+    const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+    const termEl = e.target.closest('.term-link[data-term]');
+    if (fileEl && fileEl.dataset.file) {
+      e.preventDefault();
+      openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+      e.preventDefault();
+      openTermPanel(termEl.dataset.term);
+    }
+  });
+
+  // ─── AUTO-TAG file-link for inline <code> ─────────────────────────────────
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.dataset.term || el.classList.contains('file-link') || el.classList.contains('term-link')) return;
+    const raw = el.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (ghPath) {
+      el.classList.add('file-link');
+      el.dataset.file  = ghPath;
+      el.dataset.label = raw;
+      el.title = '在 GitHub 中查看 ' + raw;
+      el.style.cursor = 'pointer';
+    }
+  });
+
+  // ─── AUTO-TAG term-link in body text ──────────────────────────────────────
+  const termPatterns = [];
+  for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+    for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+  }
+  termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+
+  const TERM_RE = new RegExp(
+    termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+
+  const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON','H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+
+  function tagTermsInDocument() {
+    const contentEl = document.querySelector('.content');
+    if (!contentEl) return;
+    const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p = node.parentNode;
+        while (p && p !== contentEl) {
+          if (SKIP_TAGS.has(p.tagName) || p.classList.contains('term-link') || p.classList.contains('file-link') || p.classList.contains('mermaid') || p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = []; let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(textNode => {
+      const text = textNode.textContent;
+      TERM_RE.lastIndex = 0;
+      if (!TERM_RE.test(text)) return;
+      TERM_RE.lastIndex = 0;
+      const frag = document.createDocumentFragment();
+      let last = 0, m;
+      while ((m = TERM_RE.exec(text)) !== null) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const key = PAT_KEY[m[0]];
+        if (key) {
+          const sp = document.createElement('span');
+          sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+          frag.appendChild(sp);
+        } else {
+          frag.appendChild(document.createTextNode(m[0]));
+        }
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  tagTermsInDocument();
+})();
+</script>
+</body>
+</html>

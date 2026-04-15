@@ -1,0 +1,12 @@
+# codebase-to-trd — skill 产出与拼接资产（不推 GitHub；本地用 example/_splice_*.py 重新生成）
+example/_*_maps.js
+example/_*_nav_main.html
+example/_splice_*.py
+example/mermaid-imgs/
+
+# 编辑器历史
+.history/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db

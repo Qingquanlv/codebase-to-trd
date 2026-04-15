@@ -1356,7 +1356,9 @@ sequenceDiagram
           while (p && p !== content) {
             if (SKIP_TAGS.has(p.tagName) ||
                 p.classList.contains('term-link') ||
-                p.classList.contains('file-link')) return NodeFilter.FILTER_REJECT;
+                p.classList.contains('file-link') ||
+                p.classList.contains('mermaid') ||
+                p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
             p = p.parentNode;
           }
           return NodeFilter.FILTER_ACCEPT;
