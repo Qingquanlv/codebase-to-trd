@@ -147,6 +147,25 @@
   .step-title { font-weight: 600; font-size: 14px; min-width: 220px; color: var(--accent); }
   .step-desc { font-size: 14px; color: var(--text-secondary); }
 
+  /* --- Phase Timeline (§4.1) --- */
+  .phase-block { margin: 20px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .phase-header { padding: 10px 18px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; letter-spacing: 0.2px; }
+  .phase-analysis .phase-header { background: #eff6ff; color: #1d4ed8; border-bottom: 1px solid #bfdbfe; }
+  .phase-planning .phase-header { background: #f0fdf4; color: #15803d; border-bottom: 1px solid #86efac; }
+  .phase-solution .phase-header { background: #fdf4ff; color: #7e22ce; border-bottom: 1px solid #e9d5ff; }
+  .phase-impl .phase-header { background: #fff7ed; color: #c2410c; border-bottom: 1px solid #fed7aa; }
+  .phase-note { padding: 8px 18px; font-size: 12.5px; color: var(--text-secondary); background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .skill-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .skill-table td { padding: 8px 14px; border-top: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+  .skill-table tr:first-child td { border-top: none; }
+  .skill-table .sk-code { font-family: 'JetBrains Mono', Consolas, monospace; font-weight: 700; color: var(--accent); white-space: nowrap; width: 44px; }
+  .skill-table .sk-name { white-space: nowrap; width: 260px; }
+  .skill-table .sk-name code { font-size: 11.5px; }
+  .skill-table .sk-desc { color: var(--text-secondary); }
+  .skill-table .sk-optional { font-size: 11px; color: #9ca3af; font-style: italic; }
+  .skill-table tr.sk-loop td { background: #fffbeb; }
+  .phase-block + .phase-block { margin-top: 14px; }
+
   /* --- Directory Tree --- */
   .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
   .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
@@ -265,7 +284,7 @@
   <div class="toc-links">
   <a href="#section-1" class="toc-h2">1 摘要</a>
   <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
-  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
   <a href="#section-2" class="toc-h2">2 项目设计理念</a>
   <a href="#section-2-1" class="toc-h3">2.1 核心理念</a>
   <a href="#section-2-2" class="toc-h3">2.2 与同类方案横向对比</a>
@@ -321,15 +340,15 @@
   <p>生成式 AI 已能写代码，但缺少<strong>可重复的敏捷仪式与角色分工</strong>时，输出易发散、难与团队治理对齐。<span class="term-link" data-term="BMAD Method">BMAD Method</span>把分析、规划、架构、实现等阶段沉淀为<strong>可安装、可版本化</strong>的技能与工作流文件，并通过一条 CLI 安装到每个仓库，使 Cursor / Claude Code 等环境中的 Agent 能按同一套「方法模块」协作。</p>
   <p>仓库同时包含 <strong>Astro Starlight</strong> 文档站（<code>website/</code>）与大量校验脚本（<code>tools/validate-*.js</code>），形成「内容 + 工具链」单体仓库。</p>
 
-  <h3 id="section-1-2">1.2 项目预期</h3>
-  <h4>1.2.1 能说明安装产物布局</h4>
-  <p>理解项目根下 <code>_bmad</code>、<code>_bmad-output</code>（可配置）及 <code>_config</code> 清单的职责。</p>
-  <h4>1.2.2 能走通 CLI 主路径</h4>
-  <p>从 <span class="file-link" data-file="tools/installer/bmad-cli.js" data-label="bmad-cli.js">bmad-cli.js</span> 到 <span class="file-link" data-file="tools/installer/commands/install.js" data-label="install.js">install.js</span> 再到 <span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">Installer.install</span> 的调用关系。</p>
-  <h4>1.2.3 能选型模块与 IDE</h4>
-  <p>能解释 core vs BMM vs 其他官方扩展模块（README 表格）及 <code>--tools claude-code,cursor</code> 含义。</p>
-  <h4>1.2.4 能评估与「裸 Prompt」差异</h4>
-  <p>从工作流结构化、技能发现、Party Mode 等角度向团队说明采纳理由与维护成本。</p>
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「AI 输出发散，缺少可重复的敏捷仪式」——结构化工作流模块化安装</h4>
+  <p>团队使用 AI 写代码时，常因没有统一的分析→规划→架构→实现节奏，导致 Agent 输出方向不一致、难与项目目标对齐。BMAD-METHOD 把敏捷各阶段的角色与工作流沉淀为 <code>src/*-skills/</code> 下可版本化的 Markdown/YAML 资产，通过 <span class="file-link" data-file="tools/installer/bmad-cli.js" data-label="bmad-cli.js">bmad-cli</span> 一条命令装入任意项目的 <code>_bmad</code> 目录，让每个仓库共享同一套方法论基线。</p>
+  <h4>1.2.2 「AI 配置文件散落各处，多 IDE 同步是噩梦」——统一 IDE 挂载与清单维护</h4>
+  <p>Claude Code、Cursor、Windsurf 等每个 IDE 都有自己的 rules/config 格式，手动维护多端一致性成本极高。<span class="term-link" data-term="IdeManager">IdeManager</span> 读取 <code>platform-codes.yaml</code> 按需写入各 IDE 配置，<span class="term-link" data-term="ManifestGenerator">ManifestGenerator</span> 维护 <code>_config</code> 清单；支持 <code>--tools claude-code,cursor</code> 同时挂载多端，也可进 CI 以 <code>--yes</code> 无头运行，实现配置即代码。</p>
+  <h4>1.2.3 「Agent 不知道能做什么，技能发现全靠记忆」——bmad-help 可发现技能入口</h4>
+  <p>随着团队积累的技能文件增多，Agent 无法自动感知哪些工作流可用，每次都要靠开发者手动粘贴背景。<span class="term-link" data-term="bmad-help">bmad-help</span> 作为统一入口技能，引导 Agent 和用户发现已安装的核心技能与方法模块（core / BMM / BMB / TEA），无需阅读完整文档即可按需激活正确的工作流。</p>
+  <h4>1.2.4 「单一 AI 视角盲区多，决策质量不稳定」——Party Mode 多角色协作</h4>
+  <p>重要决策仅依赖一个 AI 角色时，容易产生确认偏差和盲区。<span class="term-link" data-term="Party Mode">Party Mode</span> 让多个专家角色（如 PM、架构师、QA）在同一上下文中以不同视角评审方案，形成类似结构化头脑风暴的协作模式，在规格评审、架构选型等关键节点提升决策质量，同时保留完整的讨论轨迹。</p>
 
   <h2 id="section-2">2 项目设计理念</h2>
   <h3 id="section-2-1">2.1 核心理念</h3>
@@ -341,14 +360,35 @@
 
   <h3 id="section-2-2">2.2 与同类方案横向对比</h3>
   <table>
-    <thead><tr><th>工具</th><th>定位</th><th>优势</th><th>劣势</th></tr></thead>
+    <thead><tr><th>工具</th><th>核心定位</th><th>落地成本</th><th>落地效果</th></tr></thead>
     <tbody>
-      <tr><td><strong>BMAD-METHOD</strong></td><td>npm 包 + 安装器 + 大规模技能/工作流库</td><td>端到端敏捷阶段覆盖；Party Mode；官方文档站；MIT</td><td>仓库体量大；团队需学习 BMad 流程词汇；多语言/多 IDE 组合测试成本高</td></tr>
-      <tr><td><strong>通用 Agent Rules（AGENTS.md）</strong></td><td>项目内轻量约定文件</td><td>零依赖、易手写</td><td>无结构化工作流与安装升级 story</td></tr>
-      <tr><td><strong>OpenSpec 等规格工具</strong></td><td>规格/变更目录 + CLI</td><td>变更可审计、偏规格真相</td><td>与 BMad 的「敏捷引导 + 多角色技能」侧重点不同，可互补而非替代</td></tr>
-      <tr><td><strong>闭源 AI 套件</strong></td><td>厂商一站式</td><td>集成深</td><td>BMad 强调开源与无付费墙社区</td></tr>
+      <tr>
+        <td><strong>BMAD-METHOD</strong></td>
+        <td>敏捷全阶段方法论 + npm 安装器 + 多 IDE 挂载</td>
+        <td>中：<code>npx bmad-method install</code> 即可启动，但需学习 bmad-help / Party Mode 等概念，技能文件体量大</td>
+        <td>覆盖需求→规划→架构→实现全链路；Party Mode 多角色协作；跨 IDE 一次同步；适合追求完整敏捷仪式的中大型团队</td>
+      </tr>
+      <tr>
+        <td><strong>GitHub Spec Kit</strong></td>
+        <td>规格驱动开发（SDD）+ AI 命令行工具集</td>
+        <td>低：Cursor Agent Skill 形式，<code>/speckit.specify</code> 系列命令开箱即用，无需额外安装产物</td>
+        <td>强于「需求→任务→GitHub Issues」端到端规格落地，但不含 BMAD 式多角色仪式和 Party Mode；与 BMAD 互补而非替代</td>
+      </tr>
+      <tr>
+        <td><strong>OpenSpec</strong></td>
+        <td>规格变更管理 + ArtifactGraph 拓扑排序 + Zod 验证</td>
+        <td>中：需引入 CLI 和 ChangeSchema 概念，变更流程较严格</td>
+        <td>变更可审计、规格文件是真相来源；偏「规格一致性维护」，不含敏捷引导和多角色技能；可与 BMAD 配合（BMAD 做流程、OpenSpec 守规格）</td>
+      </tr>
+      <tr>
+        <td><strong>Superpowers</strong></td>
+        <td>AI 协作行为规范 + Iron Law + Skill.md 元技能体系</td>
+        <td>极低：复制 SKILL.md 即可使用，无安装步骤，无额外依赖</td>
+        <td>解决「AI 自作主张」和「会话重置后忘记约定」的问题；不含敏捷阶段工作流或多 IDE 同步能力；BMAD 可以视为 Superpowers 理念在敏捷流程层面的重量级实现</td>
+      </tr>
     </tbody>
   </table>
+  <p><strong>总结</strong>：BMAD-METHOD 的核心赢面在于<strong>完整的敏捷工作流覆盖（需求到交付）+ Party Mode 多角色 + 跨 IDE 一键安装</strong>；Spec Kit 和 OpenSpec 更偏规格/任务维度，Superpowers 更偏行为约束维度，三者与 BMAD 是正交互补关系，可以叠加使用。</p>
 
   <h3 id="section-2-3">2.3 定位一句话</h3>
   <p>把<strong>可版本化的敏捷 AI 方法模块</strong>装进任意项目目录，并用安装器完成<strong>跨 IDE 挂载与清单维护</strong>的「方法操作系统」发行版。</p>
@@ -448,39 +488,189 @@
   </table>
 
   <h2 id="section-4">4 项目使用方式</h2>
-  <h3 id="section-4-1">4.1 从决策到可用工作流的一次过程</h3>
-  <div class="timeline">
-    <div class="timeline-item"><div class="timeline-dot">1</div><div class="timeline-body"><strong>评估</strong> — 阅读 <span class="file-link" data-file="README.md" data-label="README.md">README.md</span> 与 docs.bmad-method.org 入门教程。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">2</div><div class="timeline-body"><strong>选模块</strong> — 决定是否仅需 core 或叠加 <span class="term-link" data-term="BMM">BMM</span> / 其他官方模块。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">3</div><div class="timeline-body"><strong>执行安装</strong> — 在项目根运行 <code>npx bmad-method install</code> 或带 <code>--yes</code> 的非交互参数。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">4</div><div class="timeline-body"><strong>回答向导</strong> — 由 <span class="file-link" data-file="tools/installer/ui.js" data-label="ui.js">ui.js</span> 收集姓名、语言、输出目录等（或等价 CLI 旗标）。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">5</div><div class="timeline-body"><strong>打开 IDE</strong> — 在已配置工具中打开仓库，确认技能已注册。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">6</div><div class="timeline-body"><strong>开始协作</strong> — 调用 <span class="term-link" data-term="bmad-help">bmad-help</span> 或具体工作流技能推进阶段。</div></div>
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p>以「从零搭建一个新功能」为例，展示四个阶段的全部可用技能。每步均为<strong>按需选用</strong>，非必须全部执行。已有代码库（brownfield）时，可先用 <code>bmad-generate-project-context</code> 生成精简上下文再接入后续步骤。</p>
+
+  <!-- Phase 1 -->
+  <div class="phase-block phase-analysis">
+    <div class="phase-header">① Analysis（分析）</div>
+    <div class="phase-note">按需从「轻」到「重」选，不是每步都必须。已有代码库时可先跑 [GPC] 生成项目上下文。</div>
+    <table class="skill-table">
+      <tr><td class="sk-code">[CB]</td><td class="sk-name"><code>bmad-product-brief</code></td><td class="sk-desc">产品简报——概念已较清晰时快速结构化目标、背景与约束。</td></tr>
+      <tr><td class="sk-code">[WB]</td><td class="sk-name"><code>bmad-prfaq</code></td><td class="sk-desc">PRFAQ 逆向工作法——从「新闻稿 + FAQ」倒推产品定义，与 [CB] 二选一或互补。</td></tr>
+      <tr><td class="sk-code">[BP]</td><td class="sk-name"><code>bmad-brainstorming</code></td><td class="sk-desc">发散头脑风暴，破冰、探索方向，适合需求模糊初期。</td></tr>
+      <tr><td class="sk-code">[MR]</td><td class="sk-name"><code>bmad-market-research</code></td><td class="sk-desc">市场与竞品调研，输出结构化洞察。</td></tr>
+      <tr><td class="sk-code">[DR]</td><td class="sk-name"><code>bmad-domain-research</code></td><td class="sk-desc">领域术语与业务约束梳理，为 PRD 打底。</td></tr>
+      <tr><td class="sk-code">[TR]</td><td class="sk-name"><code>bmad-technical-research</code></td><td class="sk-desc">技术可行性与方案对比，帮助在架构阶段做有据可查的决策。</td></tr>
+      <tr><td class="sk-code">[GPC]</td><td class="sk-name"><code>bmad-generate-project-context</code></td><td class="sk-desc">已有代码库时生成精简项目上下文，供后续 LLM 高效消费（brownfield 常用）。</td></tr>
+    </table>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase-block phase-planning">
+    <div class="phase-header">② Planning（规划）</div>
+    <div class="phase-note">需求与设计阶段。大多数项目从 [CP] 开始。</div>
+    <table class="skill-table">
+      <tr><td class="sk-code">[CP]</td><td class="sk-name"><code>bmad-create-prd</code></td><td class="sk-desc">生成 PRD——多数项目的「正式起点」，输出完整产品需求文档。</td></tr>
+      <tr><td class="sk-code">[VP]</td><td class="sk-name"><code>bmad-validate-prd</code></td><td class="sk-desc">PRD 质量校验——在 PRD 产出后运行，检查完整性与一致性。</td></tr>
+      <tr><td class="sk-code">[CU]</td><td class="sk-name"><code>bmad-create-ux-design</code></td><td class="sk-desc">UX 设计——UI 比重大时强烈建议，在 PRD 之后执行。</td></tr>
+      <tr><td class="sk-code">[EP]</td><td class="sk-name"><code>bmad-edit-prd</code></td><td class="sk-desc">迭代修改 PRD，响应评审反馈或需求变更。</td></tr>
+    </table>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase-block phase-solution">
+    <div class="phase-header">③ Solutioning（方案）</div>
+    <div class="phase-note">技术设计与任务拆分，依赖 PRD 完成后执行。</div>
+    <table class="skill-table">
+      <tr><td class="sk-code">[CA]</td><td class="sk-name"><code>bmad-create-architecture</code></td><td class="sk-desc">生成架构文档与关键技术决策记录（ADR）。</td></tr>
+      <tr><td class="sk-code">[CE]</td><td class="sk-name"><code>bmad-create-epics-and-stories</code></td><td class="sk-desc">在架构之后拆分 Epic + User Story，需明确依赖架构输出。</td></tr>
+      <tr><td class="sk-code">[IR]</td><td class="sk-name"><code>bmad-check-implementation-readiness</code></td><td class="sk-desc">就绪检查——验证 PRD / UX / 架构 / Epic-Story 是否对齐，确认能否开干。</td></tr>
+    </table>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="phase-block phase-impl">
+    <div class="phase-header">④ Implementation（实现）</div>
+    <div class="phase-note">迭代交付阶段。Story 小循环（CS → DS → CR）会多轮重复，[SS] 随时可查。</div>
+    <table class="skill-table">
+      <tr><td class="sk-code">[SP]</td><td class="sk-name"><code>bmad-sprint-planning</code></td><td class="sk-desc">生成或更新 Sprint 计划，作为实现阶段的「路线图」。</td></tr>
+      <tr class="sk-loop"><td class="sk-code">[CS]</td><td class="sk-name"><code>bmad-create-story</code></td><td class="sk-desc">创建并校验单条 Story（含 Validate Story 等子动作）。↩ 循环起点</td></tr>
+      <tr class="sk-loop"><td class="sk-code">[DS]</td><td class="sk-name"><code>bmad-dev-story</code></td><td class="sk-desc">按 Story 实现、测试、修改。</td></tr>
+      <tr class="sk-loop"><td class="sk-code">[CR]</td><td class="sk-name"><code>bmad-code-review</code></td><td class="sk-desc">代码评审——通过则进下一条 Story；不通过回 [DS]。↩ 循环终点</td></tr>
+      <tr><td class="sk-code">[SS]</td><td class="sk-name"><code>bmad-sprint-status</code></td><td class="sk-desc">随时查看 Sprint 进度，决定下一步走哪个 workflow。</td></tr>
+      <tr><td class="sk-code">[QA]</td><td class="sk-name"><code>bmad-qa-generate-e2e-tests</code></td><td class="sk-desc">补充自动化 API / E2E 测试，在实现阶段与 [DS] 衔接运行。</td></tr>
+      <tr><td class="sk-code">[ER]</td><td class="sk-name"><code>bmad-retrospective</code></td><td class="sk-desc">回顾——一个大块 / Epic 结束时可选执行，沉淀经验。</td></tr>
+    </table>
   </div>
 
   <h3 id="section-4-2">4.2 最小可运行路径</h3>
-  <p class="diagram-caption">图 4-1：从本机到可用 BMad 资产的最短概念路径</p>
-  <div class="diagram-container"><pre class="mermaid">
-graph LR
-  A["① Node 20+"] --> B["② npx bmad-method install"]
-  B --> C["③ 选择模块与 IDE"]
-  C --> D["④ 写入 _bmad"]
-  D --> E["⑤ IDE 中唤起技能"]
-  </pre></div>
-  <p>③ 的交互可用 <code>--modules bmm --tools claude-code --yes</code> 在无头环境跳过。</p>
-  <pre><code class="language-bash"># 交互安装（默认当前目录）
+  <p>三步即可开始：<strong>安装 → 唤起 bmad-help → 按向导推进</strong>。bmad-help 会自动检测已完成内容并告知下一步，无需记忆工作流顺序。</p>
+
+  <pre><code class="language-bash"># Step 1: 安装（在项目根目录执行）
 npx bmad-method install
 
-# 非交互示例（README）
+# 非交互 / CI 示例
 npx bmad-method install --directory /path/to/project --modules bmm --tools claude-code --yes
-</code></pre>
 
-  <h3 id="section-4-3">4.3 核心使用模式</h3>
-  <div class="usage-grid">
-    <div class="usage-card"><h4>交互安装</h4><p>本地开发者首次接入；适合探索模块与 IDE 列表。</p></div>
-    <div class="usage-card"><h4>无头 / CI</h4><p>固定 <code>--directory</code> 与模块集合，保证各分支基线一致。</p></div>
-    <div class="usage-card"><h4>升级与 quick-update</h4><p>已存在 <code>_bmad</code> 时由 <span class="term-link" data-term="Installer">Installer</span> 走更新路径，保留或合并清单（参见 install 命令 <code>--action</code>）。</p></div>
-  </div>
+# Step 2: 打开 AI IDE，立即唤起智能向导
+bmad-help</code></pre>
+
+  <p class="diagram-caption">图 4-1：从安装到交付的最短概念路径</p>
+  <div class="diagram-container"><pre class="mermaid">
+graph LR
+  A["Node 20+\n前置要求"] --> B["npx bmad-method install\n写入 _bmad/"]
+  B --> C["bmad-help\n智能向导"]
+  C --> D{"选择规划路径"}
+  D -->|"Quick Flow\n1-15 stories"| E["bmad-quick-dev\n规划+实现一体"]
+  D -->|"BMad Method\n10-50+ stories"| F["Plan 阶段\nPRD → 架构 → Story"]
+  D -->|"Enterprise\n30+ stories"| F
+  E --> G["Sprint 构建循环\nCS → DS → CR"]
+  F --> G
+  </pre></div>
+
+  <h3 id="section-4-3">4.3 三条规划路径对照</h3>
+  <p>根据项目规模和复杂度选择对应路径，story 数量仅作参考，实际应按规划需求而非数字选择。</p>
+  <table>
+    <thead><tr><th>路径</th><th>适用场景</th><th>产出文档</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Quick Flow</strong></td>
+        <td>Bug 修复、简单功能、范围明确（1–15 stories）</td>
+        <td>Tech-spec 一份；跳过 PRD 与架构，<code>bmad-quick-dev</code> 规划+实现一体</td>
+      </tr>
+      <tr>
+        <td><strong>BMad Method</strong></td>
+        <td>产品、平台、复杂功能（10–50+ stories）</td>
+        <td>PRD + 架构文档 + UX（可选）</td>
+      </tr>
+      <tr>
+        <td><strong>Enterprise</strong></td>
+        <td>合规、多租户系统（30+ stories）</td>
+        <td>PRD + 架构 + 安全 + DevOps 文档</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>BMAD 总体流程图（三轨制 + 四阶段）</h4>
+  <p class="diagram-caption">图 4-2：三条轨道与四阶段完整主线的关系</p>
+  <div class="diagram-container"><pre class="mermaid">
+flowchart TD
+    A[需求 / 想法 / 变更请求]
+    A --> B{按复杂度选择轨道}
+
+    B --> QF[Quick Flow\n小改动 / bug / 范围清晰]
+    B --> BM[BMad Method\n产品 / 平台 / 复杂功能]
+    B --> EN[Enterprise\n合规 / 多租户 / 高治理]
+
+    subgraph TRACK1[轨道一：Quick Flow — 旁路，跳过 Phase 1-3]
+        direction TB
+        QF --> Q1[bmad-quick-dev]
+        Q1 --> Q2[澄清意图]
+        Q2 --> Q3[轻量 tech-spec]
+        Q3 --> Q4[实现 + review + 交付]
+        Q4 --> Q5[输出：spec-*.md + code]
+    end
+
+    subgraph TRACK2[轨道二 / 三：BMad Method 与 Enterprise 共享完整主线]
+        direction TB
+
+        subgraph P1[Phase 1 · Analysis 可选]
+            direction LR
+            A1[brainstorming] ~~~ A2[research] ~~~ A3[product-brief] ~~~ A4[prfaq]
+        end
+
+        subgraph P2[Phase 2 · Planning 必需]
+            direction LR
+            P21[create-prd] ~~~ P22[create-ux-design] ~~~ P23[输出：PRD / ux-spec]
+        end
+
+        subgraph P3[Phase 3 · Solutioning 复杂度分水岭]
+            direction LR
+            S1[create-architecture] ~~~ S2[create-epics-and-stories] ~~~ S3[check-implementation-readiness]
+        end
+
+        subgraph P4[Phase 4 · Implementation]
+            direction LR
+            I1[sprint-planning] ~~~ I2[create-story] ~~~ I3[dev-story] ~~~ I4[code-review] ~~~ I5[retrospective]
+        end
+    end
+
+    BM --> P1
+    EN --> P1
+    P1 --> P2
+    P2 --> P3
+    S3 --> D{是否适合开工?}
+    D -->|是| P4
+    D -->|否，回修规划| P2
+    EN -.增加.-> E1[Security / DevOps 文档]
+  </pre></div>
+
+  <table class="arch-read-table">
+    <thead><tr><th>#</th><th>读图要点</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>三轨是「走哪条路」</strong></td>
+        <td>Quick Flow 适合 bug fix、范围清晰的小任务；BMad Method 适合产品与复杂功能；Enterprise 面向合规/多租户/高治理场景。按规划需求选，不是按 story 数量选。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>四阶段是完整主线</strong></td>
+        <td>Analysis（探索问题空间）→ Planning（定义做什么）→ Solutioning（决定怎么做并拆工作）→ Implementation（按 story 实现）。官方 Getting Started 与 Workflow Map 均以此为主流程。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>Quick Flow 是旁路，不是阶段一</strong></td>
+        <td>官方 Workflow Map 明确标注 Quick Flow 为 Parallel Track，<code>bmad-quick-dev</code> 统一完成澄清、规划、实现、评审和交付，跳过 Phase 1–3。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Solutioning 是复杂度分水岭</strong></td>
+        <td>Quick Flow 不需要；BMad Method 简单项目可选；复杂项目和 Enterprise 必须做。经验法则：有多个 Epic 可能由不同 Agent 实现时，应先做 Solutioning。<code>check-implementation-readiness</code> 是最终把关点，未通过则回 Planning 修订。</td>
+      </tr>
+    </tbody>
+  </table>
 
   <h2 id="section-5">5 系统详细设计</h2>
   <h3 id="section-5-1">5.1 系统架构设计</h3>
@@ -568,140 +758,6 @@ sequenceDiagram
       <tr><td>8</td><td>收尾</td><td>process.exit</td><td><span class="file-link" data-file="tools/installer/commands/install.js" data-label="install.js">install.js</span></td><td>0 成功 / 1 失败</td><td>与 CI 退出码约定一致</td></tr>
     </tbody>
   </table>
-
-  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
-
-  <div class="module-item" id="section-5-3-1">
-    <div class="module-meta"><span class="file-link" data-file="tools/installer/bmad-cli.js" data-label="bmad-cli.js">tools/installer/bmad-cli.js</span> · CLI 启动层 · 任意子命令</div>
-    <h4>要解决的问题</h4>
-    <p>在单一入口下扩展 <code>install</code>、<code>uninstall</code>、<code>status</code> 等命令，并处理 Windows stdin、npm 包装下的交互稳定性。</p>
-    <h4>解决方案</h4>
-    <p>启动时扫描 <code>commands/</code> 目录，将每个模块导出的 <code>command</code>、<code>options</code>、<code>action</code> 注册到 Commander；stdin <code>setMaxListeners</code> 避免 @clack 链式提示触达默认上限；可选 <code>npm view</code> 做版本落后提示。</p>
-    <p class="diagram-caption">图 5-3：动态命令注册（概念）</p>
-    <div class="diagram-container"><pre class="mermaid">
-sequenceDiagram
-  participant N as node
-  participant CLI as bmad-cli.js
-  participant FS as fs.readdirSync
-  participant P as Commander program
-  N->>CLI: 启动
-  CLI->>FS: 读取 commands/
-  FS-->>CLI: install.js 等
-  CLI->>P: program.command(name)
-  P-->>CLI: 就绪
-    </pre></div>
-    <p class="seq-table-caption"><strong>时序对照表</strong>（图 5-3）</p>
-    <table class="seq-table">
-      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>node</td><td>—</td><td>bmad-cli.js</td><td>require 入口</td><td>加载 Commander 与依赖</td></tr>
-        <tr><td>2</td><td>bmad-cli.js</td><td><span class="file-link" data-file="tools/installer/bmad-cli.js" data-label="bmad-cli.js">bmad-cli.js</span></td><td>fs</td><td>readdirSync(commands)</td><td>发现子命令模块</td></tr>
-        <tr><td>3</td><td>bmad-cli.js</td><td><span class="file-link" data-file="tools/installer/bmad-cli.js" data-label="bmad-cli.js">bmad-cli.js</span></td><td>program</td><td>command().action()</td><td>每个文件注册一次</td></tr>
-        <tr><td>4</td><td>用户</td><td>—</td><td>program</td><td>argv 解析</td><td>分派到具体 action</td></tr>
-      </tbody>
-    </table>
-    <p><strong>代价与局限：</strong>动态 require 使静态分析工具难以枚举命令表；子命令文件命名即对外契约。</p>
-  </div>
-
-  <div class="module-item" id="section-5-3-2">
-    <div class="module-meta"><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">tools/installer/core/installer.js</span> · 编排层 · install / quickUpdate</div>
-    <h4>要解决的问题</h4>
-    <p>在「全新安装 / 覆盖升级 / 模块增删 / IDE 变更」多种初态下保持 <code>_bmad</code> 一致且可回滚摘要。</p>
-    <h4>解决方案</h4>
-    <p><code>install</code> 开头构建 <code>Config</code> 与 <code>InstallPaths</code>，检测 <code>ExistingInstall</code> 以决定卸载多余模块或 IDE；循环中为每个模块收集结果对象，最后统一输出摘要日志；与 <code>ExternalModuleManager</code> 协同支持自定义源。</p>
-    <p class="diagram-caption">图 5-4：Installer 与配置/路径对象</p>
-    <div class="diagram-container"><pre class="mermaid">
-sequenceDiagram
-  participant CMD as install.js
-  participant INS as Installer
-  participant CF as Config.build
-  participant IP as InstallPaths.create
-  participant EX as ExistingInstall.detect
-  CMD->>INS: install(userInput)
-  INS->>CF: Config.build
-  CF-->>INS: config
-  INS->>IP: create(config)
-  IP-->>INS: paths
-  INS->>EX: detect(paths.bmadDir)
-  EX-->>INS: 已安装元数据
-    </pre></div>
-    <p class="seq-table-caption"><strong>时序对照表</strong>（图 5-4）</p>
-    <table class="seq-table">
-      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>install.js</td><td><span class="file-link" data-file="tools/installer/commands/install.js" data-label="install.js">install.js</span></td><td>Installer</td><td>install(config)</td><td>主业务入口</td></tr>
-        <tr><td>2</td><td>Installer</td><td><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">installer.js</span></td><td>Config</td><td>build(originalConfig)</td><td>规范化 modules/ides</td></tr>
-        <tr><td>3</td><td>Installer</td><td><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">installer.js</span></td><td>InstallPaths</td><td>create</td><td>解析 bmad 根路径</td></tr>
-        <tr><td>4</td><td>Installer</td><td><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">installer.js</span></td><td>ExistingInstall</td><td>detect</td><td>决定更新或全新</td></tr>
-      </tbody>
-    </table>
-    <p><strong>代价与局限：</strong>单文件超长（千行级），分支多；新人需配合测试用例阅读。</p>
-  </div>
-
-  <div class="module-item" id="section-5-3-3">
-    <div class="module-meta"><span class="file-link" data-file="tools/installer/core/manifest-generator.js" data-label="manifest-generator.js">tools/installer/core/manifest-generator.js</span> · 清单层 · 安装后</div>
-    <h4>要解决的问题</h4>
-    <p>IDE 与后续升级需要「当前磁盘上到底有什么技能、属于哪一模块」的机器可读答案。</p>
-    <h4>解决方案</h4>
-    <p>在 <code>_bmad/_config</code> 下生成/更新清单：扫描已安装模块目录，归并 preserved 与 selected 集合，输出 CSV（如 skill-manifest）供比对与平台消费；复用 <code>ide/shared/skill-manifest</code> 中的 canonicalId 逻辑。</p>
-    <p class="diagram-caption">图 5-5：清单生成与扫描</p>
-    <div class="diagram-container"><pre class="mermaid">
-sequenceDiagram
-  participant INS as Installer
-  participant MG as ManifestGenerator
-  participant FS as fs-native
-  INS->>MG: generateManifests(bmadDir, modules)
-  MG->>FS: ensureDir(_config)
-  MG->>MG: scanInstalledModules
-  MG->>FS: write CSV/YAML
-  FS-->>MG: ok
-  MG-->>INS: 完成
-    </pre></div>
-    <p class="seq-table-caption"><strong>时序对照表</strong>（图 5-5）</p>
-    <table class="seq-table">
-      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>Installer</td><td><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">installer.js</span></td><td>ManifestGenerator</td><td>generateManifests</td><td>安装后一致性步骤</td></tr>
-        <tr><td>2</td><td>ManifestGenerator</td><td><span class="file-link" data-file="tools/installer/core/manifest-generator.js" data-label="manifest-generator.js">manifest-generator.js</span></td><td>fs-native</td><td>ensureDir</td><td>保证配置目录存在</td></tr>
-        <tr><td>3</td><td>ManifestGenerator</td><td><span class="file-link" data-file="tools/installer/core/manifest-generator.js" data-label="manifest-generator.js">manifest-generator.js</span></td><td>ManifestGenerator（内部）</td><td>scanInstalledModules</td><td>聚合模块集合</td></tr>
-        <tr><td>4</td><td>ManifestGenerator</td><td><span class="file-link" data-file="tools/installer/core/manifest-generator.js" data-label="manifest-generator.js">manifest-generator.js</span></td><td>fs-native</td><td>write 清单文件</td><td>供 IDE 与增量逻辑读取</td></tr>
-      </tbody>
-    </table>
-    <p><strong>代价与局限：</strong>扫描成本随安装文件数上升；CSV 模式需注意转义与字段演进。</p>
-  </div>
-
-  <div class="module-item" id="section-5-3-4">
-    <div class="module-meta"><span class="file-link" data-file="tools/installer/ide/manager.js" data-label="manager.js">tools/installer/ide/manager.js</span> · IDE 桥接层 · ensureInitialized 后</div>
-    <h4>要解决的问题</h4>
-    <p>各 IDE 配置路径、文件格式、是否支持 marketplace 插件声明均不同，不能硬编码 N 份 if-else。</p>
-    <h4>解决方案</h4>
-    <p><code>loadConfigDrivenHandlers</code> 读取 <span class="file-link" data-file="tools/installer/ide/platform-codes.yaml" data-label="platform-codes.yaml">platform-codes.yaml</span>，仅为带 <code>installer</code> 配置段的平台实例化 <code>ConfigDrivenIdeSetup</code>；支持 <code>setBmadFolderName</code> 以兼容自定义文件夹名。</p>
-    <p class="diagram-caption">图 5-6：IdeManager 懒加载 handler</p>
-    <div class="diagram-container"><pre class="mermaid">
-sequenceDiagram
-  participant INS as Installer
-  participant IM as IdeManager
-  participant PC as platform-codes
-  participant H as ConfigDrivenIdeSetup
-  INS->>IM: setup(ide, projectRoot, bmadDir)
-  IM->>IM: ensureInitialized
-  IM->>PC: loadPlatformCodes
-  PC-->>IM: platforms 映射
-  IM->>H: new(platformCode, info)
-  H-->>IM: handler 实例
-    </pre></div>
-    <p class="seq-table-caption"><strong>时序对照表</strong>（图 5-6）</p>
-    <table class="seq-table">
-      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>Installer</td><td><span class="file-link" data-file="tools/installer/core/installer.js" data-label="installer.js">installer.js</span></td><td>IdeManager</td><td>配置调用</td><td>安装流程尾部</td></tr>
-        <tr><td>2</td><td>IdeManager</td><td><span class="file-link" data-file="tools/installer/ide/manager.js" data-label="manager.js">manager.js</span></td><td>IdeManager</td><td>ensureInitialized</td><td>懒加载一次</td></tr>
-        <tr><td>3</td><td>IdeManager</td><td><span class="file-link" data-file="tools/installer/ide/manager.js" data-label="manager.js">manager.js</span></td><td><span class="file-link" data-file="tools/installer/ide/platform-codes.yaml" data-label="platform-codes.yaml">platform-codes.yaml</span></td><td>loadPlatformCodes</td><td>声明式平台清单</td></tr>
-        <tr><td>4</td><td>IdeManager</td><td><span class="file-link" data-file="tools/installer/ide/manager.js" data-label="manager.js">manager.js</span></td><td>ConfigDrivenIdeSetup</td><td>构造函数</td><td>每平台一个 handler</td></tr>
-      </tbody>
-    </table>
-    <p><strong>代价与局限：</strong>YAML 配置错误会导致静默跳过平台；新 IDE 需同步更新 platform-codes 与测试。</p>
-  </div>
 
   <h2 id="section-6">6 方案评价</h2>
   <h3 id="section-6-1">6.1 优势分析</h3>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>autoresearch 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+  .toc {
+    position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+    overflow-y: auto; padding: 24px 16px;
+    background: var(--bg-alt); border-right: 1px solid var(--border);
+    font-size: 13px; z-index: 100;
+  }
+  .toc h3 { font-size: 14px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 6px; }
+  .diagram-container { margin: 24px 0; padding: 24px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+  .module-card { margin: 24px 0; padding: 24px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .module-card .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+  .module-card .module-meta span { padding: 2px 10px; background: var(--bg-alt); border-radius: 20px; }
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #bbf7d0; }
+  .eval-card.weakness { background: #fffbeb; border-color: #fde68a; }
+  .eval-card h4 { margin: 0 0 12px; font-size: 16px; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid var(--border); }
+  td { padding: 10px 12px; border: 1px solid var(--border); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+  .tag-blue { background: #dbeafe; color: #1e40af; }
+  .tag-green { background: #dcfce7; color: #166534; }
+  .tag-orange { background: #ffedd5; color: #9a3412; }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-2" class="toc-h2">2 设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 单文件隔离实验</a>
+  <a href="#section-2-2" class="toc-h3">2.2 时间预算公平比较</a>
+  <a href="#section-2-3" class="toc-h3">2.3 program.md 即研究协议</a>
+  <a href="#section-2-4" class="toc-h3">2.4 简洁性优先原则</a>
+  <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+  <a href="#section-3-1" class="toc-h3">3.1 系统架构设计</a>
+  <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
+  <a href="#section-3-2-1" class="toc-h4">3.2.1 GPT 模型架构</a>
+  <a href="#section-3-2-2" class="toc-h4">3.2.2 MuonAdamW 混合优化器</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 BPB 评估与无偏指标</a>
+  <a href="#section-3-2-4" class="toc-h4">3.2.4 BOS 对齐 Best-fit 数据加载</a>
+  <a href="#section-3-2-5" class="toc-h4">3.2.5 program.md 实验循环协议</a>
+  <a href="#section-4" class="toc-h2">4 方案评价</a>
+  <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+  <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>autoresearch 深度解读</h1>
+    <div class="subtitle">让 AI Agent 在一张 GPU 上自主做 LLM 训练研究的最小化框架</div>
+    <div class="lead">
+      autoresearch 是 Andrej Karpathy 于 2026 年 3 月发布的开源实验：给 AI Agent 一个只有三个文件的 GPT 训练环境，让它每晚自主改代码、跑实验、记录结果，人类早上起床就能看到数十次实验的收益曲线。
+      项目的核心洞见是——研究的价值不在于模型规模，而在于实验迭代速度；通过固定 5 分钟时间预算和单一指标 val_bpb，将"什么是一次好实验"的定义从主观判断变成了客观可比的数字。
+      读完本文，你将理解项目的三文件架构、内嵌 SOTA 技术的 GPT 模型、混合 MuonAdamW 优化器的工程实现，以及 program.md 如何把一个 AI Agent 变成一个永不停止的自主研究员。
+    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>三文件分离原则是最大亮点</strong>：prepare.py（不可改）、train.py（实验靶）、program.md（研究协议），职责边界清晰到极致，Agent 只有一个合法动作——修改 train.py。</li>
+      <li><strong>train.py 内嵌了 2025-2026 年多项前沿技术</strong>：Value Residual（ResFormer）、QK-Norm、滑动窗口注意力（SSSL）、Polar Express 矩阵正交化、NorMuon 方差归一化、Cautious Weight Decay，是极佳的前沿训练技术学习样本。</li>
+      <li><strong>val_bpb 是一个精心设计的公平指标</strong>：词表无关（vocab-size independent），跨架构/词表大小的实验结果直接可比，消除了 Agent 通过改变词表大小来"作弊"的可能。</li>
+      <li><strong>program.md 是人类迭代的代码</strong>：Agent 改 train.py，人类改 program.md——项目把"如何让 AI 更好地研究"本身也变成了一个可迭代的工程产物。</li>
+      <li><strong>GC 显式管理揭示了长训练中的隐性延迟</strong>：step=0 时 gc.freeze() + gc.disable()，防止 Python GC 在训练中途造成 ~500ms 停顿，这是生产级训练脚本的重要细节。</li>
+    </ul>
+  </div>
+
+  <!-- Section 1 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>传统机器学习研究的瓶颈不是算法创意，而是实验周期——一个想法从提出到有实验数据支撑，往往需要研究员手动修改代码、启动训练、等待结果、分析日志，一天能跑 2-3 个实验就算高效。</p>
+  <p>Karpathy 的出发点是：如果把这个循环完全交给 AI Agent，每晚让它在一张 GPU 上自主运行 ~100 个 5 分钟实验，人类早上只需要看结果、调整研究方向，实验迭代速度可以提升 10-50 倍。</p>
+  <p>项目选择了 nanochat 的简化版作为训练代码基础（单 GPU、单文件、GPT 预训练），数据集是 Karpathy 自己发布的 climbmix-400b-shuffle，评估指标是 val_bpb（validation bits per byte）。整个框架刻意保持极简——三个核心文件，几百行代码，任何人都能在一个下午读懂全部。</p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+  <h4 id="section-1-2-1">1.2.1 预期一：AI 自主实验迭代，人类从执行者变成方向指导者</h4>
+  <p>Agent 按照 program.md 定义的协议，无需人类干预地永续执行"改代码 → commit → 训练 → 记录 → 保留/丢弃"循环。人类的工作变成：早上看 results.tsv，判断哪些方向值得继续探索，更新 program.md 中的研究方向，再去睡觉。program.md 明确写道："<em>NEVER STOP. Once the experiment loop has begun, do NOT pause to ask the human if you should continue.</em>"</p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：固定预算实验可直接横向比较</h4>
+  <p>所有实验都在完全相同的硬件上运行恰好 5 分钟（TIME_BUDGET=300s）。Agent 无论做什么改动——换架构、改优化器、调 batch size——每次都是公平的 5 分钟比赛。val_bpb 下降即改进，无需任何额外分析。这个设计把"实验是否有效"从主观判断变成了一行命令：<code>grep "^val_bpb:" run.log</code>。</p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：训练代码本身成为前沿研究的演化产物</h4>
+  <p>Agent 会尝试 SOTA 技术并验证其在小规模下的实际效果，train.py 随着实验迭代不断演进。目前的 baseline 已经内嵌了 Flash Attention 3、Value Residual、QK-Norm、Muon 优化器等前沿技术，README 甚至戏谑地说"10,205th generation of the code base"——暗示这个文件本身就是 AI 不断自我改进的产物。</p>
+
+  <!-- Section 2 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 单文件隔离实验（Single Mutable Target）</h3>
+  <p>整个系统只允许 Agent 修改一个文件：<code>train.py</code>。prepare.py 包含评估函数、数据加载器、分词器——全部标记为只读，Agent 不得修改。这个设计看起来是限制，实际上是保障：确保每次实验的评估标准完全一致，Agent 无法通过修改评估函数来"刷指标"。所有 diff 都发生在同一个文件里，便于 git diff 审阅，也便于 Agent 理解改动范围。</p>
+
+  <h3 id="section-2-2">2.2 时间预算公平比较（Time-Budget Fairness）</h3>
+  <p>传统实验以 step 数或 epoch 数作为训练量度量，但当 Agent 改变模型大小或 batch size 时，相同 step 数意味着完全不同的计算量。autoresearch 用<strong>挂钟时间</strong>作为预算单位（<code>TIME_BUDGET = 300</code> 秒），无论 Agent 怎么改代码，每次实验在同一硬件上消耗的算力是完全相同的。这使得"大模型 vs. 小模型跑更多步"成为可以被实验比较的选择，而非假设。</p>
+
+  <h3 id="section-2-3">2.3 program.md 即研究协议（Markdown as Research OS）</h3>
+  <p>program.md 不是普通的 README，而是 Agent 的操作系统——它定义了分支命名规范、实验循环的每一步、崩溃处理策略、结果记录格式，甚至包含"永不停止"的指令。README 把 program.md 称为"a super lightweight skill"。人类对实验方向的控制，全部通过修改这个文件来实现；Agent 对代码的探索，全部通过修改 train.py 来实现。两个迭代循环清晰分离。</p>
+
+  <h3 id="section-2-4">2.4 简洁性优先原则（Simplicity as a First-Class Metric）</h3>
+  <p>program.md 中明确写道："<em>All else being equal, simpler is better. Removing something and getting equal or better results is a great outcome — that's a simplification win.</em>" 这防止了 Agent 为了微小的 val_bpb 提升而堆砌复杂的 hack，保持代码可读性。这不仅是工程卫生，也是防止 Agent 进入局部最优的启发式规则。</p>
+
+  <!-- Section 3 -->
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>autoresearch 由三个物理文件、两个迭代循环和一个不变的评估标准组成。Agent 循环和人类循环运行在不同时间尺度上——Agent 以 5 分钟为单位持续迭代，人类以天为单位审视结果并调整方向。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+  subgraph files ["三个核心文件"]
+    PM["program.md\n研究协议（人类迭代）"]
+    TR["train.py\n实验靶（Agent 迭代）"]
+    PR["prepare.py\n固定基础设施（只读）"]
+  end
+
+  subgraph agent ["Agent 实验循环（5分钟/次，永续）"]
+    A1["读 program.md\n理解研究方向"] --> A2["修改 train.py\n编写实验想法"]
+    A2 --> A3["git commit"] --> A4["uv run train.py\n→ run.log"]
+    A4 --> A5{"val_bpb\n是否改善？"}
+    A5 -->|"是 (keep)"| A6["保留 commit\n记录到 results.tsv"]
+    A5 -->|"否 (discard)"| A7["git reset\n记录 discard"]
+    A6 --> A1
+    A7 --> A1
+  end
+
+  subgraph human ["人类循环（每天/按需）"]
+    H1["看 results.tsv\n分析趋势"] --> H2["更新 program.md\n调整研究方向"]
+    H2 --> H1
+  end
+
+  PM --> A1
+  PR --> A4
+  TR --> A4
+  A6 -.->|"results.tsv"| H1
+
+  classDef fixed fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef mutable fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+  classDef protocol fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class PR fixed
+  class TR mutable
+  class PM protocol
+    </div>
+    <div class="caption">图 3-1：autoresearch 系统架构 — 三文件 + 双循环</div>
+  </div>
+
+  <p><strong>红色（prepare.py）</strong>：固定基础设施，包含 MAX_SEQ_LEN、TIME_BUDGET 常量、分词器、数据加载器、<code>evaluate_bpb</code> 函数。Agent 不得修改，确保评估标准永远一致。</p>
+  <p><strong>蓝色（train.py）</strong>：唯一可修改的文件，包含 GPT 模型定义、MuonAdamW 优化器、超参数、训练循环。每次实验都是对这个文件的一次 git commit。</p>
+  <p><strong>绿色（program.md）</strong>：Agent 的操作协议，由人类迭代更新。控制研究方向、实验策略、结果记录格式。</p>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <!-- Module 1: GPT -->
+  <h4 id="section-3-2-1">3.2.1 GPT 模型架构 — 前沿技术的单文件集成</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 train.py:29–291</span>
+      <span>🏷️ Decoder-only Transformer</span>
+      <span>🔬 ResFormer · QK-Norm · SSSL · Flash Attention 3</span>
+    </div>
+    <p>train.py 的 GPT 类不是简单的教学代码，而是集成了多项 2024-2026 年前沿技术的实验性基线。每项技术都有明确的设计理由：</p>
+
+    <table>
+      <thead><tr><th>技术</th><th>实现位置</th><th>解决的问题</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Value Residual（ResFormer）</strong></td><td>CausalSelfAttention.forward</td><td>深层网络中 value 信息丢失；通过可学习门控将词嵌入直接混入 value，提升信息流</td></tr>
+        <tr><td><strong>QK-Norm</strong></td><td><code>q, k = norm(q), norm(k)</code></td><td>注意力分数方差随深度爆炸；对 Q/K 做 RMS Norm 稳定训练，无需 attention dropout</td></tr>
+        <tr><td><strong>SSSL 滑动窗口</strong></td><td>_compute_window_sizes</td><td>全局注意力 O(T²) 计算开销；交替 Short/Long 窗口，最后一层保证全局感受野</td></tr>
+        <tr><td><strong>Logit Softcap</strong></td><td><code>15 * tanh(logits/15)</code></td><td>输出 logits 爆炸导致梯度不稳定；tanh 将 logits 软限制在 [-15, 15]</td></tr>
+        <tr><td><strong>可学习残差缩放</strong></td><td>resid_lambdas · x0_lambdas</td><td>固定残差权重 1.0 不适应所有深度；每层独立学习残差比例和直连强度</td></tr>
+        <tr><td><strong>Flash Attention 3</strong></td><td>fa3.flash_attn_func</td><td>标准 attention 内存 O(T²)；FA3 做 IO-aware 分块，Hopper GPU 专用优化路径</td></tr>
+      </tbody>
+    </table>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+  participant I as 输入 idx [B,T]
+  participant WTE as wte 嵌入
+  participant BLK as Block×N 层
+  participant ATT as CausalSelfAttention
+  participant VE as Value Embeds（偶数层）
+  participant FA3 as Flash Attention 3
+  participant MLP as MLP (ReLU²)
+  participant LM as lm_head + Softcap
+
+  I->>WTE: token lookup
+  WTE-->>BLK: x₀ = norm(x)
+  loop 每一层 i
+    BLK->>BLK: x = λᵢ·x + α_i·x₀  （可学习残差缩放）
+    BLK->>ATT: norm(x) → Q K V
+    ATT->>VE: 若偶数层：ve = value_embeds[i](idx)
+    VE-->>ATT: gate = 2·sigmoid(ve_gate(x[:32]))\n v = v + gate * ve
+    ATT->>FA3: Q K V（RoPE + QK-Norm 后）
+    FA3-->>ATT: 注意力输出 y [B,T,C]
+    ATT-->>BLK: c_proj(y)
+    BLK->>MLP: norm(x) → fc → ReLU² → proj
+    MLP-->>BLK: 残差 x
+  end
+  BLK->>LM: norm(x) → logits → 15·tanh(·/15)
+  LM-->>I: cross_entropy loss
+      </div>
+      <div class="caption">图 3-2：GPT 前向传播时序（含 Value Residual 和 SSSL）</div>
+    </div>
+
+    <pre><code class="language-python"># train.py:76-96  CausalSelfAttention.forward 核心
+def forward(self, x, ve, cos_sin, window_size):
+    B, T, C = x.size()
+    q = self.c_q(x).view(B, T, self.n_head, self.head_dim)
+    k = self.c_k(x).view(B, T, self.n_kv_head, self.head_dim)
+    v = self.c_v(x).view(B, T, self.n_kv_head, self.head_dim)
+
+    # Value Residual (ResFormer): 用输入依赖的门控混入词嵌入
+    # gate ∈ (0,2)，sigmoid(0)=0.5 → 初始为 neutral mix
+    if ve is not None:
+        ve = ve.view(B, T, self.n_kv_head, self.head_dim)
+        gate = 2 * torch.sigmoid(self.ve_gate(x[..., :self.ve_gate_channels]))
+        v = v + gate.unsqueeze(-1) * ve  # 残差混入词级 value
+
+    cos, sin = cos_sin
+    q, k = apply_rotary_emb(q, cos, sin), apply_rotary_emb(k, cos, sin)
+    q, k = norm(q), norm(k)  # QK-Norm：防止注意力分数爆炸
+
+    # Flash Attention 3：window_size 控制 S(short) 或 L(long) 窗口
+    y = fa3.flash_attn_func(q, k, v, causal=True, window_size=window_size)
+    y = y.contiguous().view(B, T, -1)
+    return self.c_proj(y)
+</code></pre>
+  </div>
+
+  <!-- Module 2: MuonAdamW -->
+  <h4 id="section-3-2-2">3.2.2 MuonAdamW 混合优化器 — 矩阵用 Muon，其余用 AdamW</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 train.py:296–427</span>
+      <span>🏷️ 混合优化器</span>
+      <span>🔬 Polar Express 正交化 · NorMuon · Cautious Weight Decay</span>
+    </div>
+    <p>Muon（Momentum + Orthogonalization Update Norm）是 2024 年提出的矩阵参数优化器，核心思想是：对梯度做正交化处理后再更新，使得更新方向在谱空间内更均匀，避免梯度的低秩坍缩。autoresearch 的 MuonAdamW 把 Muon 用于所有 2D 矩阵参数（Q/K/V/proj/mlp），AdamW 用于嵌入层和标量参数。</p>
+    <p>所有热路径都用 <code>@torch.compile(dynamic=False, fullgraph=True)</code> 融合成单个 CUDA kernel，消除了 Python 开销。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+  participant TL as 训练循环
+  participant OPT as MuonAdamW.step()
+  participant AM as _step_adamw（嵌入/标量）
+  participant MM as _step_muon（矩阵参数）
+  participant PE as Polar Express 正交化
+  participant NM as NorMuon 方差归一化
+  participant CWD as Cautious Weight Decay
+
+  TL->>OPT: optimizer.step()
+  loop 每个 param_group
+    alt kind == 'adamw'
+      OPT->>AM: 标准 AdamW（嵌入 lr=0.6，lm_head lr=0.004）
+    else kind == 'muon'
+      OPT->>MM: stack 同 shape 的矩阵梯度
+      MM->>PE: Nesterov momentum + 5次Newton-Schulz迭代
+      PE-->>MM: 正交化梯度 X（谱范数≈1）
+      MM->>NM: 按行计算方差 → rsqrt 缩放
+      NM-->>MM: 方差归一化梯度
+      MM->>CWD: mask = (grad * param) >= 0\n只在同号处施加 wd
+      CWD-->>TL: param -= lr*g + lr*wd*param*mask
+    end
+  end
+      </div>
+      <div class="caption">图 3-3：MuonAdamW 优化步骤时序图</div>
+    </div>
+
+    <pre><code class="language-python"># train.py:316-353  muon_step_fused 核心（torch.compile 融合）
+@torch.compile(dynamic=False, fullgraph=True)
+def muon_step_fused(stacked_grads, stacked_params, momentum_buffer,
+                    second_momentum_buffer, momentum_t, lr_t, wd_t, beta2_t, ns_steps, red_dim):
+    # Nesterov momentum：预测下一步位置的梯度方向
+    momentum = momentum_t.to(stacked_grads.dtype)
+    momentum_buffer.lerp_(stacked_grads, 1 - momentum)
+    g = stacked_grads.lerp_(momentum_buffer, momentum)
+
+    # Polar Express 正交化：5轮多项式近似 SVD，使更新具有单位谱范数
+    X = g.bfloat16()
+    X = X / (X.norm(dim=(-2, -1), keepdim=True) * 1.02 + 1e-6)
+    for a, b, c in polar_express_coeffs[:ns_steps]:   # 预计算的多项式系数
+        A = X.mT @ X   # (或 X @ X.mT，取决于矩阵宽高)
+        B = b * A + c * (A @ A)
+        X = a * X + X @ B    # Newton-Schulz 迭代
+    g = X  # 现在 g 接近正交矩阵，谱范数 ≈ 1
+
+    # NorMuon：逐行方差归一化，使更新幅度在不同行间均匀
+    v_mean = g.float().square().mean(dim=red_dim, keepdim=True)
+    second_momentum_buffer.lerp_(v_mean, 1 - beta2)
+    step_size = second_momentum_buffer.clamp_min(1e-10).rsqrt()
+    g = g * final_scale  # 方差归一化后的梯度
+
+    # Cautious Weight Decay：只对梯度与参数同号的方向施加衰减
+    mask = (g * stacked_params) >= 0   # 防止 wd 破坏正在增长的有效参数
+    stacked_params.sub_(lr * g + lr * wd * stacked_params * mask)
+</code></pre>
+  </div>
+
+  <!-- Module 3: BPB -->
+  <h4 id="section-3-2-3">3.2.3 val_bpb 评估 — 与词表大小无关的公平指标</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 prepare.py:343–365</span>
+      <span>🏷️ 不可修改的评估标准</span>
+    </div>
+    <p>标准的 cross-entropy loss 是 bits/token，当词表大小变化时（Agent 可能修改 vocab_size）直接比较是不公平的：一个词表更大的模型天然有更低的 loss 下界。val_bpb（bits per byte）通过除以目标 token 的 UTF-8 字节数，将单位统一到"每字节需要多少 bit 来表示"，使得不同词表大小的模型结果直接可比。</p>
+    <p>固定的 validation shard（shard_06542，<strong>始终是同一份数据</strong>）确保所有实验测的是同一分布上的泛化能力。</p>
+
+    <pre><code class="language-python"># prepare.py:343-365  evaluate_bpb —— 固定的评估函数，Agent 不可修改
+@torch.no_grad()
+def evaluate_bpb(model, tokenizer, batch_size):
+    token_bytes = get_token_bytes(device="cuda")  # 每个 token 的 UTF-8 字节数
+    val_loader = make_dataloader(tokenizer, batch_size, MAX_SEQ_LEN, "val")
+    steps = EVAL_TOKENS // (batch_size * MAX_SEQ_LEN)  # 固定 40M tokens 评估量
+
+    total_nats = 0.0
+    total_bytes = 0
+    for _ in range(steps):
+        x, y, _ = next(val_loader)
+        # reduction='none' 获取每个位置的 loss（nats）
+        loss_flat = model(x, y, reduction='none').view(-1)
+        nbytes = token_bytes[y.view(-1)]  # 目标 token 的字节数
+        mask = nbytes > 0   # 过滤 special tokens（BOS 等不计入 BPB）
+        total_nats += (loss_flat * mask).sum().item()
+        total_bytes += nbytes.sum().item()
+
+    # nats/byte → bits/byte：除以 ln(2)
+    return total_nats / (math.log(2) * total_bytes)
+</code></pre>
+  </div>
+
+  <!-- Module 4: Dataloader -->
+  <h4 id="section-3-2-4">3.2.4 BOS 对齐 Best-fit 数据加载 — 零填充 100% 利用率</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 prepare.py:276–337</span>
+      <span>🏷️ 背压式无限迭代器</span>
+    </div>
+    <p>传统数据加载器常用 padding 将不等长文档对齐，导致 VRAM 浪费。<code>make_dataloader</code> 采用 <strong>Best-fit packing</strong>：每行从 buffer 中找能放下的最大文档；找不到时裁剪最短文档填满剩余空间。结果是每个训练 batch 的 token 利用率为 100%，且每行都以 BOS 开头，保证跨文档不产生虚假注意力依赖。</p>
+    <p>内存管理上，使用 pin memory + 异步 GPU copy：<code>gpu_buffer.copy_(cpu_buffer, non_blocking=True)</code>，与下一次 forward pass 重叠传输，消除 CPU-GPU 传输瓶颈。</p>
+
+    <pre><code class="language-python"># prepare.py:305-337  Best-fit packing 核心逻辑
+while True:
+    for row_idx in range(B):
+        pos = 0
+        while pos < row_capacity:      # 填满一行（T+1 个 token）
+            remaining = row_capacity - pos
+
+            # 从 buffer 中找最大的能整体放入的文档
+            best_idx, best_len = -1, 0
+            for i, doc in enumerate(doc_buffer):
+                doc_len = len(doc)
+                if doc_len <= remaining and doc_len > best_len:
+                    best_idx, best_len = i, doc_len
+
+            if best_idx >= 0:
+                doc = doc_buffer.pop(best_idx)  # 完整放入
+            else:
+                # 没有文档能整体放入：裁剪最短文档填满剩余空间
+                shortest_idx = min(range(len(doc_buffer)), key=lambda i: len(doc_buffer[i]))
+                doc = doc_buffer.pop(shortest_idx)
+                doc = doc[:remaining]   # 截断
+
+            row_buffer[row_idx, pos:pos+len(doc)] = torch.tensor(doc, dtype=torch.long)
+            pos += len(doc)
+
+    # 异步 pinned memory → GPU，与下一轮前向重叠
+    gpu_buffer.copy_(cpu_buffer, non_blocking=True)
+    yield inputs, targets, epoch  # inputs = row_buffer[:, :-1], targets = row_buffer[:, 1:]
+</code></pre>
+  </div>
+
+  <!-- Module 5: program.md -->
+  <h4 id="section-3-2-5">3.2.5 program.md 实验循环协议 — Agent 的操作系统</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 program.md</span>
+      <span>🏷️ Agent 行为规范 · 人类迭代产物</span>
+    </div>
+    <p>program.md 定义了 Agent 的完整工作流，关键设计决策包括：</p>
+    <ul>
+      <li><strong>分支命名隔离</strong>：每次运行在独立分支（<code>autoresearch/&lt;tag&gt;</code>），保证主干可重放。</li>
+      <li><strong>results.tsv 故意不进 git</strong>：避免记录文件污染实验 diff，保持 commit history 只包含代码变更。</li>
+      <li><strong>"keep"逻辑等于 git advance</strong>：改善则保留 commit（branch 前进），否则 git reset（branch 退回到上一个保留点）。这使 branch 始终指向当前最优代码。</li>
+      <li><strong>崩溃处理分两类</strong>：trivial bug（typo/import）→ 修复重跑；根本性失败 → 记录 crash 跳过，不浪费算力。</li>
+    </ul>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+flowchart TD
+  START([Agent 启动]) --> SETUP["读 program.md\n读 train.py / prepare.py\n验证数据和环境"]
+  SETUP --> BASELINE["第一次运行：建立 baseline\ngit commit → run → 记录 val_bpb"]
+  BASELINE --> IDEA["产生实验想法\n（参考代码、论文、近期失败）"]
+  IDEA --> EDIT["直接修改 train.py\ngit commit"]
+  EDIT --> RUN["uv run train.py > run.log 2>&1\n（后台跑 5 分钟）"]
+  RUN --> CHECK{"grep val_bpb run.log\n有结果？"}
+  CHECK -->|"无 = 崩溃"| CRASH{"trivial fix？"}
+  CRASH -->|"是"| FIX["修复 bug 重跑"] --> RUN
+  CRASH -->|"否"| SKIP["记录 crash\ngit reset\n跳过此实验"] --> IDEA
+  CHECK -->|"有"| COMPARE{"val_bpb < 当前最优？"}
+  COMPARE -->|"是 (keep)"| KEEP["保留 commit\n记录 results.tsv\nbranch 前进"] --> IDEA
+  COMPARE -->|"否 (discard)"| DISCARD["git reset\n记录 discard\nbranch 退回"] --> IDEA
+
+  classDef happy fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef bad fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef neutral fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+  class KEEP happy
+  class DISCARD,SKIP bad
+  class BASELINE,IDEA,EDIT neutral
+      </div>
+      <div class="caption">图 3-4：program.md 定义的 Agent 实验决策流程</div>
+    </div>
+
+    <p>GC 显式管理是训练循环中的一个重要细节（train.py:593-598）：</p>
+    <pre><code class="language-python"># train.py:593-598  主动管理 Python GC，避免训练中途停顿
+if step == 0:
+    gc.collect()   # 清理第 0 步积累的临时对象
+    gc.freeze()    # 冻结现有对象，后续 GC 不再扫描它们
+    gc.disable()   # 完全关闭自动 GC！训练期间不会有 ~500ms 停顿
+elif (step + 1) % 5000 == 0:
+    gc.collect()   # 每 5000 步手动触发一次，清理训练产生的累积垃圾
+</code></pre>
+    <p>这个设计说明：在 H100 上的 5 分钟训练中，Python GC 的随机停顿会显著干扰 MFU 测量，通过显式控制 GC 时机可以获得更稳定的吞吐量数据。</p>
+  </div>
+
+  <!-- Section 4 -->
+  <h2 id="section-4">4 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>4.1 优势分析</h4>
+      <ul>
+        <li><strong>极简设计，上手门槛极低</strong>：3 个文件、~700 行代码，任何了解 PyTorch 的开发者都能在 1 小时内完全理解整个框架，并开始自己的实验。</li>
+        <li><strong>val_bpb 是真正公平的指标</strong>：词表大小无关，使得架构创新（改 vocab_size）和优化器创新（改 lr）可以在同一把尺子下直接比较。</li>
+        <li><strong>train.py 是前沿技术的教科书</strong>：Value Residual、Polar Express 正交化、NorMuon、QK-Norm、Cautious WD 等技术全部内嵌，是学习 2025-2026 LLM 训练技术的极佳入口。</li>
+        <li><strong>program.md 的人机协作模型清晰</strong>：人类控制方向（更新 program.md），Agent 控制执行（改 train.py），职责分离干净，不会相互干扰。</li>
+        <li><strong>GC 管理等工程细节到位</strong>：显式 freeze/disable GC、pin memory 异步传输、torch.compile fullgraph，每个优化都有明确的性能理由。</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>4.2 局限分析</h4>
+      <ul>
+        <li><strong>严格依赖 NVIDIA GPU（主要是 H100）</strong>：Flash Attention 3 的 varunneal 版本只支持 Hopper 架构，SSSL 窗口模式在非 Hopper GPU 上可能效率大幅下降。虽然有社区 fork，但官方不支持。</li>
+        <li><strong>5 分钟实验在小 GPU 上结论可能不可迁移</strong>：H100 的 5 分钟 ≠ 3090 的 5 分钟。由于时间预算固定而非 token 预算固定，不同硬件的实验结果无法互相参考，限制了社区协作。</li>
+        <li><strong>Best-fit packing 算法复杂度是 O(n) 每行</strong>：buffer 中文档数量增加时，每行的"找最大文档"操作线性变慢。大 batch size 下可能成为数据加载瓶颈。</li>
+        <li><strong>program.md 的"永不停止"指令缺乏安全边界</strong>：Agent 没有内置的预算上限（token 消耗、API 费用），理论上可以无限消耗计算资源。需要人类监控或添加外部停止条件。</li>
+        <li><strong>单文件 train.py 会随实验迭代变得越来越复杂</strong>：项目鼓励"简洁性优先"，但 Agent 的短期优化压力可能累积技术债。缺乏代码质量的自动化检查机制。</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: { diagramMarginX: 20, diagramMarginY: 20, actorMargin: 60, mirrorActors: false, messageAlign: 'center' },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+  hljs.highlightAll();
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+    tocLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+  });
+</script>
+</body>
+</html>

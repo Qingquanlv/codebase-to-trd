@@ -265,7 +265,7 @@
   <div class="toc-links">
   <a href="#section-1" class="toc-h2">1 摘要</a>
   <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
-  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
   <a href="#section-2" class="toc-h2">2 项目设计理念</a>
   <a href="#section-2-1" class="toc-h3">2.1 核心理念</a>
   <a href="#section-2-2" class="toc-h3">2.2 与同类方案横向对比</a>
@@ -302,7 +302,7 @@
   <header class="header">
     <h1>OpenCode（anomalyco/opencode）深度解读</h1>
     <div class="subtitle">Bun Monorepo · packages/opencode · Hono · Effect · AI SDK</div>
-    <div class="lead"><span class="term-link" data-term="OpenCode">OpenCode</span> 是 Anomaly 维护的开源 <strong>AI 终端编程代理</strong>：单仓库内包含 CLI/TUI 核心（<span class="term-link" data-term="packages/opencode">packages/opencode</span>）、桌面端、Web 控制台与 SDK。运行时以 <strong>Bun</strong> 为主、<strong>TypeScript</strong> 编写，广泛使用 <strong>Effect</strong> 做依赖注入与服务组合；对外暴露 <span class="term-link" data-term="Hono Server">Hono</span> HTTP/WebSocket API，会话层通过 <span class="term-link" data-term="Session">Session</span> + Vercel AI SDK 调模型，<span class="term-link" data-term="ToolRegistry">ToolRegistry</span> 聚合 bash、读写、grep、LSP、MCP、<code>apply_patch</code> 等工具；<span class="term-link" data-term="Plugin 系统">Plugin 系统</span> 扩展认证与 Hooks。用户分发名常为 <span class="term-link" data-term="opencode-ai">opencode-ai</span>（npm / brew）。仓库默认分支为 <strong>dev</strong>（见 <span class="file-link" data-file="AGENTS.md" data-label="AGENTS.md">AGENTS.md</span>）。</div>
+    <div class="lead"><span class="term-link" data-term="OpenCode">OpenCode</span> 是 Anomaly 维护的开源 AI 终端编程代理，把 CLI/TUI 核心、Hono HTTP/WebSocket 控制面、多模型会话与丰富工具注册表（bash / read / write / grep / LSP / MCP / apply_patch 等）整合为一个可自托管的 Bun + TypeScript Monorepo。它以 <span class="term-link" data-term="Session">Session</span> + Vercel AI SDK 驱动流式 LLM 调用，通过 <span class="term-link" data-term="ToolRegistry">ToolRegistry</span> 按模型和代理模式动态裁剪工具集，用 <span class="term-link" data-term="Plugin 系统">Plugin 系统</span> 统一认证与 Hooks 扩展。主入口为 <code>opencode</code> CLI（npm 发布名 <span class="term-link" data-term="opencode-ai">opencode-ai</span>），同一 API 服务 TUI、Desktop（Tauri）与 Web 控制台三端。</div>
   </header>
 
   <div class="conclusions">
@@ -321,15 +321,15 @@
   <p>终端 AI 工具需在<strong>本地权限、模型路由、可观测编辑</strong>之间取得平衡。OpenCode 选择「自带 HTTP 服务 + 富工具集 + 显式 Agent 模式」路线，目标是对标并超越封闭商业 Agent 体验，同时保持 MIT 许可与开源社区运营（Discord、多语言 README）。</p>
   <p>技术栈：<strong>Bun 1.3.x</strong>、<strong>Turbo</strong>、<strong>Effect</strong>、<strong>Hono</strong>、<strong>Drizzle ORM</strong>、<strong>Vercel AI SDK</strong>；桌面为 <strong>Tauri</strong>；前端大量 <strong>SolidStart</strong>（见 workspace catalog）。</p>
 
-  <h3 id="section-1-2">1.2 项目预期</h3>
-  <h4>1.2.1 能描述仓库布局</h4>
-  <p>能指出 <code>packages/opencode</code> 与 <code>packages/console</code>、<code>packages/desktop</code>、<code>packages/web</code> 的职责边界。</p>
-  <h4>1.2.2 能说明一次请求路径</h4>
-  <p>从 CLI/TUI 到 <span class="term-link" data-term="Hono Server">Hono Server</span> 再到 <span class="term-link" data-term="Session">Session</span> / LLM / 工具调用的大致顺序。</p>
-  <h4>1.2.3 理解扩展点</h4>
-  <p>能解释 npm 插件、Hooks 与内置认证插件的关系。</p>
-  <h4>1.2.4 能对照竞品选型</h4>
-  <p>能向团队说明与 Claude Code、Cursor Agent、Codex CLI 的差异与迁移成本。</p>
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「开源 AI 编码代理缺乏统一控制面，多客户端难接入」——Hono Server 暴露统一 API 服务多端</h4>
+  <p>团队在本地或服务器上运行 AI Agent 时，TUI、Web 控制台、桌面客户端往往各走一套通信协议，维护成本极高。<span class="term-link" data-term="Hono Server">Hono Server</span> 以单一 HTTP/WebSocket API 服务 TUI、Web、Desktop 等所有客户端，控制面（ControlPlane）与会话路由（Instance）统一挂载，团队可随时对接内部工具链或自定义前端。</p>
+  <h4>1.2.2 「AI 工具调用粒度粗，无法精细控制可见工具集」——ToolRegistry 按模型/代理动态过滤工具</h4>
+  <p>单一工具集暴露给所有模型时，低能力模型调用复杂工具会失败，高权限工具在只读场景也容易误触发。<span class="term-link" data-term="ToolRegistry">ToolRegistry</span> 定义为 Effect 服务，<code>tools({ providerID, modelID, agent })</code> 根据当前模型能力和代理模式（build/plan）动态返回可用工具子集，从注册表层面控制工具暴露面。</p>
+  <h4>1.2.3 「无权限边界，Agent 写文件/执行 shell 风险不可控」——plan/build 双模式提供可审计执行权限</h4>
+  <p>AI Agent 直接拥有全部写入和 shell 权限时，一次误操作可能破坏仓库或执行危险命令。<span class="term-link" data-term="build/plan 代理">plan 代理</span>只读分析，bash 需用户确认；build 代理可写但通过 Permission Ruleset 显式约束，让团队在探索陌生代码库或关键仓库时有安全边界。</p>
+  <h4>1.2.4 「第三方认证提供商集成散乱，插件能力无法热插拔」——Plugin 系统统一认证与 Hooks 扩展</h4>
+  <p>企业通常需要接入 GitHub Copilot、Cloudflare、GitLab 等多个认证源，且希望在会话管道中插入自定义逻辑。<span class="term-link" data-term="Plugin 系统">Plugin 系统</span>通过 INTERNAL_PLUGINS 静态注册内置认证插件，<code>PluginLoader</code> 解析外部 npm/本地插件；<code>Plugin.trigger</code> 在会话各阶段做类型安全的钩子分发，认证与扩展逻辑无需修改核心代码。</p>
 
   <h2 id="section-2">2 项目设计理念</h2>
   <h3 id="section-2-1">2.1 核心理念</h3>
@@ -435,13 +435,28 @@
 
   <h2 id="section-4">4 项目使用方式</h2>
   <h3 id="section-4-1">4.1 从安装到第一次对话</h3>
+  <p class="section-lead">示例：「为一个 Node.js 后端项目新增 Redis 缓存层，使用 OpenCode 完成从安装到代码交付」</p>
   <div class="timeline">
-    <div class="timeline-item"><div class="timeline-dot">1</div><div class="timeline-body"><strong>安装</strong> — <code>curl -fsSL https://opencode.ai/install | bash</code> 或 <code>npm i -g opencode-ai@latest</code> / brew。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">2</div><div class="timeline-body"><strong>配置模型</strong> — 按文档设置提供商与密钥（Copilot、Codex、Cloudflare 等插件路径）。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">3</div><div class="timeline-body"><strong>进入项目目录</strong> — 打开本地 Git 仓库。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">4</div><div class="timeline-body"><strong>启动</strong> — <code>opencode</code> 或 <code>opencode run</code>（以当前 CLI 为准）。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">5</div><div class="timeline-body"><strong>选择 Agent</strong> — Tab 在 build / plan 间切换。</div></div>
-    <div class="timeline-item"><div class="timeline-dot">6</div><div class="timeline-body"><strong>对话与工具</strong> — 模型通过注册工具读写仓库。</div></div>
+    <div class="timeline-step">
+      <div class="step-title">① 安装 opencode-ai</div>
+      <div class="step-desc">执行 <code>npm i -g opencode-ai@latest</code> 或使用官方安装脚本 <code>curl -fsSL https://opencode.ai/install | bash</code>；brew/scoop 等包管理器也受支持。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② 配置模型提供商</div>
+      <div class="step-desc">按官方文档设置 AI 提供商与 API 密钥；如需 Copilot、Cloudflare、GitLab 认证，通过 <span class="term-link" data-term="Plugin 系统">Plugin 系统</span> 内置插件配置，无需第三方适配层。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ 进入项目目录并启动</div>
+      <div class="step-desc">在本地 Git 仓库根目录执行 <code>opencode</code> 或 <code>opencode run</code>；<span class="term-link" data-term="Hono Server">Hono Server</span> 在后台启动，TUI 界面随之打开。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ 选择 Agent 模式</div>
+      <div class="step-desc">TUI 内用 Tab 键在 <span class="term-link" data-term="build/plan 代理">build</span>（可写）与 <span class="term-link" data-term="build/plan 代理">plan</span>（只读分析）间切换；陌生仓库建议先用 plan 探索，确认意图后再切换 build。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ 输入需求，模型通过工具交付</div>
+      <div class="step-desc">描述目标（如「在 user-service 中新增 Redis 缓存层」）；<span class="term-link" data-term="Session">Session</span> 驱动 LLM 流式推理，<span class="term-link" data-term="ToolRegistry">ToolRegistry</span> 按当前代理模式提供 read / write / grep / LSP / apply_patch 等工具，模型自动选用并执行。</div>
+    </div>
   </div>
 
   <h3 id="section-4-2">4.2 最小可运行路径</h3>
@@ -469,37 +484,100 @@ npm i -g opencode-ai@latest
 
   <h2 id="section-5">5 系统详细设计</h2>
   <h3 id="section-5-1">5.1 系统架构设计</h3>
-  <h4 id="section-5-1-1">5.1.1 目录角色与架构图</h4>
-  <p>★ 运行时内核在 <span class="file-link" data-file="packages/opencode/src/index.ts" data-label="packages/opencode/src/index.ts">packages/opencode</span>；根目录 orchestrates workspaces（见 <span class="file-link" data-file="package.json" data-label="package.json">package.json</span> workspaces + <span class="file-link" data-file="bunfig.toml" data-label="bunfig.toml">bunfig.toml</span>）。</p>
-  <pre><code>opencode/
-├── packages/opencode/     ★ CLI · Server · Session · Tool · Plugin
-├── packages/desktop/      Tauri 桌面
-├── packages/web/          Web 前端
-├── packages/console/      控制台应用
-├── packages/sdk/js/       JS SDK
-├── install/               安装脚本资源
-└── package.json</code></pre>
-  <p class="diagram-caption">图 5-1：packages/opencode 内分层（逻辑）</p>
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+  <p>★ 点击目录名在 GitHub 中浏览完整仓库：<a href="javascript:openRepoBrowser()" style="color:var(--accent);text-decoration:underline;cursor:pointer;">anomalyco/opencode</a>。运行时内核在 <span class="file-link" data-file="packages/opencode/src/index.ts" data-label="packages/opencode/src/index.ts">packages/opencode</span>；根目录编排 workspaces（见 <span class="file-link" data-file="package.json" data-label="package.json">package.json</span> + <span class="file-link" data-file="bunfig.toml" data-label="bunfig.toml">bunfig.toml</span>）。</p>
+
+  <div class="dir-tree"><pre>
+<span class="tree-root">opencode/</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/opencode/</span>         <span class="tree-comment"># ★ CLI · Server · Session · Tool · Plugin</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">src/</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/index.ts" data-label="index.ts">index.ts</span></span>           <span class="tree-comment"># ★ yargs CLI 入口</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">server/</span>
+<span class="tree-branch">│   │   │   └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/server/server.ts" data-label="server.ts">server.ts</span></span>     <span class="tree-comment"># ★ Hono + WebSocket 控制面</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">session/</span>
+<span class="tree-branch">│   │   │   └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/session/llm.ts" data-label="llm.ts">llm.ts</span></span>        <span class="tree-comment"># ★ streamText + Permission Ruleset</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">tool/</span>
+<span class="tree-branch">│   │   │   └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/tool/registry.ts" data-label="registry.ts">registry.ts</span></span>   <span class="tree-comment"># ★ ToolRegistry Effect 服务</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-dir">plugin/</span>
+<span class="tree-branch">│   │   │   └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/plugin/index.ts" data-label="plugin/index.ts">index.ts</span></span>      <span class="tree-comment"># Plugin 系统 + INTERNAL_PLUGINS</span>
+<span class="tree-branch">│   │   └── </span><span class="tree-dir">config/</span>
+<span class="tree-branch">│   │       └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/src/config/config.ts" data-label="config.ts">config.ts</span></span>     <span class="tree-comment"># 全局与项目配置</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry"><span class="file-link" data-file="packages/opencode/package.json" data-label="packages/opencode/package.json">package.json</span></span>               <span class="tree-comment"># bin.opencode + 条件导入 (#db/#pty/#hono)</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/desktop/</span>           <span class="tree-comment"># Tauri 桌面端</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/web/</span>               <span class="tree-comment"># SolidStart Web 前端</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/console/</span>           <span class="tree-comment"># Web 控制台</span>
+<span class="tree-branch">├── </span><span class="tree-dir">packages/sdk/</span>               <span class="tree-comment"># JS SDK（@opencode-ai/sdk）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">install/</span>                    <span class="tree-comment"># 安装脚本资源</span>
+<span class="tree-branch">└── </span><span class="tree-entry"><span class="file-link" data-file="package.json" data-label="package.json">package.json</span></span>                 <span class="tree-comment"># private workspace root（Turbo）</span></pre></div>
+
+  <p class="diagram-caption">图 5-1：packages/opencode 内部分层（主链路：CLI → Hono → Session → ToolRegistry）</p>
   <div class="diagram-container"><pre class="mermaid">
 graph TD
-%% 主链路: CLI → Server → Session → Tools
-  subgraph cli ["CLI / 入口"]
-    C1["index.ts\nyargs 子命令"]
+%% 主链路: CLI → Hono Server → Session → ToolRegistry → 工具执行
+  subgraph cli ["CLI 入口层"]
+    C1["index.ts\nyargs 子命令注册"]
   end
   subgraph srv ["服务层"]
-    S1["server.ts\nHono + WS"]
+    S1["server.ts\nHono + WebSocket"]
+    S2["ControlPlane / Instance 路由"]
   end
-  subgraph dom ["领域层"]
-    D1["session/llm.ts\nstreamText"]
-    D2["tool/registry.ts\n工具集"]
-    D3["plugin/index.ts\nHooks"]
+  subgraph session ["会话与推理层"]
+    D1["session/llm.ts\nstreamText (Vercel AI SDK)"]
+    D2["Permission Ruleset\nbuild vs plan"]
+  end
+  subgraph tools ["工具层"]
+    T1["tool/registry.ts\nToolRegistry.Service (Effect)"]
+    T2["bash · read · write\ngrep · LSP · MCP · apply_patch"]
+  end
+  subgraph plugin ["扩展层"]
+    P1["plugin/index.ts\nINTERNAL_PLUGINS + PluginLoader"]
+    P2["Plugin.trigger\nHooks 钩子链"]
   end
   C1 --> S1
-  S1 --> D1
+  S1 --> S2
+  S2 --> D1
   D1 --> D2
-  D3 -.-> D1
+  D1 --> T1
+  T1 --> T2
+  P1 --> P2
+  P2 -.->|横切钩子| D1
   </pre></div>
-  <p><strong>如何读图 5-1：</strong>左侧为进程入口；Hono 承载控制面与实例连接；会话 LLM 消费工具定义；插件在钩子点横切会话与配置。</p>
+
+  <table class="arch-read-table">
+    <thead><tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>CLI 入口</td>
+        <td><span class="file-link" data-file="packages/opencode/src/index.ts" data-label="index.ts">index.ts</span></td>
+        <td>yargs 注册 run / serve / mcp / session 等子命令，统一日志与错误处理</td>
+        <td>→ Server.create</td>
+      </tr>
+      <tr>
+        <td>服务层</td>
+        <td><span class="file-link" data-file="packages/opencode/src/server/server.ts" data-label="server.ts">server.ts</span></td>
+        <td>Hono 组装 Auth / CORS / Compression 中间件，挂载 ControlPlane + Instance 路由，支持 WebSocket 升级</td>
+        <td>→ Session / LLM</td>
+      </tr>
+      <tr>
+        <td>会话与推理</td>
+        <td><span class="file-link" data-file="packages/opencode/src/session/llm.ts" data-label="llm.ts">session/llm.ts</span></td>
+        <td>Vercel AI SDK <code>streamText</code> 驱动 LLM 流；Permission Ruleset 控制 plan/build 权限边界</td>
+        <td>→ ToolRegistry</td>
+      </tr>
+      <tr>
+        <td>工具注册</td>
+        <td><span class="file-link" data-file="packages/opencode/src/tool/registry.ts" data-label="registry.ts">tool/registry.ts</span></td>
+        <td>Effect Context.Service；<code>tools({ providerID, modelID, agent })</code> 按模型/代理动态返回 Tool.Def[] 子集</td>
+        <td>→ 各工具实现</td>
+      </tr>
+      <tr>
+        <td>扩展层</td>
+        <td><span class="file-link" data-file="packages/opencode/src/plugin/index.ts" data-label="plugin/index.ts">plugin/index.ts</span></td>
+        <td>INTERNAL_PLUGINS 静态注册认证插件（Copilot / Cloudflare / GitLab 等）；PluginLoader 解析外部插件；Plugin.trigger 类型安全分发钩子</td>
+        <td>→ 会话管道</td>
+      </tr>
+    </tbody>
+  </table>
 
   <h3 id="section-5-2">5.2 关键执行链路</h3>
   <p class="diagram-caption">图 5-2：从启动 CLI 到可处理会话（高度简化）</p>
@@ -826,11 +904,11 @@ document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
     navBack.disabled = navIdx <= 0;
     navFwd.disabled  = navIdx >= navStack.length - 1;
   }
-  navBack.addEventListener('click', () => { if (navIdx > 0) { navIdx--; restoreNav(navStack[navIdx]); updateNavBtns(); } });
-  navFwd.addEventListener('click',  () => { if (navIdx < navStack.length - 1) { navIdx++; restoreNav(navStack[navIdx]); updateNavBtns(); } });
-  function restoreNav(e) {
-    if (e.type === 'file')     _openGitHubPanelInternal(e.path, e.label);
-    else if (e.type === 'term') _openTermPanel(e.key);
+  navBack.addEventListener('click', () => { if (navIdx > 0) { navIdx--; _loadEntry(navStack[navIdx]); updateNavBtns(); } });
+  navFwd.addEventListener('click',  () => { if (navIdx < navStack.length - 1) { navIdx++; _loadEntry(navStack[navIdx]); updateNavBtns(); } });
+  function _loadEntry(e) {
+    if (e.type === 'github')    _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanelInternal(e.name);
     else if (e.type === 'reporoot') _openRepoBrowserInternal();
   }
 
@@ -883,9 +961,10 @@ document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
     }, 60);
   }
   function openGitHubPanel(ghPath, label) {
-    pushNav({ type: 'file', path: ghPath, label });
+    pushNav({ type: 'github', path: ghPath, label });
     _openGitHubPanelInternal(ghPath, label);
   }
+  const _openGitHubPanel = _openGitHubPanelInternal;
 
   function _openRepoBrowserInternal() {
     panel.dataset.type   = 'file';
@@ -930,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
       (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
       (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
   }
-  function _openTermPanel(key) {
+  function _openTermPanelInternal(key) {
     panel.dataset.type   = 'term';
     pathEl.textContent   = key;
     badgeEl.textContent  = '术语解释';
@@ -947,8 +1026,8 @@ document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });
   }
   function openTermPanel(key) {
     if (!PROJECT_TERMS[key]) return;
-    pushNav({ type: 'term', key });
-    _openTermPanel(key);
+    pushNav({ type: 'term', name: key });
+    _openTermPanelInternal(key);
   }
 
   document.addEventListener('click', function (e) {

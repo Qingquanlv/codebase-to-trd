@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Agent 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --bg-alt: #f8f9fa; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2563eb; --accent-light: #dbeafe; --border: #e5e7eb;
+    --success: #059669; --warning: #d97706; --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; color: var(--text); background: var(--bg); line-height: 1.8; display: flex; }
+  .toc { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 24px 16px; background: var(--bg-alt); border-right: 1px solid var(--border); font-size: 13px; z-index: 100; transition: width 0.25s ease, padding 0.25s ease; }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 9px 14px; border: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+  code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; background: #f0f4ff; color: #c7254e; padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+  pre code { background: transparent; color: #cdd6f4; font-size: 13px; padding: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; position: relative; cursor: zoom-in; }
+  .diagram-container .mermaid { min-width: 400px; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: 1px solid var(--border); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; z-index: 10; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: #fff; border-radius: 12px; padding: 32px; max-width: 95vw; max-height: 90vh; overflow: auto; position: relative; }
+  .caption { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px; }
+  .module-meta { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; padding: 10px 14px; background: #f0f4ff; border-radius: 6px; font-size: 13px; }
+  .module-meta span { color: var(--text-secondary); }
+  .module-meta code { font-size: 11px; }
+  .schema-obj-title { font-size: 14px; font-weight: 600; color: var(--accent); margin: 24px 0 8px; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 13px; }
+  .schema-table th { background: #eff6ff; font-weight: 700; padding: 7px 10px; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: #c7254e; white-space: nowrap; }
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 100px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 180px; }
+  .chain-table, .seq-table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 12.5px; }
+  .chain-table th, .seq-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 8px; border: 1px solid var(--border); text-align: left; font-size: 11px; }
+  .chain-table td, .seq-table td { padding: 6px 8px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .chain-table tr:nth-child(even) td, .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table-caption { font-size: 13px; color: var(--text-secondary); margin: 12px 0 6px; }
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+  .timeline { border-left: 3px solid var(--accent); padding-left: 20px; margin: 16px 0; }
+  .timeline-step { margin-bottom: 24px; position: relative; }
+  .timeline-step::before { content: ''; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+  .step-title { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+  .step-desc { font-size: 14px; color: var(--text-secondary); }
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .fit-card { padding: 16px; border-radius: 8px; font-size: 14px; }
+  .fit-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .fit-card ul { margin: 0 0 0 16px; }
+  .fit-card li { margin-bottom: 4px; }
+  .fit { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit h4 { color: #166534; }
+  .nofit { background: #fef2f2; border: 1px solid #fca5a5; }
+  .nofit h4 { color: #991b1b; }
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0; }
+  .usage-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--bg-alt); }
+  .usage-card h4 { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .usage-card p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .eval-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 16px 0; }
+  .eval-card { padding: 18px; border-radius: 10px; }
+  .eval-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .eval-card p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .strength { background: #f0fdf4; border: 1px solid #86efac; }
+  .strength h4 { color: #166534; }
+  .weakness { background: #fef2f2; border: 1px solid #fca5a5; }
+  .weakness h4 { color: #991b1b; }
+  .section-lead { font-size: 15px; color: var(--text-secondary); font-style: italic; border-left: 3px solid var(--accent-light); padding-left: 12px; margin-bottom: 20px; }
+  .term-link { color: var(--accent); cursor: pointer; border-bottom: 1px dashed var(--accent); }
+  .file-link { color: #7c3aed; cursor: pointer; border-bottom: 1px dashed #7c3aed; }
+  .code-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--code-bg); border-left: 1px solid #374151; z-index: 200; transition: right 0.3s ease; display: flex; flex-direction: column; }
+  .code-panel.open { right: 0; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #374151; background: #1a1a2e; }
+  .panel-title { color: #cdd6f4; font-size: 13px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel-nav { display: flex; gap: 8px; align-items: center; }
+  .panel-nav-btn { background: #374151; border: none; color: #9ca3af; cursor: pointer; width: 26px; height: 26px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .panel-nav-btn:hover:not(:disabled) { background: #4b5563; color: #f9fafb; }
+  .panel-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .panel-close { background: transparent; border: none; color: #9ca3af; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
+  .panel-close:hover { color: #f87171; }
+  .panel-gh-link { color: #60a5fa; font-size: 11px; text-decoration: none; white-space: nowrap; }
+  .panel-gh-link:hover { text-decoration: underline; }
+  .panel-body-iframe { flex: 1; display: none; flex-direction: column; }
+  .panel-iframe { flex: 1; border: none; background: #1e1e2e; }
+  .panel-body-term { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; color: #cdd6f4; font-size: 14px; }
+  .term-panel-title { font-size: 18px; font-weight: 700; color: #89b4fa; margin-bottom: 8px; }
+  .term-panel-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .term-tag { background: #313244; color: #cba6f7; font-size: 11px; padding: 2px 8px; border-radius: 12px; }
+  .term-panel-section { margin-bottom: 16px; }
+  .term-panel-section h4 { font-size: 13px; color: #6c7086; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .term-panel-def { font-size: 14px; line-height: 1.7; color: #cdd6f4; }
+  .term-mechanics { list-style: none; padding: 0; }
+  .term-mechanics li { padding: 4px 0 4px 16px; position: relative; font-size: 13px; color: #a6adc8; }
+  .term-mechanics li::before { content: '→'; position: absolute; left: 0; color: #89dceb; }
+  .term-rel-btn, .term-file-btn { background: #313244; border: 1px solid #45475a; color: #89b4fa; cursor: pointer; padding: 4px 10px; border-radius: 4px; font-size: 12px; transition: background 0.15s; }
+  .term-rel-btn:hover, .term-file-btn:hover { background: #45475a; }
+  .term-file-btn { color: #cba6f7; }
+  .resize-handle { width: 4px; background: transparent; cursor: ew-resize; position: absolute; left: 0; top: 0; height: 100%; transition: background 0.15s; }
+  .resize-handle:hover, .resize-handle.dragging { background: var(--accent); }
+</style>
+</head>
+<body>
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 核心理念</a>
+  <a href="#section-2-2" class="toc-h3">2.2 与同类方案横向对比</a>
+  <a href="#section-2-3" class="toc-h3">2.3 Hermes 是什么（一句话）</a>
+  <a href="#section-2-4" class="toc-h3">2.4 当前适合解决什么问题</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 状态存储载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的一次完整过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 关键执行链路</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 Agent 对话主循环</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 MemoryManager 记忆编排</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 并发工具执行引擎</a>
+  <a href="#section-5-3-4" class="toc-h4">5.3.4 上下文压缩器</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  <a href="#section-7-1" class="toc-h3">7.1 本文观察基线</a>
+  </div>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Hermes Agent 深度解读</h1>
+    <div class="subtitle">NousResearch 出品 · 自我进化 AI Agent · Python + SQLite + 16 平台网关</div>
+    <div class="lead"><strong>Hermes Agent</strong> 是 NousResearch 开源的<strong>自我进化 AI Agent</strong>：通过技能学习循环在每次复杂任务后自动创建和改进技能文件，配合 SQLite FTS5 跨会话记忆，让 Agent 越用越"懂你"。支持 16 个消息平台网关（Telegram / Discord / WeChat 等）接入，任意 OpenAI 兼容模型均可使用，提供 CLI、消息平台和编辑器插件三种入口。</div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>自我进化是一等公民</strong> — Skills 系统不是附加功能，而是 Agent 的核心差异点：每次任务完成后，Agent 被主动推送（nudge）去创建或改进技能文件，形成可复用的程序化记忆</li>
+      <li><strong>单一外部记忆提供者约束</strong> — MemoryManager 强制"内置 + 最多一个外部提供者"，防止工具 schema 膨胀和记忆后端冲突，这是工程稳健性的主动权衡</li>
+      <li><strong>并发工具执行有精确安全分析</strong> — 不是简单并发所有工具，而是维护三张集合（永不并发 / 读安全 / 路径作用域），路径重叠时自动降级为顺序执行</li>
+      <li><strong>run_agent.py 是真正的单体核心</strong> — 10,800 行，包含对话循环、错误恢复、流式输出、代理模式、IterationBudget，模块化提取在 agent/ 子包中持续进行</li>
+      <li><strong>网关用 contextvars 隔离会话状态</strong> — 多平台消息同时到达时，每个会话独立的 contextvars 防止状态污染，是从 os.environ 到 contextvars 的一次关键重构</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>大语言模型 Agent 普遍面临「会话即遗忘」的困境：每次对话重新开始，没有跨会话记忆，需要用户反复解释背景；同时 Agent 无法从成功的任务中学习可复用的工作方式。Nous Research 在 OpenClaw 项目基础上构建了 Hermes Agent，核心命题是：<strong>让 Agent 像人类一样积累经验、掌握技能、记住你的偏好</strong>。</p>
+  <p>技术栈：<strong>Python 3.11+</strong>、OpenAI 兼容 API（支持 OpenRouter / Anthropic / xAI / Qwen / MiMo / GLM 等 200+ 模型）、<strong>prompt_toolkit</strong>（TUI）、<strong>SQLite WAL + FTS5</strong>（状态与搜索）、<strong>Pydantic v2</strong>（数据校验）、16 个消息平台 SDK（Telegram Bot / discord.py / slack-bolt 等）。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「Agent 无法积累经验，每次任务从零开始」——技能自创建循环</h4>
+  <p>传统 AI 助手没有跨会话的程序化记忆：你教会它一个工作流，下次对话又得重新解释。Hermes 在每次完成复杂任务后通过 <strong>nudge 机制</strong>主动推送 Agent 创建技能文件（SKILL.md），并在后续使用中持续改进；任何人都可以把自己的技能发布到 Skills Hub，形成可组合的共享生态。</p>
+  <h4>1.2.2 「Agent 只能在一台设备的一个 App 上使用」——16 平台统一网关</h4>
+  <p>大多数 AI Agent 绑定特定界面（VSCode 插件、桌面 App），无法在 Telegram 发个消息让它在服务器上跑任务。Hermes 的 <span class="term-link" data-term="Gateway">Gateway</span> 进程同时监听 Telegram、Discord、WhatsApp、WeChat、Slack、Signal、iMessage、钉钉、飞书等 16 个平台，Agent 在 $5 VPS 上持续运行，你在手机上随时交互。</p>
+  <h4>1.2.3 「AI 对话超过上下文窗口后记忆清零」——FTS5 跨会话召回 + 上下文压缩</h4>
+  <p>上下文窗口满了之后，早期的对话内容会被丢弃，重要信息丢失。Hermes 用 SQLite FTS5 为所有历史会话消息建立全文索引，通过 <code>session_search</code> 工具在任意时刻召回相关历史；同时 <span class="term-link" data-term="ContextCompressor">ContextCompressor</span> 在压缩前从记忆提供者提取关键信息注入摘要，避免"重要的事情被压没"。</p>
+  <h4>1.2.4 「复杂任务一个 Agent 做太慢，无法并行」——子 Agent 委派与并发工具执行</h4>
+  <p>单 Agent 线性执行大型任务效率低。Hermes 支持通过 <code>delegate_task</code> 工具派生隔离子 Agent 并行处理子任务，每个子 Agent 拥有独立的 <span class="term-link" data-term="IterationBudget">IterationBudget</span>；在单次工具调用批次内，Hermes 也会对读安全工具并发执行（最多 8 个线程），路径不重叠的文件操作同样可以并发。</p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+  <h3 id="section-2-1">2.1 核心理念</h3>
+  <ol>
+    <li><strong>学习即架构</strong>：技能系统不是插件，是 Agent 的核心记忆层。技能在使用中被改进（self-improve during use），而不只是静态文档。</li>
+    <li><strong>平台无关，工具统一</strong>：所有 16 个消息平台共享同一个 <code>_HERMES_CORE_TOOLS</code> 工具集，send_message 通过 <code>check_fn</code> 门控（网关运行时才可用），平台差异被封装在适配器层，核心 Agent 无感知。</li>
+    <li><strong>安全边界显式化</strong>：并发工具执行有三张显式集合（永不并发 / 读安全 / 路径作用域）；<code>MemoryManager</code> 限制最多一个外部提供者；危险命令通过 <code>_DESTRUCTIVE_PATTERNS</code> 正则启动审批流程。安全不靠约定，靠约束。</li>
+    <li><strong>RL 数据生产内置</strong>：<code>trajectory_compressor.py</code> 和 <code>batch_runner.py</code> 把日常 Agent 使用产生的轨迹转换为强化学习训练数据，Tinker-Atropos 子模块直接跑 RL 实验，模型自我改进的完整回路在同一个仓库里。</li>
+  </ol>
+
+  <h3 id="section-2-2">2.2 与同类方案横向对比</h3>
+  <table>
+    <thead><tr><th>工具</th><th>核心定位</th><th>落地成本</th><th>落地效果</th><th>适合谁</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Hermes Agent</strong></td>
+        <td>自我进化多平台 AI Agent</td>
+        <td>低：<code>curl | bash</code> 安装，<code>hermes setup</code> 向导配置</td>
+        <td>跨会话记忆 + 技能积累 + 16 平台网关 + 子 Agent 并发；一次安装，随时随地用</td>
+        <td>需要持久化运行、多平台接入、长期积累经验的个人/小团队</td>
+      </tr>
+      <tr>
+        <td><strong>Claude Code / Cursor Agent</strong></td>
+        <td>编辑器内联 AI 编码助手</td>
+        <td>极低：编辑器插件，开箱即用</td>
+        <td>编码体验顶级，深度 IDE 集成；但绑定单一编辑器，无跨会话记忆，无多平台接入</td>
+        <td>专注编码场景的开发者</td>
+      </tr>
+      <tr>
+        <td><strong>GSD 2</strong></td>
+        <td>磁盘状态机驱动的自主 Agent</td>
+        <td>高：需配置 Pi SDK、状态机格式</td>
+        <td>崩溃可恢复、无限长任务、无人值守；无跨会话技能学习，人类干预节点少</td>
+        <td>需要长期无人值守执行的独立开发者</td>
+      </tr>
+      <tr>
+        <td><strong>AutoGPT / CrewAI</strong></td>
+        <td>多 Agent 编排框架</td>
+        <td>高：需要写 Python 代码定义 Agent 角色和任务流</td>
+        <td>自动化程度高，可编排复杂多 Agent 流程；上手成本高，无内置技能学习</td>
+        <td>需要复杂多 Agent 流水线的工程团队</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>Hermes 的核心赢面</strong>：自我进化（技能积累）+ 多平台无缝接入 + 强化学习数据生产内置，三者兼具。<strong>输面</strong>：<code>run_agent.py</code> 单文件 10,800 行带来较高的代码理解门槛；技能质量依赖模型遵从度。</p>
+
+  <h3 id="section-2-3">2.3 Hermes 是什么（一句话）</h3>
+  <p>一个以<strong>技能自创建 + SQLite 跨会话记忆</strong>为核心差异、支持 16 个消息平台网关、任意 OpenAI 兼容模型的<strong>自我进化 AI Agent</strong>，由 Nous Research 开源并持续演进。</p>
+
+  <h3 id="section-2-4">2.4 当前适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✓ 适合</h4>
+      <ul>
+        <li>需要跨会话记忆的个人助理（记住偏好、积累知识）</li>
+        <li>在多个消息平台切换但想用同一个 Agent 的场景</li>
+        <li>需要在云服务器持续运行、手机随时触发的自动化任务</li>
+        <li>希望 Agent 从工作中学习并改进工作流程</li>
+        <li>需要并发执行多个子任务（研究 + 写代码 + 搜索同时跑）</li>
+        <li>RL 训练数据生产与模型微调研究</li>
+      </ul>
+    </div>
+    <div class="fit-card nofit">
+      <h4>✗ 不适合</h4>
+      <ul>
+        <li>仅需要单次问答、无需持久化的场景（用 ChatGPT 即可）</li>
+        <li>高安全隔离要求的生产环境（终端工具默认有审批但门槛较低）</li>
+        <li>对响应延迟要求极低的实时交互场景</li>
+        <li>需要复杂多 Agent 拓扑的企业级编排（用 CrewAI 更合适）</li>
+        <li>Windows 原生环境（仅支持 WSL2）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="section-3">3 核心对象与术语</h2>
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="arch-read-table">
+    <thead><tr><th>术语</th><th>定义</th><th>所在模块</th></tr></thead>
+    <tbody>
+      <tr><td><span class="term-link" data-term="AIAgent">AIAgent</span></td><td>核心 Agent 类，持有会话历史、工具集、记忆管理器和迭代预算，<code>run_conversation()</code> 是主循环入口</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="IterationBudget">IterationBudget</span></td><td>线程安全的迭代计数器，父 Agent 默认 90 次，子 Agent 默认 50 次，<code>execute_code</code> 迭代可退款</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="MemoryManager">MemoryManager</span></td><td>记忆提供者编排器，内置提供者 + 最多一个外部提供者（Honcho/Hindsight），统一 prefetch / sync / shutdown 接口</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="ContextCompressor">ContextCompressor</span></td><td>上下文压缩器，在消息列表超过阈值时调用 LLM 生成摘要，压缩前从记忆提供者提取关键信息注入</td><td><span class="file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py">agent/context_compressor.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="Skills">Skills</span></td><td>程序化记忆单元，Markdown 文件，由 Agent 在任务后自动创建/改进，通过 Skills Hub 社区共享</td><td><span class="file-link" data-file="tools/delegate_tool.py" data-label="delegate_tool.py">skills/ 目录</span></td></tr>
+      <tr><td><span class="term-link" data-term="Gateway">Gateway</span></td><td>统一消息网关进程，监听 16 个平台，用 contextvars 隔离每个会话的运行时状态</td><td><span class="file-link" data-file="hermes_state.py" data-label="hermes_state.py">gateway/ 目录</span></td></tr>
+      <tr><td><span class="term-link" data-term="Toolset">Toolset</span></td><td>可组合工具集定义，支持 <code>includes</code> 嵌套，自动处理菱形依赖去重，支持插件注册</td><td><span class="file-link" data-file="toolsets.py" data-label="toolsets.py">toolsets.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="SOUL.md">SOUL.md</span></td><td>Agent 人格文件，定义性格、沟通风格和行为偏好，在会话开始时注入系统提示</td><td><span class="file-link" data-file="agent/prompt_builder.py" data-label="prompt_builder.py">agent/prompt_builder.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="FTS5">FTS5</span></td><td>SQLite 全文搜索虚表，为所有会话消息建立索引，支持跨会话历史召回</td><td><span class="file-link" data-file="hermes_state.py" data-label="hermes_state.py">hermes_state.py</span></td></tr>
+      <tr><td><span class="term-link" data-term="delegate_task">delegate_task</span></td><td>子 Agent 委派工具，在独立线程中启动拥有独立迭代预算和隔离上下文的子 Agent</td><td><span class="file-link" data-file="tools/delegate_tool.py" data-label="delegate_tool.py">tools/delegate_tool.py</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <table>
+    <thead><tr><th>对象</th><th>定义</th><th>分属模块</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AIAgent</strong></td><td>持有 messages 列表、MemoryManager、IterationBudget、toolset，是整个运行时的根对象</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td></tr>
+      <tr><td><strong>Session</strong></td><td>SQLite 持久化的会话元数据：来源平台、模型配置、token 用量、费用估算</td><td><span class="file-link" data-file="hermes_state.py" data-label="hermes_state.py">hermes_state.py</span></td></tr>
+      <tr><td><strong>Message</strong></td><td>会话内的单条消息，包含 role / content / tool_calls / reasoning，被 FTS5 索引</td><td><span class="file-link" data-file="hermes_state.py" data-label="hermes_state.py">hermes_state.py</span></td></tr>
+      <tr><td><strong>MemoryProvider</strong></td><td>记忆提供者接口，内置（MEMORY.md / USER.md）或外部（Honcho / Hindsight）实现</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title">Session 表结构（来自 hermes_state.py SCHEMA_SQL）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>TEXT PK</td><td>会话唯一 ID（UUID）</td></tr>
+      <tr><td>source</td><td>TEXT</td><td>来源平台：'cli' / 'telegram' / 'discord' 等</td></tr>
+      <tr><td>user_id</td><td>TEXT</td><td>平台用户 ID，用于多用户隔离</td></tr>
+      <tr><td>model</td><td>TEXT</td><td>本次会话使用的模型标识</td></tr>
+      <tr><td>parent_session_id</td><td>TEXT FK</td><td>压缩后的父会话 ID（形成会话链）</td></tr>
+      <tr><td>input_tokens</td><td>INTEGER</td><td>累计输入 token 数</td></tr>
+      <tr><td>output_tokens</td><td>INTEGER</td><td>累计输出 token 数</td></tr>
+      <tr><td>estimated_cost_usd</td><td>REAL</td><td>估算费用（美元）</td></tr>
+      <tr><td>title</td><td>TEXT</td><td>会话标题（自动生成或用户设定）</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title">Message 表结构（来自 hermes_state.py SCHEMA_SQL）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>INTEGER PK</td><td>自增主键，同时作为 FTS5 rowid</td></tr>
+      <tr><td>session_id</td><td>TEXT FK</td><td>所属会话 ID</td></tr>
+      <tr><td>role</td><td>TEXT</td><td>'user' / 'assistant' / 'tool'</td></tr>
+      <tr><td>content</td><td>TEXT</td><td>消息文本内容（被 FTS5 全文索引）</td></tr>
+      <tr><td>tool_calls</td><td>TEXT</td><td>JSON 序列化的工具调用列表</td></tr>
+      <tr><td>tool_name</td><td>TEXT</td><td>工具结果消息对应的工具名称</td></tr>
+      <tr><td>reasoning</td><td>TEXT</td><td>模型推理过程（thinking token）</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 状态存储载体</h3>
+  <table>
+    <thead><tr><th>存储层</th><th>持久性</th><th>职责</th><th>写入者</th></tr></thead>
+    <tbody>
+      <tr><td><strong>SQLite WAL (state.db)</strong></td><td>持久 ★ 真相来源</td><td>会话元数据、完整消息历史、FTS5 搜索索引；WAL 模式支持并发读</td><td>AIAgent / Gateway</td></tr>
+      <tr><td><strong>MEMORY.md / USER.md</strong></td><td>持久</td><td>人类可读的记忆笔记和用户画像，Agent 通过 memory 工具更新</td><td>AIAgent（memory tool）</td></tr>
+      <tr><td><strong>Skills 文件（~/.hermes/skills/）</strong></td><td>持久</td><td>程序化记忆：工作流程、项目约定、最佳实践；可上传到 Skills Hub</td><td>AIAgent（skill_manage tool）</td></tr>
+      <tr><td><strong>SOUL.md</strong></td><td>持久</td><td>Agent 人格定义，每次会话注入系统提示</td><td>用户手动编辑</td></tr>
+      <tr><td><strong>config.yaml</strong></td><td>持久</td><td>模型配置、工具集选择、平台设置、记忆提供者选择</td><td>hermes config set / hermes setup</td></tr>
+      <tr><td><strong>运行时 messages 列表</strong></td><td>会话级</td><td>当前会话的内存消息历史，每轮追加，压缩后丢弃早期消息</td><td>AIAgent 对话循环</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <ol>
+    <li><strong>误解：技能（Skills）只是提示词模板</strong> — 实际上 Skills 是 Agent 在任务中自主创建的程序化记忆，包含工作流程、踩坑记录、项目特定约定，并在后续任务中被自动加载和改进，是跨会话的「经验资产」而非静态配置。</li>
+    <li><strong>误解：可以同时接入多个外部记忆提供者</strong> — MemoryManager 强制限制最多一个外部提供者。第二个注册请求会被静默拒绝并打印警告。这是为了防止工具 schema 膨胀（多个 memory 工具让模型困惑）和后端状态冲突，是明确的设计决策。</li>
+    <li><strong>误解：并发工具执行就是把所有工具批量并发</strong> — 实际上有精确的安全分析：<code>clarify</code> 这类交互工具永不并发；<code>web_search</code>、<code>read_file</code> 等只读工具可并发；<code>write_file</code>、<code>patch</code> 等文件工具在目标路径不重叠时才并发，重叠时自动回退到顺序执行。</li>
+    <li><strong>误解：Gateway 运行时 Agent 的状态通过全局变量共享</strong> — Gateway v0.9 重构后使用 Python <code>contextvars</code> 为每个会话维护独立的运行时上下文，彻底替代了之前用 <code>os.environ</code> 传递会话状态的方式，防止多平台并发时的状态污染。</li>
+    <li><strong>误解：Hermes 只能用 OpenAI 模型</strong> — AIAgent 使用 OpenAI 兼容 SDK，支持 OpenRouter（200+ 模型）、Nous Portal、Anthropic、xAI、Qwen、MiMo、GLM、Mistral 等，通过 <code>hermes model</code> 随时切换，无需改代码。</li>
+  </ol>
+
+  <h2 id="section-4">4 项目使用方式</h2>
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p class="section-lead">以「在 Telegram 上让 Hermes 每天早上 8 点发送新闻摘要」为例，走一遍从安装到自动化运行的完整链路。</p>
+  <div class="timeline">
+    <div class="timeline-step"><div class="step-title">① 安装并初始化</div><div class="step-desc">执行 <code>curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash</code>，安装后运行 <code>hermes setup</code> 向导，选择 LLM 提供者（如 OpenRouter）并配置 API Key。</div></div>
+    <div class="timeline-step"><div class="step-title">② 配置 Telegram 网关</div><div class="step-desc">运行 <code>hermes gateway setup</code> 输入 Telegram Bot Token，配置完成后 <code>hermes gateway start</code> 启动网关进程（建议用 systemd 保活）。此后可在 Telegram 对话框与 Agent 交互。</div></div>
+    <div class="timeline-step"><div class="step-title">③ 测试基础对话</div><div class="step-desc">在 Telegram 发消息 "你好，查一下今天 AI 领域的最新新闻"，验证 Agent 能正确调用 <code>web_search</code> 工具并返回结果。<strong style="color:#6d28d9">跨会话记忆</strong>在此会话中已开始积累。</div></div>
+    <div class="timeline-step"><div class="step-title">④ 创建定时任务</div><div class="step-desc">在 Telegram 发消息 "帮我创建一个每天早上 8 点的定时任务：搜索今日 AI 新闻，总结成 3 条发给我"，Agent 调用 <code>cronjob</code> 工具创建 cron job，写入 <strong style="color:#6d28d9">cron 配置</strong>并通过 croniter 调度。</div></div>
+    <div class="timeline-step"><div class="step-title">⑤ Agent 自动创建技能</div><div class="step-desc">完成任务后，Hermes 的 nudge 机制会提示 Agent 将「新闻摘要工作流」封装为 Skill 文件。下次要求类似任务时，Agent 会直接加载该技能执行，无需重新学习。</div></div>
+    <div class="timeline-step"><div class="step-title">⑥ 查看和管理</div><div class="step-desc">运行 <code>hermes</code> 进入 CLI，输入 <code>/insights --days 7</code> 查看过去 7 天的用量统计；<code>/skills</code> 浏览积累的技能库；<code>/compress</code> 在上下文满之前主动压缩会话历史。</div></div>
+  </div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>最短路径：安装 → 配置模型 → 开始对话。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["curl 安装脚本"]) --> B["hermes setup\n配置 LLM 提供者"]
+    B --> C["hermes\nCLI 交互"]
+    C --> D["hermes gateway start\n可选：多平台接入"]
+    D --> E["cron / skills\n积累经验"]
+    </div>
+    <div class="caption">最小路径：安装 → 配置 → 对话 → 扩展</div>
+  </div>
+  <pre><code class="language-bash"># 1. 安装（Linux / macOS / WSL2 / Android Termux）
+curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+source ~/.bashrc
+
+# 2. 运行设置向导（配置 LLM 提供者、API Key）
+hermes setup
+
+# 3. 开始对话
+hermes
+
+# 4. 可选：启动 Telegram 网关
+hermes gateway setup   # 配置 Bot Token
+hermes gateway start   # 启动网关
+
+# 5. 诊断问题
+hermes doctor</code></pre>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <h4>💻 CLI 交互模式</h4>
+      <p>运行 <code>hermes</code> 进入全功能 TUI，支持多行编辑、slash 命令自动补全、流式工具输出、Ctrl+C 中断重定向。适合开发调试和详细任务。</p>
+    </div>
+    <div class="usage-card">
+      <h4>📱 消息平台模式</h4>
+      <p>通过 <code>hermes gateway start</code> 让 Agent 在云服务器持续运行，从 Telegram / Discord / WeChat 等随时触发任务。Agent 在你睡觉时执行定时任务。</p>
+    </div>
+    <div class="usage-card">
+      <h4>🔌 编辑器集成模式</h4>
+      <p>通过 ACP 协议（Agent Client Protocol）接入 VS Code、Zed、JetBrains。使用 <code>hermes-acp</code> 工具集（不含 clarify / send_message 等交互工具），专注编码场景。</p>
+    </div>
+    <div class="usage-card">
+      <h4>🔬 批量/RL 训练模式</h4>
+      <p>用 <code>batch_runner.py</code> 批量生成 Agent 轨迹，<code>trajectory_compressor.py</code> 压缩为训练格式，配合 Tinker-Atropos 跑 RL 实验，产出更好的 tool-calling 模型。</p>
+    </div>
+  </div>
+
+  <h2 id="section-5">5 系统详细设计</h2>
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录结构</a>了解项目整体轮廓。</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">hermes-agent/</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="run_agent.py" data-label="run_agent.py" title="在右侧面板查看源码">run_agent.py ★</span>         <span class="tree-comment">← 10,800 行核心：AIAgent 类、对话循环、并发工具执行</span>
+<span class="tree-branch">├── </span><span class="tree-dir">agent/</span>                  <span class="tree-comment">← Agent 子包：记忆、压缩、提示构建、模型元数据</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py" title="在右侧面板查看源码">memory_manager.py ★</span>   <span class="tree-comment">← 记忆提供者编排，最多一个外部提供者</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py" title="在右侧面板查看源码">context_compressor.py ★</span> <span class="tree-comment">← LLM 辅助上下文压缩</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="agent/prompt_builder.py" data-label="prompt_builder.py" title="在右侧面板查看源码">prompt_builder.py ★</span>   <span class="tree-comment">← 系统提示组装：SOUL.md / Skills / 环境提示</span>
+<span class="tree-branch">│   ├── </span><span class="tree-file">model_metadata.py</span>     <span class="tree-comment">← 模型 context 长度探测与 token 估算</span>
+<span class="tree-branch">│   └── </span><span class="tree-file">error_classifier.py</span>   <span class="tree-comment">← API 错误分类与 failover 决策</span>
+<span class="tree-branch">├── </span><span class="tree-dir">tools/</span>                  <span class="tree-comment">← 40+ 工具实现（terminal / browser / memory / delegate 等）</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry file-link" data-file="tools/delegate_tool.py" data-label="delegate_tool.py" title="在右侧面板查看源码">delegate_tool.py ★</span>    <span class="tree-comment">← 子 Agent 委派：隔离线程 + 独立迭代预算</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="toolsets.py" data-label="toolsets.py" title="在右侧面板查看源码">toolsets.py ★</span>           <span class="tree-comment">← 可组合工具集定义，菱形依赖安全去重</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="model_tools.py" data-label="model_tools.py" title="在右侧面板查看源码">model_tools.py ★</span>        <span class="tree-comment">← 工具定义注册与 function call 分发</span>
+<span class="tree-branch">├── </span><span class="tree-dir">gateway/</span>               <span class="tree-comment">← 16 平台消息网关适配器（Telegram / Discord / WeChat …）</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="hermes_state.py" data-label="hermes_state.py" title="在右侧面板查看源码">hermes_state.py ★</span>       <span class="tree-comment">← SQLite WAL + FTS5 状态存储，Schema v6</span>
+<span class="tree-branch">├── </span><span class="tree-dir">hermes_cli/</span>            <span class="tree-comment">← CLI 入口、配置管理、setup 向导、Web Dashboard</span>
+<span class="tree-branch">├── </span><span class="tree-dir">cron/</span>                  <span class="tree-comment">← Cron 调度器（croniter 驱动）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">acp_adapter/</span>           <span class="tree-comment">← Agent Client Protocol 适配，编辑器集成入口</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="trajectory_compressor.py" data-label="trajectory_compressor.py" title="在右侧面板查看源码">trajectory_compressor.py</span> <span class="tree-comment">← 轨迹压缩为 RL 训练格式</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="batch_runner.py" data-label="batch_runner.py" title="在右侧面板查看源码">batch_runner.py</span>         <span class="tree-comment">← 批量轨迹生成</span>
+<span class="tree-branch">└── </span><span class="tree-dir">tinker-atropos/</span>        <span class="tree-comment">← RL 训练子模块（git submodule）</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    %% 主链路: hermes CLI → AIAgent.run_conversation() → Tool Execution → State DB
+    subgraph 入口层
+      CLI["hermes CLI\n命令分发 + TUI"]
+      GW["Gateway\n16 平台消息桥"]
+      ACP["ACP Adapter\n编辑器集成"]
+      CLI --> Agent
+      GW --> Agent
+      ACP --> Agent
+    end
+    subgraph 对话引擎层
+      Agent["AIAgent\n对话主循环 + 迭代预算"]
+      PromptBuilder["prompt_builder\nSOUL.md + Skills + 环境提示"]
+      ModelMeta["model_metadata\nContext 长度探测"]
+      Compressor["ContextCompressor\nLLM 摘要压缩"]
+      ErrorCls["error_classifier\nFailover 决策"]
+      Agent --> PromptBuilder
+      Agent --> ModelMeta
+      Agent --> Compressor
+      Agent --> ErrorCls
+    end
+    subgraph 记忆与知识层
+      MemMgr["MemoryManager\n内置 + 最多1个外部提供者"]
+      MemBuiltin["内置提供者\nMEMORY.md / USER.md"]
+      MemExt["外部提供者\nHoncho / Hindsight"]
+      Skills["Skills 文件\n程序化记忆 / Skills Hub"]
+      Agent --> MemMgr
+      MemMgr --> MemBuiltin
+      MemMgr --> MemExt
+      PromptBuilder --> Skills
+    end
+    subgraph 工具与执行层
+      ToolExec["并发工具执行器\n安全分析 + 8线程"]
+      Toolsets["Toolset 系统\n可组合 / 插件注册"]
+      Delegate["delegate_task\n子 Agent 并行"]
+      Agent --> ToolExec
+      ToolExec --> Toolsets
+      ToolExec --> Delegate
+    end
+    subgraph 存储层
+      StateDB[("SQLite WAL\nstate.db + FTS5")]
+      CronDB["Cron 调度器\ncroniter"]
+      Agent --> StateDB
+      ToolExec --> CronDB
+    end
+    </div>
+    <div class="caption">图 5-1：Hermes Agent 系统架构图</div>
+  </div>
+
+  <p><strong>如何读图 5-1：</strong></p>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>入口层</td>
+        <td><code>hermes_cli</code><br><code>gateway/</code><br><code>acp_adapter/</code></td>
+        <td>接收来自 CLI、16 个消息平台或编辑器的输入，路由到同一个 AIAgent 实例；Gateway 用 contextvars 隔离多平台并发会话</td>
+        <td>→ 对话引擎层</td>
+      </tr>
+      <tr>
+        <td>对话引擎层</td>
+        <td><code>run_agent.py</code><br><code>agent/prompt_builder.py</code><br><code>agent/context_compressor.py</code></td>
+        <td>主循环：构建系统提示 → 调用 LLM → 解析工具调用 → 并发执行工具 → 追加结果 → 判断是否继续；IterationBudget 防止无限循环</td>
+        <td>↕ 记忆层，↕ 工具层，→ 存储层</td>
+      </tr>
+      <tr>
+        <td>记忆与知识层</td>
+        <td><code>agent/memory_manager.py</code><br><code>skills/</code><br><code>SOUL.md</code></td>
+        <td>prefetch 召回相关记忆注入上下文；sync_all 在每轮结束后同步记忆；Skills 文件由 Agent 自主创建和改进</td>
+        <td>↔ 对话引擎层</td>
+      </tr>
+      <tr>
+        <td>工具与执行层</td>
+        <td><code>toolsets.py</code><br><code>tools/delegate_tool.py</code><br><code>model_tools.py</code></td>
+        <td>并发安全分析 → ThreadPoolExecutor（最多 8 线程）执行工具；delegate_task 派生独立子 Agent；工具集可通过插件系统扩展</td>
+        <td>↔ 对话引擎层，→ 存储层</td>
+      </tr>
+      <tr>
+        <td>存储层</td>
+        <td><code>hermes_state.py</code><br><code>cron/</code></td>
+        <td>SQLite WAL 模式支持并发读；FTS5 虚表为所有消息全文索引；cron 调度独立运行，到时触发 Agent 会话</td>
+        <td>← 所有层写入</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 关键执行链路</h3>
+  <p>以「用户发送一条消息 → Agent 执行工具 → 返回结果」为完整端到端链路示例。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant U as 用户/平台
+  participant CLI as 入口层
+  participant A as AIAgent
+  participant PB as prompt_builder
+  participant MM as MemoryManager
+  participant LLM as LLM API
+  participant TE as 工具执行器
+  participant DB as SQLite
+
+  U->>CLI: 发送消息
+  CLI->>A: run_conversation(message)
+  A->>MM: prefetch_all(message)
+  MM-->>A: 相关记忆上下文
+  A->>PB: build_system_prompt()
+  PB-->>A: SOUL + Skills + 记忆 + 环境提示
+  A->>DB: 保存 user 消息
+  A->>LLM: chat.completions(messages, tools)
+  LLM-->>A: 流式响应 + tool_calls
+  A->>TE: 并发执行 tool_calls
+  TE-->>A: 工具结果列表
+  A->>DB: 保存 assistant + tool 消息
+  A->>MM: sync_all(user, assistant)
+  A->>LLM: 追加结果继续对话
+  LLM-->>A: 最终文本响应
+  A-->>U: 输出结果
+    </div>
+    <div class="caption">图 5-2：主对话执行链路</div>
+  </div>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>函数/类</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>消息入站</td><td>run_conversation() 入口</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>接收用户消息，检查 IterationBudget 余量</td><td>max_iterations 默认 90，超出拒绝继续</td></tr>
+      <tr><td>2</td><td>记忆召回</td><td>MemoryManager.prefetch_all()</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td><td>从所有提供者召回相关历史记忆，用 XML fence 包裹注入</td><td>提供者失败不阻塞主流程</td></tr>
+      <tr><td>3</td><td>系统提示构建</td><td>build_system_prompt()</td><td><span class="file-link" data-file="agent/prompt_builder.py" data-label="prompt_builder.py">agent/prompt_builder.py</span></td><td>拼接 SOUL.md + 技能上下文 + 记忆块 + 平台提示</td><td>Anthropic 模型触发 prompt caching</td></tr>
+      <tr><td>4</td><td>LLM 调用</td><td>client.chat.completions.create()</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>流式调用 LLM，解析 tool_calls；错误时触发 error_classifier failover</td><td>速率限制、token 超限、空响应重试</td></tr>
+      <tr><td>5</td><td>并发工具执行</td><td>_should_parallelize_tool_batch()</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>安全分析后 ThreadPoolExecutor 并发执行，最多 8 线程</td><td>路径重叠 / 交互工具 / 危险命令触发审批</td></tr>
+      <tr><td>6</td><td>状态持久化</td><td>StateStore.add_message()</td><td><span class="file-link" data-file="hermes_state.py" data-label="hermes_state.py">hermes_state.py</span></td><td>将 assistant 消息和工具结果写入 SQLite，FTS5 自动索引</td><td>WAL 模式保证并发读写安全</td></tr>
+      <tr><td>7</td><td>记忆同步</td><td>MemoryManager.sync_all()</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td><td>将本轮对话同步给所有记忆提供者，供后续会话召回</td><td>提供者失败打印警告但不中断</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
+
+  <h4 id="section-5-3-1">5.3.1 Agent 对话主循环</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></span>
+    <span>🏷 对话引擎</span>
+    <span>⚡ 每次用户消息触发</span>
+  </div>
+  <p><strong>要解决的问题</strong>：Agent 需要在一次用户请求中执行多轮工具调用（LLM → 工具 → LLM → 工具 → …），直到 LLM 返回最终文本响应。同时需要防止无限循环（消耗无限 token），并在上下文即将溢出时优雅压缩而非崩溃。</p>
+  <p><strong>解决方案</strong>：<code>AIAgent.run_conversation()</code> 维护一个 while 循环，由 <code>IterationBudget</code> 线程安全地计数（父 Agent 默认 90 次）。每次迭代调用 LLM 并检查响应类型：若有 <code>tool_calls</code> 则执行工具并追加结果继续循环；若是纯文本则退出。每轮结束后检查 token 使用量，接近上限时触发 <code>ContextCompressor</code>。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant L as run_conversation
+  participant B as IterationBudget
+  participant M as 模型 API
+  participant T as 工具执行器
+  participant C as ContextCompressor
+
+  L->>B: consume() 检查余量
+  B-->>L: True（允许继续）
+  L->>M: chat.completions()
+  M-->>L: 响应（tool_calls 或文本）
+  alt 有 tool_calls
+    L->>T: 并发执行工具
+    T-->>L: 工具结果
+    L->>L: 追加 tool 消息继续循环
+  else 纯文本响应
+    L->>L: 退出循环，返回结果
+  end
+  L->>C: 检查 token 压力
+  C-->>L: 压缩后的消息列表（如需）
+    </div>
+    <div class="caption">图 5-3：Agent 主循环状态机</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-3）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>run_conversation</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>IterationBudget</td><td>consume()</td><td>线程安全地消耗一次迭代预算，超限返回 False 终止循环</td></tr>
+      <tr><td>2</td><td>run_conversation</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>LLM API</td><td>chat.completions.create(stream=True)</td><td>流式调用，实时渲染 token 输出</td></tr>
+      <tr><td>3</td><td>run_conversation</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>工具执行器</td><td>并发执行 tool_calls</td><td>安全分析后决定并发还是顺序</td></tr>
+      <tr><td>4</td><td>run_conversation</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>ContextCompressor</td><td>check / compress</td><td>token 超过阈值时触发 LLM 摘要压缩</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：单文件 10,800 行的体积使代码理解和贡献门槛较高，模块化工作（agent/ 子包）仍在进行中。IterationBudget 的固定上限有时会在复杂任务中提前终止；execute_code（程序化工具调用）的迭代退款虽然缓解了此问题，但逻辑分散难以追踪。</p>
+
+  <h4 id="section-5-3-2">5.3.2 MemoryManager 记忆编排</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></span>
+    <span>🏷 记忆系统</span>
+    <span>⚡ 每轮对话 prefetch / sync</span>
+  </div>
+  <p><strong>要解决的问题</strong>：Agent 需要跨会话记忆，但不同团队有不同的记忆后端偏好（内置文件 / Honcho 对话管理 / Hindsight 插件）。若允许多个外部提供者并存，工具 schema 会因多个 <code>memory</code> 工具而膨胀，模型会困惑；同时多个后端并发写入同一记忆可能产生冲突。</p>
+  <p><strong>解决方案</strong>：MemoryManager 强制「内置提供者 + 最多一个外部提供者」约束。内置提供者（MEMORY.md / USER.md）始终注册且不可移除；第二个外部提供者注册时被静默拒绝并打印警告。所有提供者共享统一的生命周期接口（prefetch / sync_turn / on_pre_compress / shutdown），任意提供者失败不阻塞其他提供者。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant A as AIAgent
+  participant MM as MemoryManager
+  participant BP as 内置提供者
+  participant EP as 外部提供者(可选)
+
+  A->>MM: prefetch_all(user_message)
+  MM->>BP: prefetch(query)
+  BP-->>MM: 相关记忆文本
+  MM->>EP: prefetch(query)
+  EP-->>MM: 外部记忆文本
+  MM-->>A: 合并上下文（XML fence 包裹）
+  Note over A: LLM 调用 + 工具执行
+  A->>MM: sync_all(user, assistant)
+  MM->>BP: sync_turn(...)
+  MM->>EP: sync_turn(...)
+  A->>MM: on_pre_compress(messages)
+  MM-->>A: 压缩摘要提示
+    </div>
+    <div class="caption">图 5-4：MemoryManager 生命周期</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-4）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>MemoryManager</td><td>prefetch_all(query)</td><td>在 LLM 调用前召回相关记忆</td></tr>
+      <tr><td>2</td><td>MemoryManager</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td><td>内置/外部提供者</td><td>provider.prefetch(query)</td><td>各提供者独立查询，失败不阻塞</td></tr>
+      <tr><td>3</td><td>MemoryManager</td><td><span class="file-link" data-file="agent/memory_manager.py" data-label="memory_manager.py">agent/memory_manager.py</span></td><td>AIAgent（内部）</td><td>返回合并上下文</td><td>build_memory_context_block 包裹 XML fence 防止模型误解</td></tr>
+      <tr><td>4</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>MemoryManager</td><td>sync_all(user, assistant)</td><td>每轮结束后同步当轮内容到所有提供者</td></tr>
+      <tr><td>5</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>MemoryManager</td><td>on_pre_compress(messages)</td><td>压缩前提取关键记忆注入摘要提示，防止"重要信息被压没"</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：单一外部提供者限制对需要同时使用 Honcho 和 Hindsight 的高级用户来说是约束；prefetch 在每轮都同步执行，若外部提供者延迟高会影响响应速度（queue_prefetch 异步变体缓解了此问题但会引入一轮延迟）。</p>
+
+  <h4 id="section-5-3-3">5.3.3 并发工具执行引擎</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></span>
+    <span>🏷 执行引擎</span>
+    <span>⚡ LLM 返回 tool_calls 批次时触发</span>
+  </div>
+  <p><strong>要解决的问题</strong>：LLM 一次可能返回多个工具调用（如同时搜索三个网站），串行执行浪费时间；但盲目并发会导致：交互类工具（clarify）同时弹出多个问题、文件写入工具覆盖彼此的结果、危险命令未经审批执行。</p>
+  <p><strong>解决方案</strong>：维护三张工具集合精确管控并发。<code>_NEVER_PARALLEL_TOOLS</code>（clarify 等）任何时候都串行；<code>_PARALLEL_SAFE_TOOLS</code>（web_search / read_file / vision_analyze 等只读工具）直接并发；<code>_PATH_SCOPED_TOOLS</code>（read_file / write_file / patch）通过路径归一化检测重叠，重叠则串行，不重叠则并发。通过 ThreadPoolExecutor 最多 8 线程执行。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant A as AIAgent
+  participant SA as 安全分析器
+  participant TP as ThreadPoolExecutor
+  participant T1 as 工具1(web_search)
+  participant T2 as 工具2(read_file)
+
+  A->>SA: _should_parallelize_tool_batch(calls)
+  SA->>SA: 检查 NEVER_PARALLEL / PARALLEL_SAFE
+  SA->>SA: 检查路径重叠（PATH_SCOPED）
+  SA-->>A: True（可并发）
+  A->>TP: submit(tool1), submit(tool2)
+  TP->>T1: execute()
+  TP->>T2: execute()
+  T1-->>TP: result1
+  T2-->>TP: result2
+  TP-->>A: [result1, result2]
+    </div>
+    <div class="caption">图 5-5：并发工具执行安全分析</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-5）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>安全分析器（内部）</td><td>_should_parallelize_tool_batch()</td><td>遍历所有工具，逐一检查三个集合</td></tr>
+      <tr><td>2</td><td>安全分析器</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>（内部）</td><td>路径归一化 + 重叠检测</td><td>_extract_parallel_scope_path + _paths_overlap，处理绝对/相对路径</td></tr>
+      <tr><td>3</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>ThreadPoolExecutor</td><td>submit() × N</td><td>最多 8 个工作线程，_MAX_TOOL_WORKERS = 8</td></tr>
+      <tr><td>4</td><td>ThreadPoolExecutor</td><td>（内部）</td><td>各工具实现</td><td>handle_function_call()</td><td>每个工具在独立线程中执行，中断信号用 per-thread 隔离防止跨会话泄漏</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：安全分析是启发式的，_DESTRUCTIVE_PATTERNS 正则可能漏检复杂的 shell 命令链；线程安全依赖工具自身实现，若工具内部有全局状态可能引发竞态。路径重叠检测基于字符串前缀匹配，不处理符号链接。</p>
+
+  <h4 id="section-5-3-4">5.3.4 上下文压缩器</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py">agent/context_compressor.py</span></span>
+    <span>🏷 记忆管理</span>
+    <span>⚡ token 使用量接近上限时触发</span>
+  </div>
+  <p><strong>要解决的问题</strong>：长对话的 token 使用量会超过模型上下文窗口，但简单截断早期消息会丢失关键决策背景；同时每次都做完整摘要成本过高，需要根据上下文压力决定是否压缩以及压缩范围。</p>
+  <p><strong>解决方案</strong>：ContextCompressor 维护一个压缩策略：读取当前 token 估算（来自 model_metadata），与模型上下文长度的配置阈值（默认 80%）对比；超过时调用 LLM 对早期消息生成摘要，同时调用 MemoryManager.on_pre_compress() 从记忆提供者提取关键信息注入摘要提示，防止重要信息在压缩中丢失；压缩后生成新的 parent_session_id 链，保留从该点开始的完整消息历史。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant A as AIAgent
+  participant CC as ContextCompressor
+  participant MM as MemoryManager
+  participant LLM as 压缩用 LLM
+  participant DB as SQLite
+
+  A->>CC: check_and_compress(messages, token_count)
+  CC->>CC: 估算 token 压力（与阈值对比）
+  alt 超过阈值
+    CC->>MM: on_pre_compress(messages)
+    MM-->>CC: 关键记忆提示
+    CC->>LLM: 生成会话摘要（注入记忆提示）
+    LLM-->>CC: 摘要文本
+    CC->>DB: 新建 Session（parent_session_id 链）
+    CC-->>A: 压缩后的 messages（摘要 + 近期消息）
+  else 压力未超阈值
+    CC-->>A: 原始 messages（无变化）
+  end
+    </div>
+    <div class="caption">图 5-6：上下文压缩流程</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-6）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>AIAgent</td><td><span class="file-link" data-file="run_agent.py" data-label="run_agent.py">run_agent.py</span></td><td>ContextCompressor</td><td>check_and_compress()</td><td>每轮结束后检查 token 压力</td></tr>
+      <tr><td>2</td><td>ContextCompressor</td><td><span class="file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py">agent/context_compressor.py</span></td><td>MemoryManager</td><td>on_pre_compress(messages)</td><td>从记忆提供者提取关键信息，避免压缩丢失重要背景</td></tr>
+      <tr><td>3</td><td>ContextCompressor</td><td><span class="file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py">agent/context_compressor.py</span></td><td>LLM API</td><td>生成摘要（非流式）</td><td>使用当前会话模型，注入记忆提示构建高质量摘要</td></tr>
+      <tr><td>4</td><td>ContextCompressor</td><td><span class="file-link" data-file="agent/context_compressor.py" data-label="context_compressor.py">agent/context_compressor.py</span></td><td>SQLite</td><td>创建新 Session（parent_session_id 链）</td><td>历史会话不删除，通过 parent 链保留可追溯性</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：压缩本身消耗 token（摘要调用有成本）；LLM 摘要质量不稳定，复杂的工具调用历史可能在摘要中失真；压缩后的会话切换使 /undo 等命令的语义变得模糊。</p>
+
+  <h2 id="section-6">6 方案评价</h2>
+  <h3 id="section-6-1">6.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>自我进化学习闭环</h4>
+      <p>技能从任务中自动创建和改进，配合 SQLite FTS5 跨会话记忆召回，Agent 的能力随使用时间持续提升；Skills Hub 社区共享让个人积累的工作流可以被他人复用，网络效应显著。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>16 平台统一接入，无缝切换</h4>
+      <p>同一个 Agent 实例通过 Gateway 进程覆盖 Telegram、Discord、WeChat、iMessage、DingTalk 等 16 个平台，contextvars 保证会话隔离；Agent 运行在你的服务器上，24/7 响应，不绑定任何设备。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>并发工具执行的精确安全分析</h4>
+      <p>三张工具集合（永不并发 / 读安全 / 路径作用域）精确控制并发边界，读密集型任务（多网站搜索 + 多文件读取）可显著提速，同时危险命令和交互工具有明确的串行保障。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>RL 训练数据生产内置</h4>
+      <p>trajectory_compressor.py + batch_runner.py + tinker-atropos 形成完整的 RL 数据生产管线，日常 Agent 使用产生的轨迹可直接用于微调更好的 tool-calling 模型，研究与实用两条线并进。</p>
+    </div>
+  </div>
+
+  <h3 id="section-6-2">6.2 局限分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card weakness">
+      <h4>run_agent.py 单文件 10,800 行</h4>
+      <p>核心逻辑高度集中，理解和贡献门槛较高。虽然 agent/ 子包在持续提取模块，但对话循环的核心路径仍在大文件中，新贡献者需要相当时间才能定位具体功能。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>技能质量依赖模型遵从度</h4>
+      <p>技能自创建是 nudge 机制（推送给 Agent），而非强制执行；技能内容的质量（完整性、准确性）完全取决于 LLM 的遵从能力。弱模型可能创建无用甚至有害的技能文件。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>安全审批机制尚需完善</h4>
+      <p>危险命令检测基于正则启发式，复杂的 shell 命令链可能绕过；虽然 v0.9.0 做了大量安全加固（路径遍历、SSRF、Twilio webhook 验证等），但面向公开 Bot 部署时安全边界仍需仔细配置。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>Windows 原生不支持，Android 尚早</h4>
+      <p>Windows 必须用 WSL2；Android/Termux 路径在 v0.9.0 才正式落地，且部分依赖（faster-whisper、ctranslate2）在 Android 上不兼容，需要使用受限的 termux extra 而非完整的 all extra。</p>
+    </div>
+  </div>
+
+  <h2 id="section-7">7 版本化维护区</h2>
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文以开源仓库 <a href="https://github.com/NousResearch/hermes-agent">NousResearch/hermes-agent</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-04-15</strong>，对应版本 <strong>v0.9.0</strong>（2026-04-13 发布，4,214 commits，88.5k stars）。</p>
+
+</main>
+
+<!-- Side Panel -->
+<div class="code-panel" id="codePanel">
+  <div class="resize-handle" id="resizeHandle"></div>
+  <div class="panel-header">
+    <span class="panel-title" id="panelTitle">—</span>
+    <div class="panel-nav">
+      <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>←</button>
+      <button class="panel-nav-btn" id="panelNavFwd" title="前进" disabled>→</button>
+      <a class="panel-gh-link" id="panelGhLink" href="#" target="_blank">在 GitHub 打开 ↗</a>
+    </div>
+    <button class="panel-close" id="panelClose">×</button>
+  </div>
+  <div class="panel-body-iframe" id="iframeBody">
+    <iframe class="panel-iframe" id="panelIframe" src="about:blank"></iframe>
+  </div>
+  <div class="panel-body-term" id="termBody"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+
+const GH_REPO = 'NousResearch/hermes-agent';
+
+const FILE_MAP = {
+  'run_agent.py':                     `${GH_REPO}/blob/main/run_agent.py`,
+  'hermes_state.py':                  `${GH_REPO}/blob/main/hermes_state.py`,
+  'toolsets.py':                      `${GH_REPO}/blob/main/toolsets.py`,
+  'model_tools.py':                   `${GH_REPO}/blob/main/model_tools.py`,
+  'agent/memory_manager.py':          `${GH_REPO}/blob/main/agent/memory_manager.py`,
+  'memory_manager.py':                `${GH_REPO}/blob/main/agent/memory_manager.py`,
+  'agent/context_compressor.py':      `${GH_REPO}/blob/main/agent/context_compressor.py`,
+  'context_compressor.py':            `${GH_REPO}/blob/main/agent/context_compressor.py`,
+  'agent/prompt_builder.py':          `${GH_REPO}/blob/main/agent/prompt_builder.py`,
+  'prompt_builder.py':                `${GH_REPO}/blob/main/agent/prompt_builder.py`,
+  'agent/model_metadata.py':          `${GH_REPO}/blob/main/agent/model_metadata.py`,
+  'agent/error_classifier.py':        `${GH_REPO}/blob/main/agent/error_classifier.py`,
+  'tools/delegate_tool.py':           `${GH_REPO}/blob/main/tools/delegate_tool.py`,
+  'delegate_tool.py':                 `${GH_REPO}/blob/main/tools/delegate_tool.py`,
+  'trajectory_compressor.py':         `${GH_REPO}/blob/main/trajectory_compressor.py`,
+  'batch_runner.py':                  `${GH_REPO}/blob/main/batch_runner.py`,
+  'hermes_cli/main.py':               `${GH_REPO}/blob/main/hermes_cli/main.py`,
+  'pyproject.toml':                   `${GH_REPO}/blob/main/pyproject.toml`,
+  'AGENTS.md':                        `${GH_REPO}/blob/main/AGENTS.md`,
+  'hermes_constants.py':              `${GH_REPO}/blob/main/hermes_constants.py`,
+};
+
+const PROJECT_TERMS = {
+  'AIAgent': {
+    tags: ['核心类', '对话引擎'],
+    def: '核心 Agent 类，持有会话历史列表、MemoryManager、IterationBudget 和工具集配置。<code>run_conversation()</code> 是主循环入口，协调 LLM 调用、工具执行和状态持久化。',
+    mechanics: ['run_conversation() 主循环', 'IterationBudget 防无限循环', '_should_parallelize_tool_batch() 并发安全分析', '流式 LLM 响应处理'],
+    related: ['IterationBudget', 'MemoryManager', 'ContextCompressor'],
+    files: ['run_agent.py'],
+    patterns: ['AIAgent'],
+  },
+  'IterationBudget': {
+    tags: ['安全机制', '并发'],
+    def: '线程安全的迭代计数器，防止 Agent 无限循环消耗 token。父 Agent 默认 90 次，子 Agent 默认 50 次。<code>execute_code</code>（程序化工具调用）的迭代可通过 <code>refund()</code> 退还，避免"廉价"调用占用宝贵预算。',
+    mechanics: ['consume() 原子递增，超限返回 False', 'refund() 退还 execute_code 迭代', 'threading.Lock 保证线程安全', '父/子 Agent 各自独立预算'],
+    related: ['AIAgent', 'delegate_task'],
+    files: ['run_agent.py'],
+    patterns: ['IterationBudget'],
+  },
+  'MemoryManager': {
+    tags: ['记忆系统', '提供者模式'],
+    def: '记忆提供者编排器，强制「内置提供者 + 最多一个外部提供者」约束，防止 tool schema 膨胀。统一 prefetch / sync_turn / on_pre_compress / shutdown 生命周期接口。',
+    mechanics: ['内置提供者始终注册（MEMORY.md / USER.md）', '第二个外部提供者静默拒绝并警告', 'build_memory_context_block() 用 XML fence 隔离记忆', 'queue_prefetch() 异步预取下一轮'],
+    related: ['AIAgent', 'ContextCompressor', 'FTS5'],
+    files: ['agent/memory_manager.py'],
+    patterns: ['MemoryManager'],
+  },
+  'ContextCompressor': {
+    tags: ['上下文管理', '压缩'],
+    def: '上下文压缩器，在 token 使用量超过阈值（默认 80%）时调用 LLM 生成会话摘要。压缩前向 MemoryManager 请求关键记忆注入摘要提示，防止重要信息丢失；压缩后创建新 Session（parent_session_id 链）保持可追溯性。',
+    mechanics: ['token 压力估算（rough + precise 两级）', 'on_pre_compress() 从记忆提取关键信息', '会话链：新 Session + parent_session_id', '/compress <topic> 用户主动压缩'],
+    related: ['AIAgent', 'MemoryManager', 'FTS5'],
+    files: ['agent/context_compressor.py'],
+    patterns: ['ContextCompressor'],
+  },
+  'Skills': {
+    tags: ['程序化记忆', '自我进化'],
+    def: '程序化记忆单元，Markdown 格式文件（SKILL.md），由 Agent 在完成复杂任务后自动创建和改进。通过 <code>skill_manage</code> 工具管理本地技能；通过 Skills Hub（agentskills.io）社区共享；技能在使用中持续自我改进。',
+    mechanics: ['nudge 机制：任务后推送 Agent 创建技能', 'skill_manage 工具：create / update / delete', 'Skills Hub：发布和安装社区技能', '技能在使用中 self-improve'],
+    related: ['AIAgent', 'SOUL.md'],
+    files: ['tools/delegate_tool.py'],
+    patterns: ['Skills', 'skill_manage', 'Skills Hub'],
+  },
+  'Gateway': {
+    tags: ['多平台', '消息网关'],
+    def: '统一消息网关进程，监听 16 个消息平台（Telegram / Discord / WeChat / iMessage / DingTalk 等），将来自各平台的消息路由到同一 AIAgent 实例。v0.9 用 contextvars 替换 os.environ 实现会话状态隔离。',
+    mechanics: ['hermes gateway start 启动单一进程', 'contextvars 为每会话独立运行时状态', '16 个平台适配器统一接口', 'send_message 工具跨平台发消息'],
+    related: ['AIAgent', 'Toolset'],
+    files: ['hermes_state.py'],
+    patterns: ['Gateway', 'gateway'],
+  },
+  'Toolset': {
+    tags: ['工具系统', '可组合'],
+    def: '可组合工具集定义，通过 <code>includes</code> 数组嵌套其他工具集，<code>resolve_toolset()</code> 用 visited set 处理菱形依赖去重；支持插件注册（通过 tools.registry）动态扩展。',
+    mechanics: ['resolve_toolset() 递归解析 + 菱形依赖安全', 'validate_toolset() 校验工具集名称', '_HERMES_CORE_TOOLS：所有平台共享的核心工具集', 'MCP 工具集通过插件注册'],
+    related: ['AIAgent', 'delegate_task'],
+    files: ['toolsets.py'],
+    patterns: ['Toolset', 'toolset'],
+  },
+  'SOUL.md': {
+    tags: ['人格', '系统提示'],
+    def: 'Agent 人格定义文件，包含性格特征、沟通风格、行为偏好和禁止行为。每次会话开始时由 prompt_builder 读取并注入系统提示开头。不同 Profile 可以有不同的 SOUL.md。',
+    mechanics: ['load_soul_md() 读取并注入系统提示', 'hermes setup 向导创建初始 SOUL.md', '/personality <name> 临时切换人格', '各 Profile 独立 SOUL.md 文件'],
+    related: ['Skills', 'AIAgent'],
+    files: ['agent/prompt_builder.py'],
+    patterns: ['SOUL.md', 'SOUL'],
+  },
+  'FTS5': {
+    tags: ['存储', '全文搜索'],
+    def: 'SQLite FTS5 全文搜索虚表，为所有历史会话的消息内容建立自动更新的全文索引。<code>session_search</code> 工具利用 FTS5 实现跨会话的语义搜索，再由 LLM 对结果摘要。',
+    mechanics: ['messages_fts 虚表（content=messages）', 'INSERT 触发器自动同步索引', 'match 语法支持短语/近邻搜索', 'LLM 对搜索结果做二次摘要'],
+    related: ['MemoryManager', 'ContextCompressor'],
+    files: ['hermes_state.py'],
+    patterns: ['FTS5'],
+  },
+  'delegate_task': {
+    tags: ['子 Agent', '并行'],
+    def: '子 Agent 委派工具，在独立线程中启动拥有独立 IterationBudget（默认 50 次）和隔离消息历史的子 Agent。父 Agent 活动追踪包含子 Agent 活动，防止父 Agent 因"无活动"超时。',
+    mechanics: ['独立线程 + 独立 IterationBudget', '子 Agent 隔离消息历史（不共享父 Agent 上下文）', 'propagate child activity to parent', 'delegation.max_iterations 配置子预算'],
+    related: ['AIAgent', 'IterationBudget', 'Toolset'],
+    files: ['tools/delegate_tool.py'],
+    patterns: ['delegate_task'],
+  },
+};
+
+// ========== Panel System ==========
+const panel      = document.getElementById('codePanel');
+const panelTitle = document.getElementById('panelTitle');
+const panelIframe= document.getElementById('panelIframe');
+const iframeBody = document.getElementById('iframeBody');
+const termBody   = document.getElementById('termBody');
+const panelClose = document.getElementById('panelClose');
+const panelNavBack = document.getElementById('panelNavBack');
+const panelNavFwd  = document.getElementById('panelNavFwd');
+const panelGhLink  = document.getElementById('panelGhLink');
+
+let navHistory = [], navIndex = -1;
+
+function openPanel() { panel.classList.add('open'); }
+function closePanel() { panel.classList.remove('open'); }
+
+function pushNav(entry) {
+  navHistory = navHistory.slice(0, navIndex + 1);
+  navHistory.push(entry);
+  navIndex = navHistory.length - 1;
+  updateNavBtns();
+}
+
+function updateNavBtns() {
+  panelNavBack.disabled = navIndex <= 0;
+  panelNavFwd.disabled  = navIndex >= navHistory.length - 1;
+}
+
+function _loadEntry(e) {
+  if (!e) return;
+  if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+  else if (e.type === 'term') _openTermPanelInternal(e.name);
+}
+
+panelNavBack.addEventListener('click', () => {
+  if (navIndex > 0) { navIndex--; updateNavBtns(); _loadEntry(navHistory[navIndex]); }
+});
+panelNavFwd.addEventListener('click', () => {
+  if (navIndex < navHistory.length - 1) { navIndex++; updateNavBtns(); _loadEntry(navHistory[navIndex]); }
+});
+
+function _openGitHubPanel(ghPath, label) {
+  const url = `https://github1s.com/${ghPath}`;
+  panelTitle.textContent = label || ghPath.split('/').pop();
+  panelGhLink.href = `https://github.com/${ghPath}`;
+  panelGhLink.style.display = '';
+  termBody.style.display = 'none';
+  iframeBody.style.display = 'flex';
+  panelIframe.src = url;
+  openPanel();
+}
+
+function openGitHubPanel(ghPath, label) {
+  pushNav({ type: 'github', path: ghPath, label: label || ghPath });
+  _openGitHubPanel(ghPath, label);
+}
+
+function openRepoBrowser() {
+  openGitHubPanel(`${GH_REPO}`, 'hermes-agent');
+}
+
+function renderTermHTML(key) {
+  const t = PROJECT_TERMS[key]; if (!t) return '';
+  const tags = (t.tags||[]).map(g => `<span class="term-tag">${g}</span>`).join('');
+  const mech = (t.mechanics||[]).map(m => `<li>${m}</li>`).join('');
+  const rels = (t.related||[]).map(r => `<button class="term-rel-btn" data-term="${r}">${r}</button>`).join(' ');
+  const files = (t.files||[]).map(f => {
+    const p = FILE_MAP[f]; if (!p) return '';
+    return `<button class="term-file-btn" data-file="${p}">${f}</button>`;
+  }).join(' ');
+  return `<div class="term-panel-title">${key}</div>
+  <div class="term-panel-tags">${tags}</div>
+  <div class="term-panel-section"><h4>定义</h4><div class="term-panel-def">${t.def}</div></div>
+  ${mech ? `<div class="term-panel-section"><h4>机制要点</h4><ul class="term-mechanics">${mech}</ul></div>` : ''}
+  ${rels ? `<div class="term-panel-section"><h4>相关概念</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${rels}</div></div>` : ''}
+  ${files ? `<div class="term-panel-section"><h4>源文件</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${files}</div></div>` : ''}`;
+}
+
+function _openTermPanelInternal(termName) {
+  if (!PROJECT_TERMS[termName]) return;
+  panelTitle.textContent = termName;
+  panelGhLink.style.display = 'none';
+  iframeBody.style.display = 'none';
+  termBody.style.display = 'flex';
+  termBody.style.flexDirection = 'column';
+  termBody.innerHTML = renderTermHTML(termName);
+  termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+    btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+  termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+    btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+  openPanel();
+}
+
+function openTermPanel(termName) {
+  if (!PROJECT_TERMS[termName]) return;
+  pushNav({ type: 'term', name: termName });
+  _openTermPanelInternal(termName);
+}
+
+panelClose.addEventListener('click', closePanel);
+
+document.addEventListener('click', function(e) {
+  const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+  const termEl = e.target.closest('.term-link[data-term]');
+  if (fileEl && fileEl.dataset.file) {
+    e.preventDefault();
+    openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+  } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+    e.preventDefault();
+    openTermPanel(termEl.dataset.term);
+  }
+});
+
+// Auto-tag file links
+document.querySelectorAll('code:not(pre code)').forEach(el => {
+  if (el.dataset.file || el.classList.contains('file-link')) return;
+  const raw = el.textContent.trim();
+  const ghPath = FILE_MAP[raw];
+  if (ghPath) {
+    el.classList.add('file-link');
+    el.dataset.file  = ghPath;
+    el.dataset.label = raw.replace(/^★\s*/, '');
+    el.title = '在 GitHub 中查看';
+  }
+});
+
+// Auto-tag term links
+const termPatterns = [];
+for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+  for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+}
+termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+
+const TERM_RE = new RegExp(
+  termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+
+const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+  'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+
+function tagTermsInDocument() {
+  const content = document.querySelector('.content');
+  if (!content) return;
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      let p = node.parentNode;
+      while (p && p !== content) {
+        if (SKIP_TAGS.has(p.tagName) ||
+            p.classList.contains('term-link') ||
+            p.classList.contains('file-link') ||
+            p.classList.contains('mermaid') ||
+            p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+        p = p.parentNode;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(textNode => {
+    const text = textNode.textContent;
+    TERM_RE.lastIndex = 0;
+    if (!TERM_RE.test(text)) return;
+    TERM_RE.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0, m;
+    while ((m = TERM_RE.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const key = PAT_KEY[m[0]];
+      if (key) {
+        const sp = document.createElement('span');
+        sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+        frag.appendChild(sp);
+      } else {
+        frag.appendChild(document.createTextNode(m[0]));
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+}
+
+tagTermsInDocument();
+window.openRepoBrowser = openRepoBrowser;
+
+// TOC toggle
+(function() {
+  const toc = document.getElementById('tocNav');
+  const btn = document.getElementById('tocToggle');
+  const content = document.querySelector('.content');
+  if (!toc || !btn) return;
+  let collapsed = false;
+  btn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    toc.classList.toggle('collapsed', collapsed);
+    content.classList.toggle('toc-collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.title = collapsed ? '展开目录' : '收起目录';
+  });
+})();
+
+// Diagram zoom
+(function() {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className = 'diagram-zoom-btn';
+    zoomBtn.title = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+    function openLightbox() {
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+      const lb = document.createElement('div');
+      lb.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className = 'diagram-lightbox-inner';
+      const clone = svg.cloneNode(true);
+      const w = parseFloat(svg.getAttribute('width') || svg.viewBox.baseVal.width || 600);
+      const h = parseFloat(svg.getAttribute('height') || svg.viewBox.baseVal.height || 400);
+      clone.setAttribute('width', w * 1.5);
+      clone.setAttribute('height', h * 1.5);
+      inner.appendChild(clone);
+      lb.appendChild(inner);
+      document.body.appendChild(lb);
+      lb.addEventListener('click', e => { if (e.target === lb) lb.remove(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', esc); }
+      });
+    }
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+})();
+
+// Panel resize
+(function() {
+  const handle = document.getElementById('resizeHandle');
+  if (!handle) return;
+  let dragging = false, startX, startWidth;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX;
+    startWidth = panel.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startX - e.clientX;
+    const newW = Math.min(Math.max(startWidth + delta, 280), window.innerWidth * 0.7);
+    panel.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; handle.classList.remove('dragging'); document.body.style.userSelect = ''; }
+  });
+})();
+
+hljs.highlightAll();
+</script>
+</body>
+</html>

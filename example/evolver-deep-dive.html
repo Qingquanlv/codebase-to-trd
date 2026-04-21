@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evolver 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --bg-alt: #f8f9fa; --text: #1a1a2e; --text-secondary: #555;
+    --accent: #2563eb; --accent-light: #dbeafe; --border: #e5e7eb;
+    --success: #059669; --warning: #d97706; --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; color: var(--text); background: var(--bg); line-height: 1.8; display: flex; }
+  .toc { position: fixed; top: 0; left: 0; width: 260px; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 24px 16px; background: var(--bg-alt); border-right: 1px solid var(--border); font-size: 13px; z-index: 100; transition: width 0.25s ease, padding 0.25s ease; }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+  td { padding: 9px 14px; border: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+  tr:nth-child(even) td { background: var(--bg-alt); }
+  code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; background: #f0f4ff; color: #c7254e; padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+  pre code { background: transparent; color: #cdd6f4; font-size: 13px; padding: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .diagram-container { margin: 20px 0; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; position: relative; cursor: zoom-in; }
+  .diagram-container .mermaid { min-width: 400px; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); border: 1px solid var(--border); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; z-index: 10; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: #fff; border-radius: 12px; padding: 32px; max-width: 95vw; max-height: 90vh; overflow: auto; position: relative; }
+  .caption { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px; }
+  .module-meta { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; padding: 10px 14px; background: #f0f4ff; border-radius: 6px; font-size: 13px; }
+  .module-meta span { color: var(--text-secondary); }
+  .module-meta code { font-size: 11px; }
+  .schema-obj-title { font-size: 14px; font-weight: 600; color: var(--accent); margin: 24px 0 8px; }
+  .schema-table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 13px; }
+  .schema-table th { background: #eff6ff; font-weight: 700; padding: 7px 10px; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+  .schema-table td { padding: 6px 10px; border: 1px solid var(--border); }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: #c7254e; white-space: nowrap; }
+  .arch-read-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .arch-read-table th { background: var(--bg-alt); font-weight: 700; padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  .arch-read-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .arch-read-table td:first-child { font-weight: 700; color: var(--accent); white-space: nowrap; width: 100px; }
+  .arch-read-table td:last-child { font-size: 12px; white-space: nowrap; width: 180px; }
+  .chain-table, .seq-table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 12.5px; }
+  .chain-table th, .seq-table th { background: var(--bg-alt); font-weight: 700; padding: 6px 8px; border: 1px solid var(--border); text-align: left; font-size: 11px; }
+  .chain-table td, .seq-table td { padding: 6px 8px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .chain-table tr:nth-child(even) td, .seq-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .seq-table-caption { font-size: 13px; color: var(--text-secondary); margin: 12px 0 6px; }
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+  .timeline { border-left: 3px solid var(--accent); padding-left: 20px; margin: 16px 0; }
+  .timeline-step { margin-bottom: 24px; position: relative; }
+  .timeline-step::before { content: ''; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+  .step-title { font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+  .step-desc { font-size: 14px; color: var(--text-secondary); }
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .fit-card { padding: 16px; border-radius: 8px; font-size: 14px; }
+  .fit-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .fit-card ul { margin: 0 0 0 16px; }
+  .fit-card li { margin-bottom: 4px; }
+  .fit { background: #f0fdf4; border: 1px solid #86efac; }
+  .fit h4 { color: #166534; }
+  .nofit { background: #fef2f2; border: 1px solid #fca5a5; }
+  .nofit h4 { color: #991b1b; }
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0; }
+  .usage-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--bg-alt); }
+  .usage-card h4 { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .usage-card p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .eval-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 16px 0; }
+  .eval-card { padding: 18px; border-radius: 10px; }
+  .eval-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .eval-card p { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .strength { background: #f0fdf4; border: 1px solid #86efac; }
+  .strength h4 { color: #166534; }
+  .weakness { background: #fef2f2; border: 1px solid #fca5a5; }
+  .weakness h4 { color: #991b1b; }
+  .section-lead { font-size: 15px; color: var(--text-secondary); font-style: italic; border-left: 3px solid var(--accent-light); padding-left: 12px; margin-bottom: 20px; }
+  .term-link { color: var(--accent); cursor: pointer; border-bottom: 1px dashed var(--accent); }
+  .file-link { color: #7c3aed; cursor: pointer; border-bottom: 1px dashed #7c3aed; }
+  .code-panel { position: fixed; top: 0; right: -45%; width: 45%; height: 100vh; background: var(--code-bg); border-left: 1px solid #374151; z-index: 200; transition: right 0.3s ease; display: flex; flex-direction: column; }
+  .code-panel.open { right: 0; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #374151; background: #1a1a2e; }
+  .panel-title { color: #cdd6f4; font-size: 13px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel-nav { display: flex; gap: 8px; align-items: center; }
+  .panel-nav-btn { background: #374151; border: none; color: #9ca3af; cursor: pointer; width: 26px; height: 26px; border-radius: 4px; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .panel-nav-btn:hover:not(:disabled) { background: #4b5563; color: #f9fafb; }
+  .panel-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .panel-close { background: transparent; border: none; color: #9ca3af; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
+  .panel-close:hover { color: #f87171; }
+  .panel-gh-link { color: #60a5fa; font-size: 11px; text-decoration: none; white-space: nowrap; }
+  .panel-gh-link:hover { text-decoration: underline; }
+  .panel-body-iframe { flex: 1; display: none; flex-direction: column; }
+  .panel-iframe { flex: 1; border: none; background: #1e1e2e; }
+  .panel-body-term { flex: 1; display: none; flex-direction: column; overflow-y: auto; padding: 20px; color: #cdd6f4; font-size: 14px; }
+  .term-panel-title { font-size: 18px; font-weight: 700; color: #89b4fa; margin-bottom: 8px; }
+  .term-panel-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .term-tag { background: #313244; color: #cba6f7; font-size: 11px; padding: 2px 8px; border-radius: 12px; }
+  .term-panel-section { margin-bottom: 16px; }
+  .term-panel-section h4 { font-size: 13px; color: #6c7086; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .term-panel-def { font-size: 14px; line-height: 1.7; color: #cdd6f4; }
+  .term-mechanics { list-style: none; padding: 0; }
+  .term-mechanics li { padding: 4px 0 4px 16px; position: relative; font-size: 13px; color: #a6adc8; }
+  .term-mechanics li::before { content: '→'; position: absolute; left: 0; color: #89dceb; }
+  .term-rel-btn, .term-file-btn { background: #313244; border: 1px solid #45475a; color: #89b4fa; cursor: pointer; padding: 4px 10px; border-radius: 4px; font-size: 12px; transition: background 0.15s; }
+  .term-rel-btn:hover, .term-file-btn:hover { background: #45475a; }
+  .term-file-btn { color: #cba6f7; }
+  .resize-handle { width: 4px; background: transparent; cursor: ew-resize; position: absolute; left: 0; top: 0; height: 100%; transition: background 0.15s; }
+  .resize-handle:hover, .resize-handle.dragging { background: var(--accent); }
+</style>
+</head>
+<body>
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起目录">◀</button>
+  </div>
+  <div class="toc-links">
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 核心理念</a>
+  <a href="#section-2-2" class="toc-h3">2.2 与同类方案横向对比</a>
+  <a href="#section-2-3" class="toc-h3">2.3 定位一句话</a>
+  <a href="#section-2-4" class="toc-h3">2.4 当前适合解决什么问题</a>
+  <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+  <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+  <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+  <a href="#section-3-3" class="toc-h3">3.3 状态存储载体</a>
+  <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+  <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+  <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的一次完整过程</a>
+  <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+  <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+  <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+  <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+  <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+  <a href="#section-5-2" class="toc-h3">5.2 关键执行链路</a>
+  <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+  <a href="#section-5-3-1" class="toc-h4">5.3.1 Daemon 主循环</a>
+  <a href="#section-5-3-2" class="toc-h4">5.3.2 GEP Selector 信号选基因</a>
+  <a href="#section-5-3-3" class="toc-h4">5.3.3 Solidify 固化机制</a>
+  <a href="#section-5-3-4" class="toc-h4">5.3.4 Proxy Mailbox 代理网关</a>
+  <a href="#section-6" class="toc-h2">6 方案评价</a>
+  <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+  <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+  <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+  <a href="#section-7-1" class="toc-h3">7.1 本文观察基线</a>
+  </div>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>🧬 Evolver 深度解读</h1>
+    <div class="subtitle">EvoMap 出品 · GEP 协议驱动的 AI Agent 自进化引擎 · Node.js + Git + 可审计资产</div>
+    <div class="lead"><strong>Evolver</strong> 是一个基于 <strong>GEP（Genome Evolution Protocol）</strong> 的 AI Agent 自进化引擎，把每次 prompt 调整变成带信号匹配、变更估算、回滚兜底的可审计进化操作。它扫描运行日志提取信号，按信号匹配选择 Gene（进化规则），生成受协议约束的 GEP 提示词，通过 CLI（单次或 Daemon 循环）驱动 Agent 完成下一步进化。</div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li><strong>「进化」是有结构的，不是自由发挥</strong> — 每次改动由 Gene 定义约束（max_files / forbidden_paths / validation 命令），Selector 基于信号匹配选 Gene，Solidify 负责验证 + git commit + 记录 EvolutionEvent，整个过程可审计可回滚</li>
+      <li><strong>核心模块是混淆的黑盒</strong> — <code>src/evolve.js</code>（711KB 单行混淆）是整个引擎的大脑，源码不可读；这是 EvoMap 保护知识产权的主动决策，也是理解这个项目的最大障碍</li>
+      <li><strong>Proxy Mailbox 是网络隔离的关键设计</strong> — Agent 不直接调用 EvoMap Hub API，而是通过本地 localhost HTTP Proxy 读写 JSONL 邮箱；Proxy 负责认证、重试、同步，Agent 只做本地 IPC</li>
+      <li><strong>自适应调度是 Daemon 模式的核心价值</strong> — 指数退避 + OMLS 空闲窗口调度 + 饱和检测（evolution_saturation 信号），让 Daemon 在系统空闲时做蒸馏/探索，在饱和时降频，避免无意义循环</li>
+      <li><strong>Distillation 是知识沉淀的机制</strong> — 每 5 次 solidify 或失败模式积累后，触发 skillDistiller 将重复成功/失败模式蒸馏成新的 Gene，形成知识复利</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>AI Agent 的 prompt 工程通常以「改一改、试一试」的方式进行，没有标准化的变更格式、没有回滚机制、没有可复用的模式库。同一类错误被反复手动修复，成功的修复经验无法沉淀传播。EvoMap 团队在 2026 年初发布 Evolver，将<strong>生物进化的隐喻</strong>引入 AI Agent 的持续改进流程中：用 Gene（基因）封装进化规则，用 Capsule（胶囊）记录成功案例，用 EvolutionEvent（进化事件）建立审计日志，形成「信号驱动 → 协议约束 → 可审计落地」的完整闭环。</p>
+  <p>技术栈：<strong>Node.js 18+</strong>，100% JavaScript，仅依赖 <code>dotenv</code>（生产依赖只有这一个），开发依赖 <code>javascript-obfuscator</code>（用于混淆核心模块）。强依赖 <strong>Git</strong>（用于回滚、变更范围计算和 solidify）。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+  <h4>1.2.1 「prompt 调整是黑盒操作，无迹可查」——GEP 协议强制可审计进化</h4>
+  <p>每次修改 prompt 都是一次随机尝试，没有记录"为什么改"、"改了什么"、"结果怎样"。Evolver 的 <span class="term-link" data-term="GEP">GEP 协议</span>强制每次进化必须绑定一个 <span class="term-link" data-term="Gene">Gene</span>（定义改动意图和约束），记录 <span class="term-link" data-term="EvolutionEvent">EvolutionEvent</span>（追踪信号、意图、结果、blast radius），形成 append-only 的 <code>events.jsonl</code> 审计日志。</p>
+  <h4>1.2.2 「同一类错误反复手动修复，没有知识沉淀」——Gene 库 + Distillation 蒸馏</h4>
+  <p>Agent 在相似错误上重复失败，每次都从零处理。Evolver 的 <span class="term-link" data-term="Selector">Selector</span> 基于日志信号（error / exception / failed 等）匹配现有 Gene，优先复用成功模式；每 5 次 solidify 后，<span class="term-link" data-term="Distillation">Distillation</span> 机制自动分析历史事件，将成功/失败模式蒸馏成新的 Gene，形成可复用的知识资产。</p>
+  <h4>1.2.3 「Agent 进化失控，改坏了难以回滚」——Blast Radius 估算 + Git 回滚</h4>
+  <p>Agent 有时改动范围过大，触碰到不该动的文件，结果难以恢复。Evolver 的每次进化前计算 <span class="term-link" data-term="BlastRadius">Blast Radius</span>（预计影响文件数和行数），Gene 约束中有 <code>max_files</code> 和 <code>forbidden_paths</code> 字段；验证失败时通过 <code>EVOLVER_ROLLBACK_MODE=hard/stash/none</code> 控制 git 回滚策略，失败不留痕迹。</p>
+  <h4>1.2.4 「Agent 节点孤立，进化经验无法共享」——EvoMap Hub + Proxy Mailbox 网络</h4>
+  <p>每个 Agent 各自积累经验，团队或社区之间的成功 Gene 无法流通。Evolver 通过 <span class="term-link" data-term="ProxyMailbox">Proxy Mailbox</span> 架构与 EvoMap Hub 通信，支持资产发布（<code>asset/submit</code>）、技能下载（<code>node index.js fetch --skill</code>）、任务领取（Worker Pool），让进化资产在网络中流通复用。</p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+  <h3 id="section-2-1">2.1 核心理念</h3>
+  <ol>
+    <li><strong>协议约束 > 自由发挥</strong>：进化不是「让 LLM 随便改」，而是严格按照 Gene 定义的策略、约束和验证步骤执行。Gene 是进化行为的合同，Selector 是合同匹配器，不允许在没有 Gene 的情况下自由编辑。</li>
+    <li><strong>信号驱动选择</strong>：每次进化的起点是从 <code>memory/</code> 日志中提取的信号（error / perf_bottleneck / user_feature_request 等），信号决定选择哪个 Gene，Gene 决定采用哪种策略。主观直觉被替换为客观信号。</li>
+    <li><strong>最小可逆变更</strong>：Gene 策略中反复强调「smallest reversible patch」和 blast radius 估算；solidify 在验证失败时自动回滚；这与「先行完成、后行验证」的 AI 常见模式形成对比。</li>
+    <li><strong>隔离网络通信</strong>：Agent 通过 localhost Proxy 读写邮箱，绝不直接接触 Hub API 或外部认证；Proxy 处理重试、认证、序列化。这在安全性和可测试性上都有明显优势。</li>
+  </ol>
+
+  <h3 id="section-2-2">2.2 与同类方案横向对比</h3>
+  <table>
+    <thead><tr><th>工具</th><th>核心定位</th><th>落地成本</th><th>落地效果</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Evolver</strong></td>
+        <td>GEP 协议驱动的可审计进化引擎</td>
+        <td>低：<code>npm install</code> + <code>node index.js</code>，但需要已有 memory/ 日志才能体现价值</td>
+        <td>严格可审计 + git 回滚 + 知识蒸馏沉淀；但核心模块黑盒，调试困难</td>
+      </tr>
+      <tr>
+        <td><strong>Hermes Agent Skills</strong></td>
+        <td>AI Agent 技能自创建学习循环</td>
+        <td>低：安装后自动触发技能创建 nudge</td>
+        <td>会话级记忆 + 技能积累；偏重个人使用，无结构化进化协议和 git 回滚</td>
+      </tr>
+      <tr>
+        <td><strong>PromptFlow (Azure)</strong></td>
+        <td>企业级 LLM 流水线编排与测试</td>
+        <td>高：需要 Azure 环境 + 学习 PromptFlow DSL</td>
+        <td>成熟的 CI/CD 集成、评估框架；没有自动信号提取和 Gene 知识库概念</td>
+      </tr>
+      <tr>
+        <td><strong>DSPy</strong></td>
+        <td>自动 prompt 优化（程序化 LLM）</td>
+        <td>中：需要 Python + 写 DSPy 模块和评估指标</td>
+        <td>数据驱动的自动 prompt 优化，效果稳定；需要标注数据集，不适合无监督在线场景</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>Evolver 的核心赢面</strong>：在需要可审计进化轨迹和知识资产积累的场景中无可替代；Git 原生回滚是其他工具不具备的安全网。<strong>输面</strong>：核心模块混淆是根本性的透明度障碍；离开 memory/ 日志数据没有办法体现价值。</p>
+
+  <h3 id="section-2-3">2.3 定位一句话</h3>
+  <p>一个用 Gene 库 + 信号匹配把随机 prompt 调整变成<strong>可审计、可回滚、可蒸馏</strong>的结构化进化操作的 Node.js 引擎，由 EvoMap 网络提供跨节点知识共享能力。</p>
+
+  <h3 id="section-2-4">2.4 当前适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✓ 适合</h4>
+      <ul>
+        <li>团队维护 Agent prompt 和运行日志、需要变更可追溯</li>
+        <li>有重复出现的错误模式，需要沉淀为可复用 Gene</li>
+        <li>需要 git 回滚兜底的生产级 Agent 改进流程</li>
+        <li>集成 OpenClaw 等支持 stdout 指令的宿主运行时</li>
+        <li>希望参与 EvoMap 网络共享 Gene/Capsule 资产</li>
+      </ul>
+    </div>
+    <div class="fit-card nofit">
+      <h4>✗ 不适合</h4>
+      <ul>
+        <li>没有 memory/ 日志数据的一次性脚本</li>
+        <li>需要完全透明源码的场景（核心模块混淆）</li>
+        <li>需要 LLM 自由创意修改，不接受协议约束</li>
+        <li>非 git 目录（会直接报错退出）</li>
+        <li>需要高度定制化进化逻辑（黑盒无法修改）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="section-3">3 核心对象与术语</h2>
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="arch-read-table">
+    <thead><tr><th>术语</th><th>定义</th><th>所在文件</th></tr></thead>
+    <tbody>
+      <tr><td><span class="term-link" data-term="Gene">Gene</span></td><td>进化规则单元，定义 signals_match（触发条件）、strategy（执行策略）、constraints（约束：max_files / forbidden_paths）和 validation（验证命令）</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/genes.json" data-label="genes.json">assets/gep/genes.json</span></td></tr>
+      <tr><td><span class="term-link" data-term="Capsule">Capsule</span></td><td>成功进化记录，将一次成功的进化（Gene + 触发信号 + 结果 + 环境指纹）封装为可重用参考案例，按 SHA-256 内容哈希寻址</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/capsules.json" data-label="capsules.json">assets/gep/capsules.json</span></td></tr>
+      <tr><td><span class="term-link" data-term="EvolutionEvent">EvolutionEvent</span></td><td>进化事件审计记录，append-only 追加到 events.jsonl，包含信号、意图、blast_radius、结果和 Gene ID</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/events.jsonl" data-label="events.jsonl">assets/gep/events.jsonl</span></td></tr>
+      <tr><td><span class="term-link" data-term="GEP">GEP</span></td><td>Genome Evolution Protocol：协议约束的进化框架，规定进化必须绑定 Gene、记录 Event、遵循 Selector 决策，不允许自由发挥</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/SKILL.md" data-label="SKILL.md">SKILL.md</span></td></tr>
+      <tr><td><span class="term-link" data-term="Signal">Signal</span></td><td>从 memory/ 日志中提取的指示器（如 error / perf_bottleneck / user_feature_request），是 Selector 匹配 Gene 的驱动输入</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td></tr>
+      <tr><td><span class="term-link" data-term="Selector">Selector</span></td><td>根据提取的信号对所有 Gene 打分，输出 JSON 选择决策（选中 Gene ID + 理由），是 GEP 提示词的核心组件</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></td></tr>
+      <tr><td><span class="term-link" data-term="Solidify">Solidify</span></td><td>固化操作：执行 Gene 的 validation 命令 → 通过则 git commit → 记录 EvolutionEvent + 更新 Capsule 库；失败则 git rollback</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td></tr>
+      <tr><td><span class="term-link" data-term="BlastRadius">BlastRadius</span></td><td>预变更影响评估：预计改动的文件数和行数，用于防止意外改动扩散；Gene 的 constraints.max_files 是上限</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td></tr>
+      <tr><td><span class="term-link" data-term="Distillation">Distillation</span></td><td>知识蒸馏：分析历史 EvolutionEvent，将重复成功/失败模式提炼为新 Gene；每 5 次 solidify 自动触发，也可手动执行</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/skillDistiller.js" data-label="skillDistiller.js">src/gep/skillDistiller.js</span></td></tr>
+      <tr><td><span class="term-link" data-term="ProxyMailbox">Proxy Mailbox</span></td><td>本地 HTTP 代理（默认 127.0.0.1:19820），Agent 通过邮箱 API（send/poll/ack）与 Hub 异步通信，Proxy 处理认证和重试</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/mailboxTransport.js" data-label="mailboxTransport.js">src/gep/mailboxTransport.js</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <table>
+    <thead><tr><th>对象</th><th>定义</th><th>分属模块</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Gene</strong></td><td>进化规则定义，含触发条件、策略、约束、验证命令</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/genes.json" data-label="genes.json">assets/gep/genes.json</span></td></tr>
+      <tr><td><strong>Capsule</strong></td><td>成功进化记录，绑定 Gene + 触发信号 + 结果</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/capsules.json" data-label="capsules.json">assets/gep/capsules.json</span></td></tr>
+      <tr><td><strong>EvolutionEvent</strong></td><td>进化事件审计记录，append-only</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/assets/gep/events.jsonl" data-label="events.jsonl">assets/gep/events.jsonl</span></td></tr>
+      <tr><td><strong>Mutation</strong></td><td>单次进化的意图约束对象，控制这次 run 的 intent（repair/optimize/innovate）</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title">Gene 字段结构（来自 assets/gep/genes.json）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>string</td><td>Gene 唯一标识（如 gene_gep_repair_from_errors）</td></tr>
+      <tr><td>category</td><td>string</td><td>分类：repair / optimize / innovate</td></tr>
+      <tr><td>signals_match</td><td>string[]</td><td>触发信号列表，Selector 用于匹配</td></tr>
+      <tr><td>preconditions</td><td>string[]</td><td>执行前提条件描述</td></tr>
+      <tr><td>strategy</td><td>string[]</td><td>执行策略步骤（语义约束，非可执行代码）</td></tr>
+      <tr><td>constraints.max_files</td><td>number</td><td>最大允许改动文件数</td></tr>
+      <tr><td>constraints.forbidden_paths</td><td>string[]</td><td>禁止修改的路径列表</td></tr>
+      <tr><td>validation</td><td>string[]</td><td>验证命令（仅 node/npm/npx，无 shell 注入）</td></tr>
+    </tbody>
+  </table>
+
+  <p class="schema-obj-title">Capsule 字段结构（来自 assets/gep/capsules.json）</p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>string</td><td>Capsule 唯一 ID（时间戳格式）</td></tr>
+      <tr><td>trigger</td><td>string[]</td><td>触发此次进化的信号组合</td></tr>
+      <tr><td>gene</td><td>string</td><td>使用的 Gene ID</td></tr>
+      <tr><td>summary</td><td>string</td><td>本次进化的摘要描述</td></tr>
+      <tr><td>confidence</td><td>number</td><td>进化置信度 (0-1)</td></tr>
+      <tr><td>blast_radius</td><td>{files, lines}</td><td>实际影响的文件数和行数</td></tr>
+      <tr><td>outcome.status</td><td>string</td><td>success / failed</td></tr>
+      <tr><td>env_fingerprint</td><td>object</td><td>运行环境指纹（node 版本、平台、arch）</td></tr>
+      <tr><td>asset_id</td><td>string</td><td>SHA-256 内容哈希（用于 Hub 去重）</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 状态存储载体</h3>
+  <table>
+    <thead><tr><th>存储层</th><th>持久性</th><th>职责</th><th>写入者</th></tr></thead>
+    <tbody>
+      <tr><td><strong>assets/gep/genes.json</strong></td><td>持久 ★ Gene 真相来源</td><td>所有可用进化规则的定义库；促进后只能追加，不覆盖同 ID</td><td>Distillation / a2a_promote</td></tr>
+      <tr><td><strong>assets/gep/capsules.json</strong></td><td>持久</td><td>成功进化记录库；Selector 用于信号二次匹配</td><td>solidify.js</td></tr>
+      <tr><td><strong>assets/gep/events.jsonl</strong></td><td>持久 append-only</td><td>进化事件审计日志，不可修改，只可追加</td><td>solidify.js</td></tr>
+      <tr><td><strong>evolution_solidify_state.json</strong></td><td>持久</td><td>最近一次 run 和 solidify 的状态，Daemon 用于判断是否有 pending solidify</td><td>solidify.js / evolve.js</td></tr>
+      <tr><td><strong>memory/</strong></td><td>持久</td><td>运行日志和信号文件；evolve.run() 扫描此目录提取信号</td><td>宿主运行时 / Agent</td></tr>
+      <tr><td><strong>~/.evolver/settings.json</strong></td><td>持久</td><td>Proxy 地址发现文件（url / pid / started_at）</td><td>src/proxy/index.js</td></tr>
+      <tr><td><strong>~/.evomap/node_id</strong></td><td>持久</td><td>节点身份文件（A2A_NODE_ID 备用来源）</td><td>首次注册时写入</td></tr>
+      <tr><td><strong>evolver.pid</strong></td><td>进程级</td><td>Singleton Guard 锁文件，防止多个 Daemon 实例</td><td>index.js acquireLock()</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <ol>
+    <li><strong>误解：Evolver 会自动修改你的代码</strong> — 实际上 Evolver 是一个「提示词生成器」，它输出一份 GEP 协议约束的提示词到 stdout，不会直接编辑任何源文件。只有在宿主运行时（如 OpenClaw）解释 stdout 的 <code>sessions_spawn(...)</code> 指令，或者人工使用 <code>node index.js solidify</code> 命令时，才会真正发生代码变更。</li>
+    <li><strong>误解：MIT 许可证意味着所有代码可读</strong> — README 声明 MIT，但 package.json 显示 GPL-3.0-or-later，同时 <code>src/evolve.js</code>（711KB 单行混淆）是不可读的黑盒。README 底部小字说明「Core evolution engine modules are distributed in obfuscated form to protect intellectual property」。这是一个商业利益与开源精神之间明显的张力点。</li>
+    <li><strong>误解：--loop 模式会让 Agent 不停地改代码</strong> — Daemon 循环有多重节流机制：pending solidify 时挂起等待、adaptive sleep 指数退避、OMLS 空闲调度降频、evolution_saturation 信号触发 4x sleep。在没有新信号或处于饱和状态时，Daemon 基本处于休眠状态。</li>
+    <li><strong>误解：Proxy 是网络代理服务器</strong> — Proxy 是 <strong>本地 localhost HTTP 服务</strong>，是 Agent 与 EvoMap Hub 之间的本地 IPC 层，不是透明的网络代理。它负责将 Agent 的邮箱操作（send/poll/ack）异步同步到 Hub，Agent 绝不直接访问 Hub API。</li>
+    <li><strong>误解：Gene 的 validation 命令可以执行任意 Shell 命令</strong> — Solidify 有严格的命令白名单（仅 node/npm/npx 前缀），禁止命令替换（`` ` `` 和 `$(…)`）、shell 操作符（;/&/|/>/<），且有 180 秒超时。外部 Gene 在 promote 之前还要过一遍同样的安全检查。</li>
+  </ol>
+
+  <h2 id="section-4">4 项目使用方式</h2>
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p class="section-lead">以「Agent 持续触发 exec 工具错误，需要修复并沉淀为可复用 Gene」为例，走一遍完整的 Evolver 进化链路。</p>
+  <div class="timeline">
+    <div class="timeline-step"><div class="step-title">① 错误日志写入 memory/</div><div class="step-desc">宿主运行时（如 OpenClaw）将 Agent 运行日志写入 <code>memory/</code> 目录。日志包含错误片段如 <code>error: unknown command 'process'</code> 和工具结果 <code>{"status":"error"}</code>，这些将成为后续信号提取的输入。</div></div>
+    <div class="timeline-step"><div class="step-title">② evolve.run() 提取信号</div><div class="step-desc">执行 <code>node index.js</code>，<code>src/evolve.js</code> 扫描 <code>memory/</code> 提取信号：<code>log_error</code>、<code>errsig:TOOLRESULT error</code>、<code>windows_shell_incompatible</code> 等。这些信号被传入 <span class="term-link" data-term="Selector">Selector</span>。</div></div>
+    <div class="timeline-step"><div class="step-title">③ Selector 匹配 Gene</div><div class="step-desc">Selector 将信号与 <code>assets/gep/genes.json</code> 中所有 Gene 的 <code>signals_match</code> 对比打分，选出最匹配的 <strong>gene_gep_repair_from_errors</strong>（error / exception / failed / unstable 信号），输出 JSON 选择决策。</div></div>
+    <div class="timeline-step"><div class="step-title">④ 生成 GEP 提示词并输出到 stdout</div><div class="step-desc">将 Gene 定义、信号、选择决策、历史 Capsule 组装成 GEP 协议提示词，打印到 stdout。使用 <code>--review</code> 时暂停等待人工确认；宿主运行时解释 <code>sessions_spawn(...)</code> 触发 Agent 执行该提示词。</div></div>
+    <div class="timeline-step"><div class="step-title">⑤ Agent 执行修复，执行 solidify 验证</div><div class="step-desc">Agent 按 Gene 的 strategy 完成修复后，执行 <code>node index.js solidify</code>：先运行 Gene 的 validation 命令（<code>node scripts/validate-modules.js</code> + <code>node scripts/validate-suite.js</code>），通过则 git commit，失败则 git rollback（hard 模式）。</div></div>
+    <div class="timeline-step"><div class="step-title">⑥ 记录 EvolutionEvent + 生成 Capsule</div><div class="step-desc">Solidify 成功后，将本次进化结果追加到 <code>events.jsonl</code>，并写入新 Capsule 到 <code>capsules.json</code>（含环境指纹、blast_radius、confidence）。每 5 次 solidify 触发 <span class="term-link" data-term="Distillation">Distillation</span>，自动蒸馏新 Gene。</div></div>
+  </div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>最短路径：clone → install → 准备 memory 日志 → 运行 → 查看 GEP 提示词。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A(["git clone + npm install"]) --> B["准备 memory/ 日志\n（运行日志 / 错误信号）"]
+    B --> C["node index.js\n提取信号 + 生成 GEP 提示词"]
+    C --> D["--review 审查\n或宿主执行"]
+    D --> E["node index.js solidify\n验证 + git commit + 记录 Event"]
+    E --> F["Distillation 蒸馏\n新 Gene 沉淀"]
+    </div>
+    <div class="caption">最小路径：安装 → 准备信号 → 进化 → 固化 → 蒸馏</div>
+  </div>
+  <pre><code class="language-bash"># 1. 安装
+git clone https://github.com/EvoMap/evolver.git && cd evolver && npm install
+
+# 2. 可选：配置 EvoMap Hub（离线模式下不需要）
+echo "A2A_HUB_URL=https://evomap.ai\nA2A_NODE_ID=your_node_id" > .env
+
+# 3. 单次进化（需要 memory/ 目录有日志文件）
+node index.js
+
+# 4. 审查模式（人工确认后再执行）
+node index.js --review
+
+# 5. 固化（验证 + git commit + 记录事件）
+node index.js solidify --intent=repair --summary="Fix exec command error"
+
+# 6. Daemon 模式（持续循环）
+EVOLVE_STRATEGY=repair-only node index.js --loop
+
+# 7. 生命周期管理
+node src/ops/lifecycle.js start    # 后台启动
+node src/ops/lifecycle.js status   # 查看状态</code></pre>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <h4>🔍 单次进化模式</h4>
+      <p><code>node index.js</code> 单次扫描 memory → 选 Gene → 输出 GEP 提示词。适合手动触发、审查后再执行的工作流。</p>
+    </div>
+    <div class="usage-card">
+      <h4>👁 审查模式</h4>
+      <p><code>node index.js --review</code> 生成 GEP 提示词后暂停，展示 git diff 等待人工确认，再决定是否 solidify。适合生产环境谨慎操作。</p>
+    </div>
+    <div class="usage-card">
+      <h4>⚙️ Daemon 循环模式</h4>
+      <p><code>node index.js --loop</code> 持续运行，自适应调度：空闲时做蒸馏/探索，有信号时进化，饱和时降频。配合 pm2 或 systemd 保活。</p>
+    </div>
+    <div class="usage-card">
+      <h4>🌐 Worker Pool 模式</h4>
+      <p><code>WORKER_ENABLED=1</code> 参与 EvoMap 网络领取进化任务，需同时在 evomap.ai Dashboard 开启 Worker 开关，本地 + Hub 双端均打开才能收到任务。</p>
+    </div>
+  </div>
+
+  <h2 id="section-5">5 系统详细设计</h2>
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>先从<a href="#" onclick="openRepoBrowser();return false;" style="color:#2563eb;font-weight:700;text-decoration:underline dotted;cursor:pointer">目录结构</a>了解项目整体轮廓。</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">evolver/</span>
+<span class="tree-branch">├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js ★</span>                <span class="tree-comment">← 入口：命令分发、Daemon 主循环、PID Singleton Guard</span>
+<span class="tree-branch">├── </span><span class="tree-dir">src/</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">evolve.js ★</span>              <span class="tree-comment">← ⚠️ 混淆黑盒（711KB）：信号提取 + GEP 提示词生成</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">gep/</span>                   <span class="tree-comment">← GEP 协议子模块</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">selector.js ★</span>        <span class="tree-comment">← 信号 → Gene 匹配打分选择</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">solidify.js ★</span>        <span class="tree-comment">← 验证 + git commit + Event 记录</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/skillDistiller.js" data-label="skillDistiller.js">skillDistiller.js ★</span>  <span class="tree-comment">← Distillation：事件 → 新 Gene 蒸馏</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/a2aProtocol.js" data-label="a2aProtocol.js">a2aProtocol.js</span>       <span class="tree-comment">← A2A 协议：Hub 心跳 + 事件流</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/mailboxTransport.js" data-label="mailboxTransport.js">mailboxTransport.js</span>  <span class="tree-comment">← Proxy 邮箱传输层注册</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/assetStore.js" data-label="assetStore.js">assetStore.js</span>        <span class="tree-comment">← Gene/Capsule 本地存储 CRUD</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/memoryGraph.js" data-label="memoryGraph.js">memoryGraph.js</span>       <span class="tree-comment">← 记忆图谱（memory_graph.jsonl）</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/gep/idleScheduler.js" data-label="idleScheduler.js">idleScheduler.js</span>     <span class="tree-comment">← OMLS 空闲调度：蒸馏/探索窗口</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-file">mutation.js</span>          <span class="tree-comment">← Mutation 意图约束对象</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-file">personality.js</span>       <span class="tree-comment">← PersonalityState 进化</span>
+<span class="tree-branch">│   │   ├── </span><span class="tree-file">policyCheck.js</span>       <span class="tree-comment">← 策略/约束校验</span>
+<span class="tree-branch">│   │   └── </span><span class="tree-file">paths.js</span>             <span class="tree-comment">← 路径工具（repo root / evolution dir）</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">ops/</span>                   <span class="tree-comment">← 运维模块（零平台依赖）</span>
+<span class="tree-branch">│   │   └── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/src/ops/lifecycle.js" data-label="lifecycle.js">lifecycle.js ★</span>        <span class="tree-comment">← start / stop / status / check</span>
+<span class="tree-branch">│   ├── </span><span class="tree-dir">proxy/</span>                 <span class="tree-comment">← 本地 Proxy 服务器（mailbox → Hub 异步同步）</span>
+<span class="tree-branch">│   └── </span><span class="tree-file">atp/</span>                   <span class="tree-comment">← ATP 商户代理（可选）</span>
+<span class="tree-branch">├── </span><span class="tree-dir">assets/gep/</span>             <span class="tree-comment">← GEP 资产：Gene 库 + Capsule 库 + 事件日志</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/assets/gep/genes.json" data-label="genes.json">genes.json ★</span>           <span class="tree-comment">← Gene 定义库（repair / optimize / innovate）</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/assets/gep/capsules.json" data-label="capsules.json">capsules.json ★</span>        <span class="tree-comment">← Capsule 成功案例库</span>
+<span class="tree-branch">│   └── </span><span class="tree-entry file-link" data-file="EvoMap/evolver/blob/main/assets/gep/events.jsonl" data-label="events.jsonl">events.jsonl ★</span>         <span class="tree-comment">← append-only 进化事件审计日志</span>
+<span class="tree-branch">├── </span><span class="tree-dir">scripts/</span>               <span class="tree-comment">← A2A 资产导入导出、验证工具</span>
+<span class="tree-branch">└── </span><span class="tree-dir">memory/</span>                <span class="tree-comment">← 运行时日志输入目录（信号提取来源）</span></pre>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    %% 主链路: index.js → evolve.run() → Selector → GEP Prompt → solidify → EvolutionEvent
+    subgraph 入口与控制层
+      Entry["index.js ★\n命令分发 + PID Guard"]
+      Lifecycle["lifecycle.js\nstart/stop/check"]
+      Entry --> EvolveCore
+      Lifecycle --> Entry
+    end
+    subgraph 进化核心层
+      EvolveCore["src/evolve.js ⚠️\n混淆黑盒：信号提取 + GEP 提示词"]
+      Selector["gep/selector.js\n信号 → Gene 匹配打分"]
+      Prompt["gep/prompt.js\nGEP 提示词组装"]
+      EvolveCore --> Selector
+      EvolveCore --> Prompt
+    end
+    subgraph 固化与蒸馏层
+      Solidify["gep/solidify.js\n验证 + git commit + Event 记录"]
+      Distiller["gep/skillDistiller.js\n失败/成功模式 → 新 Gene"]
+      Solidify --> AssetStore
+      Solidify --> Distiller
+    end
+    subgraph 知识资产层
+      AssetStore["gep/assetStore.js\nGene / Capsule CRUD"]
+      GeneDB[("assets/gep/\ngenes.json + capsules.json\n+ events.jsonl")]
+      AssetStore --> GeneDB
+      Selector --> GeneDB
+      Distiller --> GeneDB
+    end
+    subgraph 网络通信层
+      Proxy["src/proxy/\n本地 localhost:19820"]
+      Mailbox["gep/mailboxTransport.js\nsend/poll/ack JSONL"]
+      A2A["gep/a2aProtocol.js\n心跳 + SSE 事件流"]
+      Proxy --> HubAPI[("EvoMap Hub\nhttps://evomap.ai")]
+      Mailbox --> Proxy
+      A2A --> HubAPI
+    end
+    subgraph 信号输入层
+      Memory["memory/ 目录\n运行日志 + 错误信号"]
+      EvolveCore --> Memory
+    end
+    </div>
+    <div class="caption">图 5-1：Evolver 系统架构图</div>
+  </div>
+
+  <p><strong>如何读图 5-1：</strong></p>
+  <table class="arch-read-table">
+    <thead><tr><th>层级</th><th>核心模块</th><th>核心职责</th><th>主要交互</th></tr></thead>
+    <tbody>
+      <tr><td>入口层</td><td><code>index.js</code><br><code>lifecycle.js</code></td><td>命令分发（run/solidify/review/distill）、PID Singleton Guard 防多实例、Daemon 自适应循环、Proxy 启动</td><td>→ 进化核心层</td></tr>
+      <tr><td>进化核心层</td><td><code>src/evolve.js</code>（混淆）<br><code>gep/selector.js</code><br><code>gep/prompt.js</code></td><td>扫描 memory/ 提取信号 → Selector 匹配 Gene → 组装 GEP 协议提示词输出到 stdout；这是整个引擎的大脑，但源码不可读</td><td>↔ 知识资产层，↕ 信号输入层</td></tr>
+      <tr><td>固化与蒸馏层</td><td><code>gep/solidify.js</code><br><code>gep/skillDistiller.js</code></td><td>validation 命令安全执行 → git commit/rollback → 写 EvolutionEvent；每 5 次触发 Distillation 将历史模式蒸馏成新 Gene</td><td>→ 知识资产层</td></tr>
+      <tr><td>知识资产层</td><td><code>gep/assetStore.js</code><br><code>assets/gep/*.json</code></td><td>Gene 库、Capsule 库、事件日志的本地持久化 CRUD；genes.json 是进化行为的单一真相来源</td><td>← 所有层读写</td></tr>
+      <tr><td>网络通信层</td><td><code>src/proxy/</code><br><code>gep/mailboxTransport.js</code></td><td>本地 Proxy 隔离 Hub 通信，Agent 只读写 localhost 邮箱；A2A 协议处理心跳和 SSE 事件流（直连模式）</td><td>→ EvoMap Hub</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-2">5.2 关键执行链路</h3>
+  <p>以「一次完整的 repair 进化周期：信号提取 → 选 Gene → 生成提示词 → solidify 验证 + 记录事件」为链路。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant I as index.js
+  participant E as src/evolve.js
+  participant S as gep/selector.js
+  participant P as gep/prompt.js
+  participant A as gep/assetStore.js
+  participant Sol as gep/solidify.js
+  participant G as assets/gep/
+  participant GIT as git
+
+  I->>E: evolve.run()
+  E->>E: 扫描 memory/ 提取信号
+  E->>S: selectGene(signals)
+  S->>A: loadGenes() + loadCapsules()
+  A-->>S: Gene 列表 + Capsule 列表
+  S-->>E: 选中 Gene + 选择决策 JSON
+  E->>P: buildGepPrompt(gene, signals, capsules)
+  P-->>E: GEP 协议提示词字符串
+  E-->>I: 输出到 stdout（sessions_spawn 或纯文本）
+  Note over I: --review: 等待人工确认
+  I->>Sol: solidify({intent, summary})
+  Sol->>G: 读取 evolution_solidify_state.json
+  Sol->>Sol: 运行 Gene.validation 命令
+  alt 验证通过
+    Sol->>GIT: git commit
+    Sol->>G: 追加 EvolutionEvent 到 events.jsonl
+    Sol->>G: 写入新 Capsule 到 capsules.json
+  else 验证失败
+    Sol->>GIT: git rollback（hard/stash）
+  end
+    </div>
+    <div class="caption">图 5-2：进化 + 固化主链路</div>
+  </div>
+  <table class="chain-table">
+    <thead><tr><th>#</th><th>阶段</th><th>函数/类</th><th>所在文件</th><th>作用简述</th><th>关键约束</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>信号提取</td><td>evolve.run() 内部（混淆）</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td><td>扫描 memory/ 目录，解析日志，提取结构化信号列表</td><td>memory/ 必须存在且有内容</td></tr>
+      <tr><td>2</td><td>Gene 匹配</td><td>selectGene(signals)</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></td><td>对每个 Gene 的 signals_match 与当前信号计算匹配分，加权 Capsule 历史成功率</td><td>EVOLVE_STRATEGY 影响 innovate/repair 权重</td></tr>
+      <tr><td>3</td><td>资产加载</td><td>loadGenes() / loadCapsules()</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/assetStore.js" data-label="assetStore.js">src/gep/assetStore.js</span></td><td>从 assets/gep/ 读取 Gene 和 Capsule 数据</td><td>Capsule 按 asset_id 去重，Gene 同 ID 不覆盖</td></tr>
+      <tr><td>4</td><td>GEP 提示词组装</td><td>buildGepPrompt()</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/prompt.js" data-label="prompt.js">src/gep/prompt.js</span></td><td>将 Gene 定义、信号列表、选择决策、历史 Capsule 嵌入协议格式的提示词</td><td>严格格式：只允许 🧬 emoji</td></tr>
+      <tr><td>5</td><td>Solidify 验证</td><td>solidify({intent, summary})</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td><td>执行 Gene.validation 命令（安全白名单），通过则继续，失败则 git rollback</td><td>仅 node/npm/npx，无 shell 注入，180s 超时</td></tr>
+      <tr><td>6</td><td>Event 记录</td><td>appendEvolutionEvent()</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td><td>将本次进化结果 append 到 events.jsonl（不可修改）</td><td>append-only，不可删除历史记录</td></tr>
+      <tr><td>7</td><td>Capsule 写入</td><td>addCapsule()</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/assetStore.js" data-label="assetStore.js">src/gep/assetStore.js</span></td><td>将成功进化写为 Capsule，供 Selector 后续参考</td><td>SHA-256 内容哈希去重</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
+
+  <h4 id="section-5-3-1">5.3.1 Daemon 主循环</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></span>
+    <span>🏷 控制层</span>
+    <span>⚡ node index.js --loop 触发</span>
+  </div>
+  <p><strong>要解决的问题</strong>：持续运行的进化守护进程需要防止多实例并发（两个 Daemon 同时修改同一代码库会造成 git 冲突）、防止无意义的高频空转（没有信号时反复调用浪费资源）、以及在内存泄漏时优雅自重启（长期运行 Node.js 进程的常见问题）。</p>
+  <p><strong>解决方案</strong>：三层防护：① <strong>PID Singleton Guard</strong>（<code>evolver.pid</code> 文件 + <code>process.kill(pid, 0)</code> 探活）防止多实例；② <strong>自适应睡眠</strong>（指数退避 + 随机抖动 + OMLS 空闲乘数 + 饱和乘数 4x）防止空转；③ <strong>Suicide 机制</strong>（<code>EVOLVER_MAX_CYCLES_PER_PROCESS=100</code> 或 RSS > 500MB 时 spawn 子进程后退出）防止内存累积。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant I as index.js(loop)
+  participant PID as evolver.pid
+  participant E as evolve.run()
+  participant OMLS as idleScheduler
+  participant Self as 自重启
+
+  I->>PID: acquireLock() 写 PID 文件
+  PID-->>I: 成功（或陈旧锁接管）
+  loop 每个周期
+    I->>I: 检查 isPendingSolidify()
+    alt 有 pending solidify
+      I->>I: sleep(pendingSleepMs)
+    else 无 pending
+      I->>E: evolve.run()
+      E-->>I: ok / error
+      I->>OMLS: getScheduleRecommendation()
+      OMLS-->>I: sleep_multiplier + should_distill
+      I->>I: sleep(adaptive + jitter + saturation × omls)
+    end
+    I->>I: 检查 cycleCount / RSS
+    alt 超过阈值
+      I->>Self: spawn 新进程 + process.exit(0)
+    end
+  end
+    </div>
+    <div class="caption">图 5-3：Daemon 主循环状态机</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-3）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>evolver.pid</td><td>acquireLock()</td><td>原子写 PID 文件，O_EXCL flag 防并发；陈旧 PID 用 kill(0) 探活</td></tr>
+      <tr><td>2</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>evolution_solidify_state.json</td><td>isPendingSolidify()</td><td>对比 last_run.run_id 与 last_solidify.run_id，相同则已固化，不同则 pending</td></tr>
+      <tr><td>3</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>evolve.run()</td><td>await evolve.run()</td><td>主进化逻辑，混淆模块执行</td></tr>
+      <tr><td>4</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>idleScheduler</td><td>getScheduleRecommendation()</td><td>OMLS 空闲检测：idle_seconds + intensity → sleep_multiplier + should_distill</td></tr>
+      <tr><td>5</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>spawn(子进程)</td><td>自重启</td><td>RSS > 500MB 或 cycleCount >= 100 时 detach + unref 子进程后退出</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：Suicide 机制的自重启虽然能防内存泄漏，但会产生短暂的进化空窗期；PID 文件方案在容器/VM 重启后可能留下陈旧文件（虽有探活补偿），分布式部署时无法防止不同主机上的多实例。</p>
+
+  <h4 id="section-5-3-2">5.3.2 GEP Selector：信号匹配选基因</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></span>
+    <span>🏷 进化核心</span>
+    <span>⚡ evolve.run() 内部调用</span>
+  </div>
+  <p><strong>要解决的问题</strong>：从多个 Gene 中选出最适合当前问题的一个，既要考虑信号匹配度，又要考虑历史成功记录（Capsule），还要受 EVOLVE_STRATEGY 策略偏好的影响（如 repair-only 模式下不应选 innovate Gene）。</p>
+  <p><strong>解决方案</strong>：Selector 对每个 Gene 计算综合分数：基础分 = 信号重叠比例；加权分 = 匹配 Capsule 的历史成功率（confidence × success_streak）；策略惩罚 = repair-only 策略对 innovate Gene 扣分。选分最高的 Gene 并输出 JSON 选择决策（含 gene_id + rationale），这份决策被嵌入最终的 GEP 提示词中，供 LLM 参考。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant E as evolve.js
+  participant S as selector.js
+  participant A as assetStore.js
+  participant C as capsules.json
+  participant G as genes.json
+
+  E->>S: selectGene(signals, strategy)
+  S->>A: loadGenes()
+  A->>G: 读取 genes.json
+  G-->>A: Gene 列表
+  A-->>S: Gene[]
+  S->>A: loadCapsules()
+  A->>C: 读取 capsules.json
+  C-->>A: Capsule 列表
+  A-->>S: Capsule[]
+  S->>S: 对每个 Gene 计算匹配分
+  Note over S: signals_match ∩ extracted_signals / 信号总数
+  S->>S: Capsule 历史加权 + 策略调权
+  S-->>E: { gene, rationale, score, selector_json }
+    </div>
+    <div class="caption">图 5-4：Selector 信号匹配流程</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-4）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>evolve.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td><td>selector.js</td><td>selectGene(signals, strategy)</td><td>传入提取的信号列表和当前策略预设</td></tr>
+      <tr><td>2</td><td>selector.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></td><td>assetStore.js</td><td>loadGenes() + loadCapsules()</td><td>从本地 JSON 文件读取全部 Gene 和 Capsule</td></tr>
+      <tr><td>3</td><td>selector.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></td><td>（内部）</td><td>信号交集计分</td><td>Gene.signals_match ∩ extracted_signals 交集越大分越高</td></tr>
+      <tr><td>4</td><td>selector.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/selector.js" data-label="selector.js">src/gep/selector.js</span></td><td>（内部）</td><td>Capsule 历史加权</td><td>找到与当前信号触发模式最相似的 Capsule，用其 confidence × success_streak 加权</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：信号匹配是简单的集合交集，没有语义理解（"exec error" 和 "tool execution failed" 不会被识别为同类信号）；Gene 库很小（默认只有 3 个），Capsule 积累需要时间，初期选择质量有限。</p>
+
+  <h4 id="section-5-3-3">5.3.3 Solidify 固化机制</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></span>
+    <span>🏷 固化层</span>
+    <span>⚡ node index.js solidify 或 review 后触发</span>
+  </div>
+  <p><strong>要解决的问题</strong>：AI Agent 修改代码后需要一个安全的"提交"机制：验证改动是否合法（运行单测）、防止不安全的 Shell 命令趁机执行、失败时能完整回滚到修改前的状态，并且整个过程留下可审计的记录。</p>
+  <p><strong>解决方案</strong>：Solidify 实现了一个三阶段原子化流程：① 执行 Gene.validation 数组中的验证命令（通过 <code>isValidationCommandAllowed</code> 白名单过滤后才执行）；② 验证全部通过则 <code>git commit</code>；③ 写入 EvolutionEvent + Capsule。失败时根据 <code>EVOLVER_ROLLBACK_MODE</code> 执行 <code>git reset --hard HEAD</code>（hard）或 <code>git stash</code>（stash）或不回滚（none）。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant I as index.js
+  participant Sol as solidify.js
+  participant V as isValidationCommandAllowed
+  participant GIT as git
+  participant A as assetStore.js
+
+  I->>Sol: solidify({intent, summary, dryRun})
+  Sol->>Sol: 读取 evolution_solidify_state.json
+  loop 每条 Gene.validation 命令
+    Sol->>V: isValidationCommandAllowed(cmd)
+    alt 命令不合法（非 node/npm/npx）
+      V-->>Sol: rejected
+      Sol->>GIT: git rollback
+      Sol-->>I: { ok: false, reason: "invalid_command" }
+    else 命令合法
+      Sol->>Sol: execSync(cmd, {timeout:180s})
+    end
+  end
+  alt 全部验证通过
+    Sol->>GIT: git commit
+    Sol->>A: appendEvolutionEvent(events.jsonl)
+    Sol->>A: addCapsule(capsules.json)
+    Sol-->>I: { ok: true, event, capsule }
+  else 验证失败
+    Sol->>GIT: git reset --hard HEAD (hard mode)
+    Sol-->>I: { ok: false, validation }
+  end
+    </div>
+    <div class="caption">图 5-5：Solidify 三阶段原子化流程</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-5）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>index.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">index.js</span></td><td>solidify.js</td><td>solidify({intent, summary})</td><td>传入本次进化意图和摘要，用于写 EvolutionEvent</td></tr>
+      <tr><td>2</td><td>solidify.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td><td>isValidationCommandAllowed</td><td>白名单校验</td><td>前缀仅允许 node/npm/npx；无 backtick / $(); 无 shell 操作符</td></tr>
+      <tr><td>3</td><td>solidify.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td><td>git</td><td>git commit</td><td>所有验证通过后原子提交，失败路径不会到达这一步</td></tr>
+      <tr><td>4</td><td>solidify.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/solidify.js" data-label="solidify.js">src/gep/solidify.js</span></td><td>assetStore.js</td><td>appendEvolutionEvent + addCapsule</td><td>append-only 事件日志 + SHA-256 去重 Capsule</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：验证命令白名单仅限 node/npm/npx，对于需要运行 Python 测试（pytest）或 Makefile 的项目不适用；hard 回滚不保留任何工作，若 AI 有部分有价值的改动也会一起丢弃；并发 solidify（两个进程同时操作同一仓库）没有更细粒度的锁，依赖 Singleton Guard 在 Daemon 层防范。</p>
+
+  <h4 id="section-5-3-4">5.3.4 Proxy Mailbox 代理网关</h4>
+  <div class="module-meta">
+    <span>📄 <span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/mailboxTransport.js" data-label="mailboxTransport.js">src/gep/mailboxTransport.js</span></span>
+    <span>🏷 网络通信层</span>
+    <span>⚡ EVOMAP_PROXY=1 且 --loop 时启动</span>
+  </div>
+  <p><strong>要解决的问题</strong>：AI Agent 直接调用外部 Hub API 存在认证密钥管理复杂、网络抖动导致进化中断、请求失败难以重试等问题。同时 Hub 需要向 Agent 推送任务和事件，直接轮询 HTTP 成本高。</p>
+  <p><strong>解决方案</strong>：在 Agent 和 Hub 之间插入一个本地 HTTP Proxy（localhost:19820），Agent 只通过邮箱 API（<code>POST /mailbox/send</code>、<code>POST /mailbox/poll</code>、<code>POST /mailbox/ack</code>）与 Proxy 通信；Proxy 在后台异步同步邮箱到 Hub，处理认证、重试、序列化。地址通过 <code>~/.evolver/settings.json</code> 发现，兼容 Proxy 进程重启后地址变化。</p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+  participant A as Agent(evolve.js)
+  participant T as mailboxTransport.js
+  participant P as src/proxy/(localhost)
+  participant MB as 本地 JSONL 邮箱
+  participant H as EvoMap Hub
+
+  A->>T: send({type: "asset_submit", payload})
+  T->>P: POST /mailbox/send (HTTP local)
+  P->>MB: 写入 outbound JSONL
+  P-->>T: { message_id, status: "pending" }
+  Note over P,H: 后台异步同步
+  P->>H: 同步 outbound 到 Hub
+  H-->>P: 处理结果
+  P->>MB: 写入 inbound 结果
+  A->>T: poll({type: "asset_submit_result"})
+  T->>P: POST /mailbox/poll
+  P->>MB: 读取 inbound JSONL
+  P-->>T: { messages: [...] }
+  T-->>A: 处理结果
+    </div>
+    <div class="caption">图 5-6：Proxy Mailbox 异步通信架构</div>
+  </div>
+  <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-6）</p>
+  <table class="seq-table">
+    <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Agent</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td><td>mailboxTransport.js</td><td>send(message)</td><td>将消息发送到本地邮箱，立即返回 pending 状态</td></tr>
+      <tr><td>2</td><td>mailboxTransport.js</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/gep/mailboxTransport.js" data-label="mailboxTransport.js">mailboxTransport.js</span></td><td>src/proxy/ (localhost)</td><td>POST /mailbox/send</td><td>本地 IPC，无网络延迟，无认证</td></tr>
+      <tr><td>3</td><td>src/proxy/</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">src/proxy/</span></td><td>本地 JSONL 邮箱</td><td>写入 outbound</td><td>邮箱是本地文件，所有操作可离线完成</td></tr>
+      <tr><td>4</td><td>src/proxy/</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/index.js" data-label="index.js">src/proxy/</span></td><td>EvoMap Hub</td><td>异步同步</td><td>后台同步，失败自动重试，Agent 不阻塞</td></tr>
+      <tr><td>5</td><td>Agent</td><td><span class="file-link" data-file="EvoMap/evolver/blob/main/src/evolve.js" data-label="evolve.js">src/evolve.js</span></td><td>mailboxTransport.js</td><td>poll({type})</td><td>拉取入站消息（任务/事件/资产结果），支持类型过滤</td></tr>
+    </tbody>
+  </table>
+  <p><strong>代价与局限</strong>：Proxy 是单点，Proxy 崩溃后 Agent 无法与 Hub 通信（虽有 a2aProtocol 直连作为回退）；JSONL 邮箱文件在高并发下存在写入竞争；Proxy 的地址发现依赖 <code>~/.evolver/settings.json</code>，在容器化部署时路径管理较复杂。</p>
+
+  <h2 id="section-6">6 方案评价</h2>
+  <h3 id="section-6-1">6.1 优势分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>进化过程完全可审计</h4>
+      <p>events.jsonl append-only 审计日志 + Capsule 成功记录 + Git 历史构成三层可追溯性。每次改动有信号驱动、Gene 约束、blast radius 记录，远超随手改 prompt 的可审计性。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>Git 原生回滚安全网</h4>
+      <p>验证失败时通过 git rollback 彻底还原，不会留下部分修改的中间状态。这是大多数 AI 改代码工具不具备的强安全保障，特别适合生产代码仓库。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>极轻依赖，部署简单</h4>
+      <p>生产依赖只有 <code>dotenv</code> 一个包，<code>npm install</code> + <code>node index.js</code> 即可运行。对比需要 Python 虚拟环境、Docker 容器的同类工具，部署摩擦极低，离线模式完整可用。</p>
+    </div>
+    <div class="eval-card strength">
+      <h4>知识蒸馏形成复利</h4>
+      <p>Distillation 机制（每 5 次 solidify 自动触发）将重复成功/失败模式提炼为新 Gene，知识不断积累。EvoMap 网络使蒸馏出的 Gene 可在社区流通，形成超越单节点的进化复利。</p>
+    </div>
+  </div>
+
+  <h3 id="section-6-2">6.2 局限分析</h3>
+  <div class="eval-grid">
+    <div class="eval-card weakness">
+      <h4>核心模块混淆是根本性透明度障碍</h4>
+      <p><code>src/evolve.js</code>（711KB 单行混淆）是整个引擎的大脑，信号提取、GEP 提示词生成的具体逻辑对开发者完全不可见。调试困难、无法定制、与「开源」精神形成明显矛盾。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>冷启动需要大量日志积累</h4>
+      <p>Selector 的信号匹配和 Capsule 历史加权在 memory/ 为空时几乎无意义；初始 Gene 库只有 3 个，覆盖场景有限。项目价值需要一段时间的日志积累才能充分体现。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>许可证定义不一致</h4>
+      <p>README 说 MIT，package.json 说 GPL-3.0-or-later，核心模块混淆分发。这个三重矛盾对需要在企业项目中使用的用户造成法律不确定性，GPL 具有强传染性。</p>
+    </div>
+    <div class="eval-card weakness">
+      <h4>验证命令白名单限制场景</h4>
+      <p>只允许 node/npm/npx 前缀的验证命令，Python 项目（pytest）、Go 项目（go test）、需要 Make 的项目都无法使用 Gene 内置验证，严重限制了在异构技术栈中的适用性。</p>
+    </div>
+  </div>
+
+  <h2 id="section-7">7 版本化维护区</h2>
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文以开源仓库 <a href="https://github.com/EvoMap/evolver">EvoMap/evolver</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-04-15</strong>，对应版本 <strong>v1.66.0</strong>（2026-04-15 发布，373 commits，2.2k stars）。</p>
+
+</main>
+
+<!-- Side Panel -->
+<div class="code-panel" id="codePanel">
+  <div class="resize-handle" id="resizeHandle"></div>
+  <div class="panel-header">
+    <span class="panel-title" id="panelTitle">—</span>
+    <div class="panel-nav">
+      <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>←</button>
+      <button class="panel-nav-btn" id="panelNavFwd" title="前进" disabled>→</button>
+      <a class="panel-gh-link" id="panelGhLink" href="#" target="_blank">在 GitHub 打开 ↗</a>
+    </div>
+    <button class="panel-close" id="panelClose">×</button>
+  </div>
+  <div class="panel-body-iframe" id="iframeBody">
+    <iframe class="panel-iframe" id="panelIframe" src="about:blank"></iframe>
+  </div>
+  <div class="panel-body-term" id="termBody"></div>
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+
+const GH_REPO = 'EvoMap/evolver';
+
+const FILE_MAP = {
+  'index.js':                          `${GH_REPO}/blob/main/index.js`,
+  'package.json':                      `${GH_REPO}/blob/main/package.json`,
+  'SKILL.md':                          `${GH_REPO}/blob/main/SKILL.md`,
+  'src/evolve.js':                     `${GH_REPO}/blob/main/src/evolve.js`,
+  'evolve.js':                         `${GH_REPO}/blob/main/src/evolve.js`,
+  'src/gep/selector.js':               `${GH_REPO}/blob/main/src/gep/selector.js`,
+  'selector.js':                       `${GH_REPO}/blob/main/src/gep/selector.js`,
+  'src/gep/solidify.js':               `${GH_REPO}/blob/main/src/gep/solidify.js`,
+  'solidify.js':                       `${GH_REPO}/blob/main/src/gep/solidify.js`,
+  'src/gep/prompt.js':                 `${GH_REPO}/blob/main/src/gep/prompt.js`,
+  'prompt.js':                         `${GH_REPO}/blob/main/src/gep/prompt.js`,
+  'src/gep/assetStore.js':             `${GH_REPO}/blob/main/src/gep/assetStore.js`,
+  'assetStore.js':                     `${GH_REPO}/blob/main/src/gep/assetStore.js`,
+  'src/gep/skillDistiller.js':         `${GH_REPO}/blob/main/src/gep/skillDistiller.js`,
+  'skillDistiller.js':                 `${GH_REPO}/blob/main/src/gep/skillDistiller.js`,
+  'src/gep/a2aProtocol.js':            `${GH_REPO}/blob/main/src/gep/a2aProtocol.js`,
+  'a2aProtocol.js':                    `${GH_REPO}/blob/main/src/gep/a2aProtocol.js`,
+  'src/gep/mailboxTransport.js':       `${GH_REPO}/blob/main/src/gep/mailboxTransport.js`,
+  'mailboxTransport.js':               `${GH_REPO}/blob/main/src/gep/mailboxTransport.js`,
+  'src/gep/memoryGraph.js':            `${GH_REPO}/blob/main/src/gep/memoryGraph.js`,
+  'memoryGraph.js':                    `${GH_REPO}/blob/main/src/gep/memoryGraph.js`,
+  'src/gep/idleScheduler.js':          `${GH_REPO}/blob/main/src/gep/idleScheduler.js`,
+  'idleScheduler.js':                  `${GH_REPO}/blob/main/src/gep/idleScheduler.js`,
+  'src/gep/paths.js':                  `${GH_REPO}/blob/main/src/gep/paths.js`,
+  'src/ops/lifecycle.js':              `${GH_REPO}/blob/main/src/ops/lifecycle.js`,
+  'lifecycle.js':                      `${GH_REPO}/blob/main/src/ops/lifecycle.js`,
+  'scripts/a2a_ingest.js':             `${GH_REPO}/blob/main/scripts/a2a_ingest.js`,
+  'scripts/a2a_promote.js':            `${GH_REPO}/blob/main/scripts/a2a_promote.js`,
+  'assets/gep/genes.json':             `${GH_REPO}/blob/main/assets/gep/genes.json`,
+  'genes.json':                        `${GH_REPO}/blob/main/assets/gep/genes.json`,
+  'assets/gep/capsules.json':          `${GH_REPO}/blob/main/assets/gep/capsules.json`,
+  'capsules.json':                     `${GH_REPO}/blob/main/assets/gep/capsules.json`,
+  'assets/gep/events.jsonl':           `${GH_REPO}/blob/main/assets/gep/events.jsonl`,
+  'events.jsonl':                      `${GH_REPO}/blob/main/assets/gep/events.jsonl`,
+};
+
+const PROJECT_TERMS = {
+  'Gene': {
+    tags: ['进化单元', 'GEP 协议'],
+    def: '进化规则定义单元，包含触发信号（signals_match）、执行策略（strategy）、约束（max_files / forbidden_paths）和验证命令（validation）。是 Evolver 进化行为的合同，Selector 通过信号匹配选择最合适的 Gene。',
+    mechanics: ['signals_match：与提取信号做集合交集计分', 'constraints.max_files：限制改动文件数上限', 'validation：安全白名单命令列表（仅 node/npm/npx）', '同 ID Gene 不可被 promote 覆盖'],
+    related: ['Capsule', 'EvolutionEvent', 'Selector', 'Solidify'],
+    files: ['assets/gep/genes.json'],
+    patterns: ['Gene', 'gene'],
+  },
+  'Capsule': {
+    tags: ['成功记录', 'GEP 协议'],
+    def: '成功进化案例记录，将一次成功的进化（Gene + 触发信号 + 结果 + 环境指纹）封装为可重用参考案例。按 SHA-256 内容哈希寻址，供 Selector 在相似信号场景下提升选择置信度。',
+    mechanics: ['触发信号 + Gene ID + blast_radius + confidence', 'SHA-256 asset_id 内容去重', 'env_fingerprint 记录运行时环境', 'a2a.eligible_to_broadcast 控制是否发布到 Hub'],
+    related: ['Gene', 'EvolutionEvent', 'Selector', 'Solidify'],
+    files: ['assets/gep/capsules.json'],
+    patterns: ['Capsule', 'capsule'],
+  },
+  'EvolutionEvent': {
+    tags: ['审计日志', 'GEP 协议'],
+    def: '进化事件审计记录，每次 solidify 后追加到 events.jsonl（append-only，不可修改）。包含信号列表、选用 Gene、意图（repair/optimize/innovate）、blast radius、结果和时间戳，是 Distillation 的数据来源。',
+    mechanics: ['append-only JSONL，不可删除历史', 'blast_radius.files + lines 记录实际影响', 'outcome.score 进化质量评分', 'Distillation 分析历史 Event 蒸馏新 Gene'],
+    related: ['Gene', 'Capsule', 'Solidify', 'Distillation'],
+    files: ['assets/gep/events.jsonl'],
+    patterns: ['EvolutionEvent'],
+  },
+  'GEP': {
+    tags: ['协议', '核心概念'],
+    def: 'Genome Evolution Protocol（基因组进化协议），Evolver 的核心协议框架。规定每次进化必须：① 绑定 Gene；② 记录 EvolutionEvent；③ 遵循 Selector 决策；④ 经过 validation 验证。不允许无协议的自由修改。',
+    mechanics: ['强制绑定 Gene（no improvisation）', '必须记录 EvolutionEvent', 'Selector 输出 JSON 决策嵌入提示词', '文档中只允许 🧬 emoji（协议标识）'],
+    related: ['Gene', 'Selector', 'Solidify', 'EvolutionEvent'],
+    files: ['SKILL.md'],
+    patterns: ['GEP', 'Genome Evolution Protocol'],
+  },
+  'Signal': {
+    tags: ['信号', '驱动输入'],
+    def: '从 memory/ 日志中提取的结构化指示器，如 log_error / perf_bottleneck / user_feature_request / stable_success_plateau 等。是 Selector 选择 Gene 的驱动输入，也决定 EVOLVE_STRATEGY 的实际权重。',
+    mechanics: ['由 src/evolve.js 扫描 memory/ 提取', '错误信号触发 repair Gene', '机会信号触发 innovate Gene', 'evolution_saturation 信号触发 Daemon 降频'],
+    related: ['Gene', 'Selector', 'GEP'],
+    files: ['assets/gep/genes.json'],
+    patterns: ['Signal', 'signal', 'signals'],
+  },
+  'Selector': {
+    tags: ['选择器', '核心逻辑'],
+    def: '基于提取信号对所有 Gene 打分，选出最匹配的 Gene 并输出 JSON 选择决策。计分综合考虑：信号交集比例、历史 Capsule 成功率、EVOLVE_STRATEGY 策略权重偏好。',
+    mechanics: ['信号交集：Gene.signals_match ∩ extracted_signals', 'Capsule 历史加权：confidence × success_streak', 'EVOLVE_STRATEGY 调权：repair-only 惩罚 innovate', '输出 JSON selector 决策嵌入 GEP 提示词'],
+    related: ['Gene', 'Capsule', 'Signal', 'GEP'],
+    files: ['src/gep/selector.js'],
+    patterns: ['Selector'],
+  },
+  'Solidify': {
+    tags: ['固化', '验证提交'],
+    def: '三阶段原子化操作：① 执行 Gene.validation 白名单命令验证；② 验证通过则 git commit；③ 记录 EvolutionEvent + 写入 Capsule。失败则按 EVOLVER_ROLLBACK_MODE 执行 git rollback，整个过程不会留下部分提交状态。',
+    mechanics: ['命令白名单：仅 node/npm/npx，无 shell 注入', 'isValidationCommandAllowed() 安全过滤', 'EVOLVER_ROLLBACK_MODE: hard/stash/none', '外部 Gene promotion 也要过同样白名单'],
+    related: ['Gene', 'EvolutionEvent', 'Capsule', 'Distillation'],
+    files: ['src/gep/solidify.js'],
+    patterns: ['Solidify', 'solidify'],
+  },
+  'BlastRadius': {
+    tags: ['影响评估', '安全约束'],
+    def: '进化变更的预估影响范围：预计改动的文件数（files）和行数（lines）。Gene 的 constraints.max_files 是上限约束，blast radius 估算帮助 Agent 在改动前评估风险，避免牵连无关文件。',
+    mechanics: ['evolve.run() 在生成提示词时估算', 'solidify 记录实际 blast_radius（files+lines）', 'Gene.constraints.max_files 是硬上限', 'Capsule 中保存历史 blast_radius 供参考'],
+    related: ['Gene', 'Solidify', 'EvolutionEvent'],
+    files: ['assets/gep/capsules.json'],
+    patterns: ['BlastRadius', 'blast_radius', 'blast radius'],
+  },
+  'Distillation': {
+    tags: ['知识蒸馏', '自进化'],
+    def: '知识蒸馏机制：分析历史 EvolutionEvent，将重复出现的成功/失败模式提炼为新的 Gene，写入 genes.json 供后续选择。每 5 次 solidify 自动触发；失败模式积累到阈值也自动触发。',
+    mechanics: ['每 5 次 solidify 自动触发（autoDistillInterval=5）', 'shouldDistillFromFailures() 检测失败模式阈值', 'autoDistill() 直接生成新 Gene', 'prepareDistillation() 生成 LLM 提示等待人工响应'],
+    related: ['EvolutionEvent', 'Gene', 'Solidify'],
+    files: ['src/gep/skillDistiller.js'],
+    patterns: ['Distillation', 'distillation', 'Distiller'],
+  },
+  'ProxyMailbox': {
+    tags: ['网络通信', '隔离层'],
+    def: '本地 HTTP 代理服务（默认 127.0.0.1:19820），将 Agent 与 EvoMap Hub 的所有通信通过本地 JSONL 邮箱异步中转。Agent 只做本地 IPC（无网络延迟、无认证复杂度），Proxy 负责认证、重试、序列化到 Hub。',
+    mechanics: ['地址发现：~/.evolver/settings.json', 'mailbox API：send/poll/ack/status/list', '出站邮件本地写入，后台异步同步到 Hub', 'registerMailboxTransport() 注册替代直连模式'],
+    related: ['GEP', 'Gene'],
+    files: ['src/gep/mailboxTransport.js'],
+    patterns: ['Proxy Mailbox', 'ProxyMailbox', 'EVOMAP_PROXY'],
+  },
+};
+
+// ========== Panel System ==========
+const panel      = document.getElementById('codePanel');
+const panelTitle = document.getElementById('panelTitle');
+const panelIframe= document.getElementById('panelIframe');
+const iframeBody = document.getElementById('iframeBody');
+const termBody   = document.getElementById('termBody');
+const panelClose = document.getElementById('panelClose');
+const panelNavBack = document.getElementById('panelNavBack');
+const panelNavFwd  = document.getElementById('panelNavFwd');
+const panelGhLink  = document.getElementById('panelGhLink');
+
+let navHistory = [], navIndex = -1;
+
+function openPanel() { panel.classList.add('open'); }
+function closePanel() { panel.classList.remove('open'); }
+
+function pushNav(entry) {
+  navHistory = navHistory.slice(0, navIndex + 1);
+  navHistory.push(entry);
+  navIndex = navHistory.length - 1;
+  updateNavBtns();
+}
+
+function updateNavBtns() {
+  panelNavBack.disabled = navIndex <= 0;
+  panelNavFwd.disabled  = navIndex >= navHistory.length - 1;
+}
+
+function _loadEntry(e) {
+  if (!e) return;
+  if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+  else if (e.type === 'term') _openTermPanelInternal(e.name);
+}
+
+panelNavBack.addEventListener('click', () => {
+  if (navIndex > 0) { navIndex--; updateNavBtns(); _loadEntry(navHistory[navIndex]); }
+});
+panelNavFwd.addEventListener('click', () => {
+  if (navIndex < navHistory.length - 1) { navIndex++; updateNavBtns(); _loadEntry(navHistory[navIndex]); }
+});
+
+function _openGitHubPanel(ghPath, label) {
+  const url = `https://github1s.com/${ghPath}`;
+  panelTitle.textContent = label || ghPath.split('/').pop();
+  panelGhLink.href = `https://github.com/${ghPath}`;
+  panelGhLink.style.display = '';
+  termBody.style.display = 'none';
+  iframeBody.style.display = 'flex';
+  panelIframe.src = url;
+  openPanel();
+}
+
+function openGitHubPanel(ghPath, label) {
+  pushNav({ type: 'github', path: ghPath, label: label || ghPath });
+  _openGitHubPanel(ghPath, label);
+}
+
+function openRepoBrowser() {
+  openGitHubPanel(`${GH_REPO}`, 'evolver');
+}
+
+function renderTermHTML(key) {
+  const t = PROJECT_TERMS[key]; if (!t) return '';
+  const tags = (t.tags||[]).map(g => `<span class="term-tag">${g}</span>`).join('');
+  const mech = (t.mechanics||[]).map(m => `<li>${m}</li>`).join('');
+  const rels = (t.related||[]).map(r => `<button class="term-rel-btn" data-term="${r}">${r}</button>`).join(' ');
+  const files = (t.files||[]).map(f => {
+    const p = FILE_MAP[f]; if (!p) return '';
+    return `<button class="term-file-btn" data-file="${p}">${f}</button>`;
+  }).join(' ');
+  return `<div class="term-panel-title">${key}</div>
+  <div class="term-panel-tags">${tags}</div>
+  <div class="term-panel-section"><h4>定义</h4><div class="term-panel-def">${t.def}</div></div>
+  ${mech ? `<div class="term-panel-section"><h4>机制要点</h4><ul class="term-mechanics">${mech}</ul></div>` : ''}
+  ${rels ? `<div class="term-panel-section"><h4>相关概念</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${rels}</div></div>` : ''}
+  ${files ? `<div class="term-panel-section"><h4>源文件</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${files}</div></div>` : ''}`;
+}
+
+function _openTermPanelInternal(termName) {
+  if (!PROJECT_TERMS[termName]) return;
+  panelTitle.textContent = termName;
+  panelGhLink.style.display = 'none';
+  iframeBody.style.display = 'none';
+  termBody.style.display = 'flex';
+  termBody.style.flexDirection = 'column';
+  termBody.innerHTML = renderTermHTML(termName);
+  termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+    btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+  termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+    btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+  openPanel();
+}
+
+function openTermPanel(termName) {
+  if (!PROJECT_TERMS[termName]) return;
+  pushNav({ type: 'term', name: termName });
+  _openTermPanelInternal(termName);
+}
+
+panelClose.addEventListener('click', closePanel);
+
+document.addEventListener('click', function(e) {
+  const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+  const termEl = e.target.closest('.term-link[data-term]');
+  if (fileEl && fileEl.dataset.file) {
+    e.preventDefault();
+    openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+  } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+    e.preventDefault();
+    openTermPanel(termEl.dataset.term);
+  }
+});
+
+// Auto-tag file links
+document.querySelectorAll('code:not(pre code)').forEach(el => {
+  if (el.dataset.file || el.classList.contains('file-link')) return;
+  const raw = el.textContent.trim();
+  const ghPath = FILE_MAP[raw];
+  if (ghPath) {
+    el.classList.add('file-link');
+    el.dataset.file  = ghPath;
+    el.dataset.label = raw.replace(/^★\s*/, '');
+    el.title = '在 GitHub 中查看';
+  }
+});
+
+// Auto-tag term links
+const termPatterns = [];
+for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+  for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+}
+termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+
+const TERM_RE = new RegExp(
+  termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+
+const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+  'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+
+function tagTermsInDocument() {
+  const content = document.querySelector('.content');
+  if (!content) return;
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      let p = node.parentNode;
+      while (p && p !== content) {
+        if (SKIP_TAGS.has(p.tagName) ||
+            p.classList.contains('term-link') ||
+            p.classList.contains('file-link') ||
+            p.classList.contains('mermaid') ||
+            p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+        p = p.parentNode;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = []; let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(textNode => {
+    const text = textNode.textContent;
+    TERM_RE.lastIndex = 0;
+    if (!TERM_RE.test(text)) return;
+    TERM_RE.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0, m;
+    while ((m = TERM_RE.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const key = PAT_KEY[m[0]];
+      if (key) {
+        const sp = document.createElement('span');
+        sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+        frag.appendChild(sp);
+      } else {
+        frag.appendChild(document.createTextNode(m[0]));
+      }
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+}
+
+tagTermsInDocument();
+window.openRepoBrowser = openRepoBrowser;
+
+// TOC toggle
+(function() {
+  const toc = document.getElementById('tocNav');
+  const btn = document.getElementById('tocToggle');
+  const content = document.querySelector('.content');
+  if (!toc || !btn) return;
+  let collapsed = false;
+  btn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    toc.classList.toggle('collapsed', collapsed);
+    content.classList.toggle('toc-collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.title = collapsed ? '展开目录' : '收起目录';
+  });
+})();
+
+// Diagram zoom
+(function() {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className = 'diagram-zoom-btn';
+    zoomBtn.title = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+    function openLightbox() {
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+      const lb = document.createElement('div');
+      lb.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className = 'diagram-lightbox-inner';
+      const clone = svg.cloneNode(true);
+      const w = parseFloat(svg.getAttribute('width') || svg.viewBox.baseVal.width || 600);
+      const h = parseFloat(svg.getAttribute('height') || svg.viewBox.baseVal.height || 400);
+      clone.setAttribute('width', w * 1.5);
+      clone.setAttribute('height', h * 1.5);
+      inner.appendChild(clone);
+      lb.appendChild(inner);
+      document.body.appendChild(lb);
+      lb.addEventListener('click', e => { if (e.target === lb) lb.remove(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', esc); }
+      });
+    }
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+})();
+
+// Panel resize
+(function() {
+  const handle = document.getElementById('resizeHandle');
+  if (!handle) return;
+  let dragging = false, startX, startWidth;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX;
+    startWidth = panel.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startX - e.clientX;
+    const newW = Math.min(Math.max(startWidth + delta, 280), window.innerWidth * 0.7);
+    panel.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; handle.classList.remove('dragging'); document.body.style.userSelect = ''; }
+  });
+})();
+
+hljs.highlightAll();
+</script>
+</body>
+</html>
