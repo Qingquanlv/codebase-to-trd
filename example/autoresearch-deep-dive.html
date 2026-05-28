@@ -94,7 +94,7 @@
   <a href="#section-1" class="toc-h2">1 摘要</a>
   <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
   <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
-  <a href="#section-2" class="toc-h2">2 设计理念</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
   <a href="#section-2-1" class="toc-h3">2.1 单文件隔离实验</a>
   <a href="#section-2-2" class="toc-h3">2.2 时间预算公平比较</a>
   <a href="#section-2-3" class="toc-h3">2.3 program.md 即研究协议</a>
@@ -104,7 +104,7 @@
   <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
   <a href="#section-3-2-1" class="toc-h4">3.2.1 GPT 模型架构</a>
   <a href="#section-3-2-2" class="toc-h4">3.2.2 MuonAdamW 混合优化器</a>
-  <a href="#section-3-2-3" class="toc-h4">3.2.3 BPB 评估与无偏指标</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 val_bpb 评估与无偏指标</a>
   <a href="#section-3-2-4" class="toc-h4">3.2.4 BOS 对齐 Best-fit 数据加载</a>
   <a href="#section-3-2-5" class="toc-h4">3.2.5 program.md 实验循环协议</a>
   <a href="#section-4" class="toc-h2">4 方案评价</a>
@@ -259,7 +259,7 @@ sequenceDiagram
     BLK->>BLK: x = λᵢ·x + α_i·x₀  （可学习残差缩放）
     BLK->>ATT: norm(x) → Q K V
     ATT->>VE: 若偶数层：ve = value_embeds[i](idx)
-    VE-->>ATT: gate = 2·sigmoid(ve_gate(x[:32]))\n v = v + gate * ve
+    VE-->>ATT: gate·ve 混入 v（门控 Value Residual）
     ATT->>FA3: Q K V（RoPE + QK-Norm 后）
     FA3-->>ATT: 注意力输出 y [B,T,C]
     ATT-->>BLK: c_proj(y)
@@ -377,6 +377,33 @@ def muon_step_fused(stacked_grads, stacked_params, momentum_buffer,
     <p>标准的 cross-entropy loss 是 bits/token，当词表大小变化时（Agent 可能修改 vocab_size）直接比较是不公平的：一个词表更大的模型天然有更低的 loss 下界。val_bpb（bits per byte）通过除以目标 token 的 UTF-8 字节数，将单位统一到"每字节需要多少 bit 来表示"，使得不同词表大小的模型结果直接可比。</p>
     <p>固定的 validation shard（shard_06542，<strong>始终是同一份数据</strong>）确保所有实验测的是同一分布上的泛化能力。</p>
 
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+  participant TL as 训练脚本
+  participant EV as evaluate_bpb()
+  participant VL as val_loader
+  participant M as model(x, y, reduction=none)
+  participant TB as token_bytes 查找表
+
+  TL->>EV: 训练结束后调用
+  EV->>TB: get_token_bytes(device=cuda)
+  TB-->>EV: 每个 token_id → UTF-8 字节数
+  EV->>VL: make_dataloader(val, fixed MAX_SEQ_LEN)
+  loop EVAL_TOKENS // (B*T) 次（固定 ~40M tokens）
+    VL-->>EV: x, y batch
+    EV->>M: 前向（不计梯度）→ per-token loss [B*T]
+    M-->>EV: loss_flat（nats）
+    EV->>TB: nbytes = token_bytes[y_flat]
+    EV->>EV: mask = nbytes > 0（过滤 BOS 等特殊 token）
+    EV->>EV: total_nats += (loss * mask).sum()
+    EV->>EV: total_bytes += nbytes.sum()
+  end
+  EV-->>TL: total_nats / (ln2 × total_bytes) = val_bpb
+      </div>
+      <div class="caption">图 3-5：evaluate_bpb 调用时序 — nats/token 转换为 bits/byte</div>
+    </div>
+
     <pre><code class="language-python"># prepare.py:343-365  evaluate_bpb —— 固定的评估函数，Agent 不可修改
 @torch.no_grad()
 def evaluate_bpb(model, tokenizer, batch_size):
@@ -409,6 +436,35 @@ def evaluate_bpb(model, tokenizer, batch_size):
     </div>
     <p>传统数据加载器常用 padding 将不等长文档对齐，导致 VRAM 浪费。<code>make_dataloader</code> 采用 <strong>Best-fit packing</strong>：每行从 buffer 中找能放下的最大文档；找不到时裁剪最短文档填满剩余空间。结果是每个训练 batch 的 token 利用率为 100%，且每行都以 BOS 开头，保证跨文档不产生虚假注意力依赖。</p>
     <p>内存管理上，使用 pin memory + 异步 GPU copy：<code>gpu_buffer.copy_(cpu_buffer, non_blocking=True)</code>，与下一次 forward pass 重叠传输，消除 CPU-GPU 传输瓶颈。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+  participant TL as 训练循环
+  participant DL as make_dataloader()
+  participant BUF as doc_buffer（文档缓冲）
+  participant RB as row_buffer [B, T+1]
+  participant GPU as GPU Buffer（pin memory）
+
+  TL->>DL: next(train_loader)
+  loop B 行（每行填满 T+1 tokens）
+    loop 直到 pos == T+1
+      DL->>BUF: 找最大能放入的文档（best-fit）
+      alt 存在可整体放入的文档
+        BUF-->>DL: doc（完整）
+      else 无文档能放入
+        BUF-->>DL: doc[:remaining]（裁剪最短文档）
+      end
+      DL->>RB: row_buffer[row, pos:pos+len] = doc tokens
+    end
+  end
+  DL->>GPU: cpu_inputs = row_buffer[:, :-1]
+  DL->>GPU: cpu_targets = row_buffer[:, 1:]
+  DL->>GPU: gpu_buffer.copy_(cpu_buffer, non_blocking=True)
+  GPU-->>TL: inputs, targets, epoch（异步传输）
+      </div>
+      <div class="caption">图 3-6：Best-fit packing 数据加载时序 — 100% token 利用率</div>
+    </div>
 
     <pre><code class="language-python"># prepare.py:305-337  Best-fit packing 核心逻辑
 while True:

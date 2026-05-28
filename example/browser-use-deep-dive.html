@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>browser-use 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+  .toc {
+    position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+    overflow-y: auto; padding: 24px 16px; background: var(--bg-alt);
+    border-right: 1px solid var(--border); font-size: 13px; z-index: 100;
+  }
+  .toc h3 { font-size: 14px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; }
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead {
+    font-size: 16px; color: var(--text-secondary); line-height: 1.8;
+    padding: 16px 20px; background: var(--bg-alt);
+    border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0;
+  }
+  .conclusions {
+    margin: 32px 0; padding: 20px 24px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+    border: 1px solid #bfdbfe; border-radius: 12px;
+  }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 6px; }
+  .diagram-container {
+    margin: 24px 0; padding: 24px; background: var(--bg-alt);
+    border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;
+  }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+  .module-card { margin: 24px 0; padding: 24px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .module-card .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+  .module-card .module-meta span { padding: 2px 10px; background: var(--bg-alt); border-radius: 20px; }
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #bbf7d0; }
+  .eval-card.weakness { background: #fffbeb; border-color: #fde68a; }
+  .eval-card h4 { margin: 0 0 12px; font-size: 16px; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid var(--border); }
+  td { padding: 10px 12px; border: 1px solid var(--border); }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-1-2-1" class="toc-h4">1.2.1 通用网页自动化</a>
+  <a href="#section-1-2-2" class="toc-h4">1.2.2 多模态感知</a>
+  <a href="#section-1-2-3" class="toc-h4">1.2.3 开放扩展生态</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 ReAct 循环作为骨架</a>
+  <a href="#section-2-2" class="toc-h3">2.2 结构化输出驱动行动</a>
+  <a href="#section-2-3" class="toc-h3">2.3 事件总线解耦浏览器层</a>
+  <a href="#section-2-4" class="toc-h3">2.4 DOM 序列化为 LLM 感知视图</a>
+  <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+  <a href="#section-3-1" class="toc-h3">3.1 系统架构设计</a>
+  <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
+  <a href="#section-3-2-1" class="toc-h4">3.2.1 Agent 主循环</a>
+  <a href="#section-3-2-2" class="toc-h4">3.2.2 DOM 树提取与序列化</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 Watchdog 事件驱动架构</a>
+  <a href="#section-3-2-4" class="toc-h4">3.2.4 循环检测系统</a>
+  <a href="#section-3-2-5" class="toc-h4">3.2.5 消息压缩与上下文管理</a>
+  <a href="#section-4" class="toc-h2">4 方案评价</a>
+  <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+  <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>browser-use 深度解读</h1>
+    <div class="subtitle">基于 CDP + ReAct 的通用 AI 网页自动化框架</div>
+    <div class="lead">
+      browser-use 是目前 GitHub Star 数超过 95k 的热门开源项目，它让 AI Agent 能够像人类一样操作任意网页。
+      其核心思路是：将浏览器的 DOM 树序列化成 LLM 可理解的结构化文本，再通过 JSON 结构化输出驱动浏览器执行点击、输入、滚动等操作，
+      形成"感知→决策→执行"的 ReAct 主循环。读完本文，你将深刻理解 LLM Agent 如何与浏览器深度集成，
+      以及 DOM 序列化、循环检测、消息压缩等几个精妙工程设计背后的权衡。
+    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>Agent 主循环是标准 ReAct 模式的工程化实现：每步分三阶段——<strong>获取浏览器状态 → 调用 LLM 决策 → 执行动作列表</strong>，单步最多执行 5 个原子动作。</li>
+      <li>DOM 树序列化是最关键的工程挑战：通过合并 CDP Accessibility Tree + DOMSnapshot 布局数据，为每个可交互元素分配顺序索引 <code>[0]</code>、<code>[1]</code>...，LLM 通过索引操作 DOM 而非 XPath/CSS selector。</li>
+      <li>浏览器层采用 <code>bubus</code> 事件总线驱动，12+ 个 Watchdog 模块（CAPTCHA、崩溃恢复、下载监控等）以纯事件回调方式接入，Chrome 断连可自动重连而不中断任务。</li>
+      <li>循环检测系统通过"动作哈希滚动窗口 + 页面指纹"双重机制发现重复行为，以向 LLM 注入提示信息（而非强制阻断）的方式让 Agent 自主调整策略。</li>
+      <li>支持 15+ LLM 提供商（OpenAI、Anthropic、Gemini、Groq、Ollama 等），通过统一 <code>BaseChatModel</code> 抽象层和各自的 Serializer 屏蔽 API 差异。</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>
+    传统的网页自动化工具（Selenium、Playwright）依赖开发者手写精确的选择器（CSS selector、XPath），
+    任何 UI 变化都会导致脚本失效，维护成本极高。随着 LLM 多模态理解能力的提升，
+    一类新的自动化范式出现了：<strong>让 LLM 理解网页语义，自行决定下一步操作</strong>。
+  </p>
+  <p>
+    browser-use 正是这类框架的代表作。它诞生于 2024 年末，在短短数月内达到 95k+ Star，
+    成为 AI Agent 工具链中最受关注的开源项目之一。项目由苏黎世和旧金山的小团队维护，
+    同时提供商业云服务（Browser Use Cloud）以覆盖验证码绕过、浏览器指纹伪造等生产级需求。
+  </p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+
+  <h4 id="section-1-2-1">1.2.1 预期一：通用网页自动化</h4>
+  <p>
+    任何网页上的任务（填表、购物、搜索、数据提取）都应该能通过自然语言描述来完成，
+    无需编写特定于页面的选择器代码。Agent 能够在多标签页、iframe、动态内容之间自由导航，
+    遇到意外情况（弹窗、重定向、验证码）时能自主应对。
+  </p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：多模态感知（截图 + DOM）</h4>
+  <p>
+    同时利用截图（视觉）和 DOM 文本（语义）两路信息，让 LLM 获得最完整的页面理解。
+    截图提供空间布局直觉，DOM 文本提供精确的可交互元素列表。
+    两路信息互补：某些视觉元素只能通过图片识别，某些隐藏的可交互元素只有 DOM 结构才能揭示。
+  </p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：开放扩展生态</h4>
+  <p>
+    框架本身只提供浏览器操作原语（click、type、navigate 等）；
+    用户可通过 <code>Tools</code> 注册自定义动作（调用外部 API、读写文件等），
+    技能系统（Skills）支持从 Browser Use Cloud 动态加载预建工作流。
+    同时提供 MCP（Model Context Protocol）服务器，让 Claude Code、Cursor 等工具可以将 browser-use 作为工具调用。
+  </p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 ReAct 循环作为骨架</h3>
+  <p>
+    browser-use 严格遵循 <strong>ReAct（Reason + Act）</strong> 范式：每个步骤先"观察"当前浏览器状态（截图 + DOM 树），
+    然后"思考"（LLM 内部推理 + 可选 Planning），最后"行动"（执行动作列表）。
+    这个循环天然支持错误恢复——如果某步操作失败，下一步的"观察"阶段会看到失败结果并调整策略，
+    而无需额外的 try/catch 逻辑；Agent 具备了类似人类"看到结果再决定下一步"的自适应能力。
+  </p>
+
+  <h3 id="section-2-2">2.2 结构化输出驱动行动</h3>
+  <p>
+    LLM 的输出不是自由文本，而是严格的 Pydantic 模型定义的 JSON 结构：
+    <code>AgentOutput</code> 包含 <code>current_state</code>（思考、记忆、目标评估）和 <code>action</code>（动作列表）。
+    每个动作也是 Pydantic 模型（<code>ClickElementAction</code>、<code>InputTextAction</code> 等），
+    带有完整的类型校验和字段描述。这种设计彻底避免了"解析 LLM 输出"的脆弱正则表达式，
+    同时通过 JSON Schema 给 LLM 提供了精确的格式约束，大幅提升输出可靠性。
+  </p>
+
+  <h3 id="section-2-3">2.3 事件总线解耦浏览器层</h3>
+  <p>
+    浏览器会话（<code>BrowserSession</code>）内部使用 <code>bubus</code> 事件总线（EventBus），
+    所有浏览器行为（导航完成、标签页创建、文件下载、CAPTCHA 出现）都被建模为强类型 Pydantic 事件。
+    各功能组件（Watchdog）通过 <code>on_EventName</code> 方法自动注册为事件处理器，
+    彼此完全解耦——增删一个 Watchdog 不影响任何其他组件。CDP 连接断开时，
+    Watchdog 基类会自动等待重连，确保任务不中断。
+  </p>
+
+  <h3 id="section-2-4">2.4 DOM 序列化为 LLM 感知视图</h3>
+  <p>
+    网页 DOM 直接传给 LLM 既噪音太多（样式/脚本/隐藏元素），又难以定位操作目标。
+    browser-use 的 DOM 序列化层做了精心设计：合并 CDP 的 Accessibility Tree（语义）和 DOMSnapshot（布局/可见性），
+    过滤掉不可见和不可交互的元素，对每个可交互元素分配 Chrome 内部 <code>backendNodeId</code> 作为索引，
+    最终输出一段高信噪比的结构化文本。LLM 只需要说"点击 <code>[145037]</code>"，框架就能精确定位并执行。
+    这个"索引化"设计解决了自然语言对 DOM 元素定位的歧义问题，同时相比原始 HTML 有 10-15x 的 Token 压缩率。
+  </p>
+
+  <h4>AX Tree 序列化格式详解</h4>
+  <p>
+    <code>DOMTreeSerializer.serialize_tree()</code> 将融合后的节点树输出为以下文本格式（发送给 LLM 的 <code>Interactive elements</code> 字段）：
+  </p>
+
+  <table>
+    <tr><th>格式</th><th>含义</th></tr>
+    <tr><td><code>[145001]&lt;tag attr="val" /&gt;</code></td><td>可交互元素，方括号内是 <code>backendNodeId</code>，LLM 用这个 ID 操作元素</td></tr>
+    <tr><td><code>&lt;tag attr="val" /&gt;</code></td><td>非交互元素（纯容器/展示节点），LLM 无法直接操作</td></tr>
+    <tr><td><code>*[145005]&lt;button /&gt;</code></td><td>新元素（上一步不存在），<code>*</code> 提示 LLM 注意动态变化</td></tr>
+    <tr><td><code>|scroll element|&lt;div /&gt;</code></td><td>可滚动容器（无可交互子元素）</td></tr>
+    <tr><td><code>|scroll element[145004]&lt;ul /&gt;</code></td><td>可滚动 + 可交互（如下拉列表）</td></tr>
+    <tr><td><code>|SHADOW(open)|&lt;div /&gt;</code></td><td>包含 Shadow DOM 的宿主元素</td></tr>
+    <tr><td><code>Open Shadow</code> / <code>Shadow End</code></td><td>Shadow DOM 范围标记</td></tr>
+    <tr><td><code>|IFRAME|&lt;iframe /&gt;</code></td><td>内嵌框架（已递归处理其内部元素）</td></tr>
+  </table>
+
+  <p>LLM 实际收到的 prompt 片段（电商页面示例）：</p>
+
+<pre><code class="language-text">Interactive elements:
+[Start of page]
+&lt;html lang="zh-CN"&gt;
+  &lt;body&gt;
+    &lt;header&gt;
+      &lt;nav&gt;
+        [120034]&lt;a href="/" aria-label="首页" /&gt;
+        [120035]&lt;a href="/products"&gt;商品 /&gt;
+        [120036]&lt;button aria-label="购物车 (3件)"&gt;🛒 3 /&gt;
+      &lt;/nav&gt;
+    &lt;/header&gt;
+    &lt;main&gt;
+      &lt;form action="/search"&gt;
+        [120037]&lt;input type="search" placeholder="搜索..." name="q" value="" /&gt;
+        [120038]&lt;button type="submit"&gt;搜索 /&gt;
+      &lt;/form&gt;
+      &lt;section&gt;
+        [120039]&lt;a href="/product/1"&gt;
+          AirPods Pro ¥1,899
+        [120040]&lt;button data-product-id="1"&gt;加入购物车 /&gt;
+        *[120041]&lt;a href="/product/2"&gt;
+          iPhone 16 ¥5,999
+        [120042]&lt;button data-product-id="2"&gt;加入购物车 /&gt;
+    &lt;/main&gt;
+[End of page]
+</code></pre>
+
+  <p>LLM 看到上面内容后，返回结构化 JSON 动作：</p>
+
+<pre><code class="language-json">{
+  "current_state": {
+    "evaluation_previous_goal": "Success - 页面已加载",
+    "memory": "正在搜索 AirPods Pro",
+    "next_goal": "在搜索框输入关键词并提交"
+  },
+  "action": [
+    {"input_text": {"index": 120037, "text": "AirPods Pro"}},
+    {"click_element": {"index": 120038}}
+  ]
+}
+</code></pre>
+
+  <p>
+    <strong>为什么用 <code>backendNodeId</code> 而不是 <code>[0]</code>、<code>[1]</code> 的连续索引？</strong>
+    <code>backendNodeId</code> 是 Chrome 在页面生命周期内分配的稳定 ID，不随 DOM 变化而重新编号。
+    当 LLM 输出 <code>click(index=120037)</code>，框架通过 <code>selector_map[120037]</code> 直接定位节点，
+    再调用 CDP <code>DOM.getBoxModel</code> 获取坐标执行点击，全程 O(1) 查找，无需重新遍历 DOM。
+  </p>
+
+  <p>
+    <strong>压缩效果（原始 HTML vs AX Tree）：</strong>
+    一个带 SVG 图标的按钮，原始 HTML 约 80-120 tokens，序列化后只需 5-10 tokens，
+    整页压缩比通常达到 <strong>10-15x</strong>，使得百万元素级的复杂页面（如 Amazon 首页）也能控制在 LLM 的上下文窗口内。
+  </p>
+
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>
+    browser-use 采用分层架构，从上到下依次为：Agent 决策层 → DOM 感知层 → 浏览器会话层 → LLM 抽象层。
+    各层通过明确的接口边界解耦，支持独立替换（如更换 LLM 提供商或浏览器类型）。
+  </p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    subgraph 用户层
+        U[用户: agent.run]
+    end
+
+    subgraph 决策层
+        A[Agent / service.py\nReAct 主循环]
+        MM[MessageManager\n对话上下文管理]
+        LD[ActionLoopDetector\n循环检测]
+        PL[Planning Engine\n任务规划]
+    end
+
+    subgraph 感知层
+        DS[DomService\nDOM 树提取]
+        SS[DOM Serializer\n→ 索引化文本]
+        SC[Screenshots\n截图捕获]
+    end
+
+    subgraph 浏览器层
+        BS[BrowserSession\nCDP 连接管理]
+        EB[EventBus bubus\n事件总线]
+        WD[Watchdogs ×12\nCAPTCHA/崩溃/下载...]
+        TS[Tools\n动作执行器]
+    end
+
+    subgraph LLM 层
+        LLM[BaseChatModel\n统一接口]
+        P1[OpenAI / Anthropic]
+        P2[Gemini / Groq / Ollama]
+        P3[Browser-Use Model]
+    end
+
+    U --> A
+    A --> MM
+    A --> DS
+    A --> SC
+    A --> TS
+    A --> LD
+    A --> PL
+    MM --> LLM
+    DS --> SS
+    BS --> DS
+    BS --> SC
+    BS --> EB
+    EB --> WD
+    TS --> BS
+    LLM --> P1
+    LLM --> P2
+    LLM --> P3
+
+    style A fill:#dbeafe,stroke:#2563eb
+    style BS fill:#d1fae5,stroke:#059669
+    style LLM fill:#fef9c3,stroke:#d97706
+    </div>
+    <div class="caption">图 3-1: browser-use 分层架构图</div>
+  </div>
+
+  <p>
+    <strong>关键数据流</strong>：每个 step 中，Agent 向 BrowserSession 请求浏览器状态（截图 + DOM 树）；
+    DomService 通过 CDP 拉取 DOMSnapshot 和 AX Tree，序列化为带索引的文本；
+    MessageManager 将浏览器状态、历史记录、系统提示组装成消息列表；
+    LLM 返回结构化的 <code>AgentOutput</code>；
+    Agent 解析动作列表，通过 EventBus 分发给 Tools 执行，Tools 调用 CDP 操作浏览器。
+  </p>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <h4 id="section-3-2-1">3.2.1 关键模块一：Agent 主循环</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 browser_use/agent/service.py</span>
+      <span>🏷️ ReAct 模式 + 状态机</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：如何将"让 LLM 操作浏览器"的需求转化为可靠的控制流？
+      任何步骤都可能失败（LLM 超时、DOM 解析错误、CDP 断连），需要统一的错误处理和恢复机制。
+    </p>
+    <p>
+      <strong>核心设计</strong>：<code>step()</code> 方法是最小执行单元，分为四个阶段：
+      (1) <strong>Prepare Context</strong>：获取浏览器状态 + 构建 LLM 消息；
+      (2) <strong>Get Next Action</strong>：调用 LLM 获取结构化输出；
+      (3) <strong>Execute Actions</strong>：执行动作列表；
+      (4) <strong>Post Process</strong>：记录历史、检测循环、更新计划。
+      所有异常统一在 <code>_handle_step_error</code> 处理，失败次数超过 <code>max_failures</code> 后触发最终恢复尝试。
+    </p>
+    <p>
+      <strong>设计亮点</strong>：Flash Mode 通过剥除 planning 字段直接生成更简洁的输出模式，
+      专为微调过的 Browser-Use 模型优化，执行速度提升 3-5 倍。
+      Planning Engine 允许 Agent 在步骤间维护结构化任务列表，连续失败或停滞时自动触发重新规划（Replan）。
+    </p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户调用 run()
+    participant A as Agent
+    participant BS as BrowserSession
+    participant MM as MessageManager
+    participant LLM as LLM Provider
+    participant TS as Tools
+
+    U->>A: agent.run(max_steps=50)
+    loop 每个 step（直到 done 或 max_steps）
+        A->>BS: get_browser_state_summary(screenshot=True)
+        BS-->>A: url + DOM文本 + 截图
+
+        A->>MM: create_state_messages(浏览器状态 + 历史)
+        A->>A: _inject_loop_detection_nudge()
+        A->>A: _inject_replan_nudge()
+
+        A->>LLM: chat(messages, response_format=AgentOutput)
+        LLM-->>A: AgentOutput{thinking, memory, next_goal, actions:[...]}
+
+        A->>TS: multi_act(actions)
+        TS->>BS: click / type / navigate / scroll
+        BS-->>TS: ActionResult
+
+        A->>A: _update_loop_detector_actions()
+        A->>A: _update_plan_from_model_output()
+    end
+    A-->>U: AgentHistoryList
+      </div>
+      <div class="caption">图 3-2: Agent 主循环完整时序图</div>
+    </div>
+
+<pre><code class="language-python"># 文件: browser_use/agent/service.py (line 1023-1073)
+# step() 是每次迭代的最小执行单元，严格三阶段执行
+async def step(self, step_info: AgentStepInfo | None = None) -> None:
+    self.step_start_time = time.time()
+    browser_state_summary = None
+
+    try:
+        # 阶段0: 等待 CAPTCHA 解决（Cloud 功能）
+        await self.browser_session.wait_if_captcha_solving()
+
+        # 阶段1: 准备上下文 - 获取 DOM + 截图，构建 LLM 消息
+        browser_state_summary = await self._prepare_context(step_info)
+
+        # 清空上一步的输出（防止超时时使用过期状态）
+        self.state.last_model_output = None
+        self.state.last_result = None
+
+        # 阶段2: 调用 LLM 获取结构化输出，内置超时和重试
+        await self._get_next_action(browser_state_summary)
+
+        # 阶段3: 执行动作列表（最多 max_actions_per_step 个）
+        await self._execute_actions()
+
+        # 阶段4: 后处理 - 更新循环检测、计划、下载跟踪
+        await self._post_process()
+
+    except Exception as e:
+        # 统一错误处理：累计失败次数，超过阈值时触发最终恢复
+        await self._handle_step_error(e)
+
+    finally:
+        await self._finalize(browser_state_summary)
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-2">3.2.2 关键模块二：DOM 树提取与序列化</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 browser_use/dom/service.py + serializer/serializer.py</span>
+      <span>🏷️ 融合树 + 索引映射</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：完整 DOM 树有数千节点，绝大多数与任务无关；
+      而 LLM 需要精确知道"哪些元素可点击"以及"如何引用它们"。
+      直接传 HTML 太长且噪音巨大，传截图无法精确定位元素。
+    </p>
+    <p>
+      <strong>两步融合方案</strong>：
+      Step 1 — 通过 CDP 同时拉取 <code>Accessibility.getFullAXTree</code>（语义标签、role、name）
+      和 <code>DOMSnapshot.captureSnapshot</code>（layout bounds、computed styles、visibility）；
+      Step 2 — 将两棵树按 <code>backendNodeId</code> 对齐，构建 <code>EnhancedAXNode</code> 融合节点，
+      每个节点同时携带语义信息和布局可见性信息。
+    </p>
+    <p>
+      <strong>序列化输出示例</strong>（DOMTreeSerializer）：过滤不可见/不可交互节点后，
+      为每个交互元素分配递增序号，输出如：
+      <code>[12]&lt;button&gt;立即购买&lt;/button&gt;</code>，
+      <code>[13]&lt;input type="text" placeholder="搜索..."&gt;</code>。
+      LLM 决策输出 <code>{"click": {"index": 12}}</code> 即可触发操作，无需 XPath 或 CSS selector。
+    </p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant SVC as DomService
+    participant CDP as Chrome DevTools Protocol
+    participant AX as AX Tree 处理
+    participant DOM as DOMSnapshot 处理
+    participant SER as DOMTreeSerializer
+
+    SVC->>CDP: Accessibility.getFullAXTree()
+    CDP-->>SVC: AXNode[] (role, name, nodeId...)
+
+    SVC->>CDP: DOMSnapshot.captureSnapshot(computedStyles=[...])
+    CDP-->>SVC: LayoutTree + NodeTree + strings[]
+
+    SVC->>AX: 构建 backendNodeId → AXNode 映射
+    SVC->>DOM: build_snapshot_lookup() → 布局信息查找表
+
+    SVC->>SVC: 递归合并两棵树 → EnhancedDOMTreeNode[]
+    Note over SVC: 每个节点含: role, name, bounds,<br/>is_visible, is_clickable, cursor_style
+
+    SVC->>SER: DOMTreeSerializer(root_node)
+    SER->>SER: 过滤不可见/script/style 节点
+    SER->>SER: ClickableElementDetector 判断可交互性
+    SER->>SER: 分配递增索引 [0], [1], [2]...
+    SER-->>SVC: SerializedDOMState{text, selector_map}
+    Note over SER: selector_map: index → backendNodeId<br/>用于执行阶段精确定位
+      </div>
+      <div class="caption">图 3-3: DOM 树提取与序列化流程</div>
+    </div>
+
+<pre><code class="language-python"># 文件: browser_use/dom/enhanced_snapshot.py (line 17-29)
+# 只请求必要的计算样式，避免向 Chrome 传递过多请求导致崩溃
+REQUIRED_COMPUTED_STYLES = [
+    'display',       # 用于可见性检测：display:none 不可见
+    'visibility',    # 用于可见性检测：visibility:hidden 不可见
+    'opacity',       # 用于可见性检测：opacity:0 透明不可见
+    'overflow',      # 用于滚动检测
+    'overflow-x',
+    'overflow-y',
+    'cursor',        # 关键！cursor:pointer 强烈暗示可点击
+    'pointer-events',# pointer-events:none → 不可交互
+    'position',      # 用于 z-index 遮挡检测
+    'background-color',
+]
+# 通过 Paint Order 过滤被上层元素遮挡的交互元素
+# 通过 viewport_threshold 过滤视口外 1000px 以上的元素
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-3">3.2.3 关键模块三：Watchdog 事件驱动架构</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 browser_use/browser/watchdog_base.py + watchdogs/</span>
+      <span>🏷️ 观察者模式 + 自动注册</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：浏览器运行时有大量需要监控的横切关注点（CAPTCHA、崩溃、弹窗、下载、DOM 变化等），
+      如果全部堆在 BrowserSession 中会造成严重的代码耦合；如果各模块直接轮询则浪费资源且难以扩展。
+    </p>
+    <p>
+      <strong>解决方案</strong>：<code>BaseWatchdog</code> 基类 + <code>bubus</code> 事件总线。
+      每个 Watchdog 只需实现 <code>on_EventTypeName</code> 方法，基类的 <code>attach_to_session()</code>
+      通过反射自动扫描方法名并注册事件处理器。
+      Watchdog 实例化时传入 <code>BrowserSession</code> 和 <code>EventBus</code>，其余状态完全在 Watchdog 内部维护，
+      互不污染。
+    </p>
+    <p>
+      <strong>CDP 断连恢复</strong>：每个事件处理器外层都有一个统一的包装函数（<code>make_unique_handler</code>），
+      检测到 CDP WebSocket 断连时会等待重连成功再继续执行，而不是静默丢弃事件，
+      确保长时任务在网络抖动时不会静默失败。
+    </p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+graph LR
+    subgraph BrowserSession
+        EB[EventBus]
+    end
+    subgraph Watchdogs
+        CW[CaptchaWatchdog\non_BrowserStateRequestEvent]
+        CR[CrashWatchdog\non_BrowserErrorEvent]
+        DL[DownloadsWatchdog\non_FileDownloadedEvent]
+        PO[PopupsWatchdog\non_TabCreatedEvent]
+        SC[ScreenshotWatchdog\non_NavigationCompleteEvent]
+        DM[DOMWatchdog\non_NavigationStartedEvent]
+    end
+    EB -->|BrowserStateRequestEvent| CW
+    EB -->|BrowserErrorEvent| CR
+    EB -->|FileDownloadedEvent| DL
+    EB -->|TabCreatedEvent| PO
+    EB -->|NavigationCompleteEvent| SC
+    EB -->|NavigationStartedEvent| DM
+    CW -->|CaptchaDetectedEvent| EB
+    CR -->|BrowserReconnectingEvent| EB
+    SC -->|ScreenshotCapturedEvent| EB
+      </div>
+      <div class="caption">图 3-4: Watchdog 事件订阅/发布关系图</div>
+    </div>
+
+<pre><code class="language-python"># 文件: browser_use/browser/watchdog_base.py (line 243-280)
+# attach_to_session 通过反射自动注册所有 on_EventName 方法
+def attach_to_session(self) -> None:
+    from browser_use.browser import events
+
+    # 扫描所有 events 模块中定义的事件类
+    event_classes = {}
+    for name in dir(events):
+        obj = getattr(events, name)
+        if inspect.isclass(obj) and issubclass(obj, BaseEvent):
+            event_classes[name] = obj
+
+    # 扫描当前 Watchdog 所有 on_XXX 方法并自动注册
+    for method_name in dir(self):
+        if method_name.startswith('on_') and callable(getattr(self, method_name)):
+            event_name = method_name[3:]   # 去掉 'on_' 前缀
+            if event_name in event_classes:
+                event_class = event_classes[event_name]
+                handler = getattr(self, method_name)
+                # 包装 handler：添加 CDP 断连检测 + 重连等待逻辑
+                self.attach_handler_to_session(self.browser_session, event_class, handler)
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-4">3.2.4 关键模块四：循环检测系统</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 browser_use/agent/views.py — ActionLoopDetector</span>
+      <span>🏷️ 滚动窗口哈希 + 页面指纹</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：LLM 有时会陷入行为循环（反复点击同一按钮、反复搜索同一词），
+      导致任务无法完成并耗尽 Token。强制阻断会损失 Agent 的自主性（有时重复操作是合理的），
+      而完全不处理则会导致 Token 浪费。
+    </p>
+    <p>
+      <strong>解决方案</strong>：<strong>软检测 + 提示注入</strong>。
+      <code>ActionLoopDetector</code> 维护两个滚动窗口：
+      (1) <strong>动作哈希窗口</strong>（最近 20 步）：对每个动作规范化后计算 SHA-256 前 12 位，
+      统计重复次数；重复 ≥3 次时向 LLM 注入"你已经重复了此操作，请换一种方式"的提示信息；
+      (2) <strong>页面指纹窗口</strong>：对页面 URL + DOM 文本哈希 + 元素数量构成指纹，
+      连续 N 步指纹相同说明页面停滞，也会触发提示。
+      关键设计：这些提示只是"建议"，不会阻断执行，Agent 可以忽略它们继续重复——
+      因为有些任务确实需要重复操作（如等待加载）。
+    </p>
+
+<pre><code class="language-python"># 文件: browser_use/agent/views.py (line 110-154)
+# 动作哈希规范化：不同类型的动作用不同粒度进行相似度计算
+def _normalize_action_for_hash(action_name: str, params: dict) -> str:
+    if action_name == 'search':
+        # 搜索：对关键词排序去重，引擎相同+关键词相同 = 同一操作
+        query = str(params.get('query', ''))
+        tokens = sorted(set(re.sub(r'[^\w\s]', ' ', query.lower()).split()))
+        engine = params.get('engine', 'google')
+        return f'search|{engine}|{"|".join(tokens)}'
+
+    if action_name in ('click', 'input'):
+        # 点击/输入：只看元素 index，不看具体文字（index 相同 = 同一元素）
+        index = params.get('index')
+        if action_name == 'input':
+            text = str(params.get('text', '')).strip().lower()
+            return f'input|{index}|{text}'
+        return f'click|{index}'
+
+    if action_name == 'navigate':
+        # 导航：完整 URL（不同路径 = 合理探索，不算重复）
+        return f'navigate|{params.get("url", "")}'
+
+    # 默认：action_name + 所有参数排序后序列化
+    filtered = {k: v for k, v in sorted(params.items()) if v is not None}
+    return f'{action_name}|{json.dumps(filtered, sort_keys=True)}'
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-5">3.2.5 关键模块五：消息压缩与上下文管理</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 browser_use/agent/message_manager/service.py</span>
+      <span>🏷️ LLM 摘要压缩 + 敏感数据脱敏</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：长任务（50+ 步）的对话历史会超出 LLM 上下文窗口（通常 128k tokens），
+      而且包含大量重复的截图和 DOM 文本，这些历史数据对当前决策的价值递减，却持续消耗 Token。
+    </p>
+    <p>
+      <strong>解决方案</strong>：<code>MessageCompactionSettings</code> 配置的自动压缩机制。
+      默认每 25 步触发一次，或当历史文本超过 40000 字符时触发。
+      压缩时保留最近 6 条历史记录（包含最新的行动结果和浏览器状态），
+      对更早的历史调用一个（可配置的）摘要 LLM 生成不超过 6000 字的摘要，
+      替换掉原来的完整历史。这类似于人类"将前 N 页笔记压缩成一段摘要"的工作方式。
+    </p>
+    <p>
+      <strong>敏感数据保护</strong>：<code>sensitive_data</code> 参数支持传入密码、API Key 等敏感信息。
+      MessageManager 在构建消息时会对这些值进行正则替换（<code>redact_sensitive_string</code>），
+      确保 LLM 日志和对话记录中不出现明文密码；同时支持按域名隔离（domain-specific credentials），
+      避免某网站的密码在其他网站被意外使用。
+    </p>
+
+<pre><code class="language-python"># 文件: browser_use/agent/views.py (line 35-56)
+# MessageCompactionSettings 控制历史压缩策略
+class MessageCompactionSettings(BaseModel):
+    enabled: bool = True
+    compact_every_n_steps: int = 25        # 每隔 25 步强制压缩一次
+    trigger_char_count: int | None = None  # 字符数阈值，默认 40000（约 10k tokens）
+    trigger_token_count: int | None = None # Token 数阈值（与字符数二选一）
+    chars_per_token: float = 4.0           # 字符→Token 估算比例
+    keep_last_items: int = 6               # 保留最近 N 条不压缩（保持短期记忆完整）
+    summary_max_chars: int = 6000          # 压缩后摘要最大字符数
+    include_read_state: bool = False       # 是否在摘要中包含已读状态
+    compaction_llm: BaseChatModel | None = None  # 可指定专用摘要模型（如 flash）
+</code></pre>
+  </div>
+
+  <h2 id="section-4">4 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>4.1 优势分析</h4>
+      <ul>
+        <li><strong>工程完备性高</strong>：从 CAPTCHA 处理、浏览器崩溃恢复、下载跟踪到敏感数据脱敏，覆盖了生产级浏览器自动化的大多数 edge case。</li>
+        <li><strong>LLM 无关性</strong>：统一的 <code>BaseChatModel</code> 抽象层支持 15+ 提供商，切换模型只需改一个参数，不影响任何业务逻辑。</li>
+        <li><strong>索引化 DOM 表示优雅</strong>：为可交互元素分配数字索引，彻底解决了"LLM 如何精确引用 DOM 元素"的难题，比 CSS selector 更稳定，比图像坐标更精确。</li>
+        <li><strong>软性循环检测</strong>：不强制阻断而是注入提示的设计，在防止无效循环的同时保留了 Agent 的自主性，避免了误杀合理的重复操作。</li>
+        <li><strong>事件总线架构可扩展性强</strong>：新增监控能力只需写一个 Watchdog 类，不需要修改任何已有代码。</li>
+        <li><strong>消息压缩支持超长任务</strong>：自动摘要历史使得 50+ 步的复杂任务成为可能，而不受 LLM 上下文窗口的硬限制。</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>4.2 局限分析</h4>
+      <ul>
+        <li><strong>DOM 序列化计算开销不小</strong>：每步都需要调用 CDP 拉取完整 AX Tree + DOMSnapshot，两棵树融合 + 过滤 + 序列化，在重型页面（如电商首页）可能耗时 1-3 秒。</li>
+        <li><strong>Canvas / WebGL 页面盲区</strong>：DOM 树无法表示 Canvas 或 WebGL 渲染的内容，此类场景只能依赖截图（视觉），定位精度远不如索引方式。</li>
+        <li><strong>多步规划能力有限</strong>：Planning Engine 提供了基础的任务列表，但对于需要复杂推理（如多步事务、条件分支）的任务，LLM 的规划能力仍然是瓶颈，框架层面没有做更深的弥补。</li>
+        <li><strong>Token 消耗较高</strong>：平均每个步骤5 千 → 1 万+tokens，每任务约 5 万 → 10 万+ tokens，每步都包含截图（vision token）+ DOM 文本 + 完整历史，即使压缩后，单任务几十步的成本仍然可观。</li>
+        <li><strong>并发任务支持有限</strong>：单 BrowserSession 模型在高并发场景下需要多实例，资源调度和会话复用逻辑主要依赖 Cloud 版本，开源版缺少内置的任务队列。</li>
+        <li><strong>Monkey Patching 替代方案缺失</strong>：相比 Sharingan 那样可以"录制回放"，browser-use 没有离线测试/录制机制，每次调试都需要真实联网浏览器，开发体验有改进空间。</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: {
+      diagramMarginX: 20, diagramMarginY: 20,
+      actorMargin: 60, mirrorActors: false, messageAlign: 'center'
+    },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+
+  hljs.highlightAll();
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>
