@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright CLI 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #7c3aed;
+    --accent-light: #ede9fe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  .toc {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+  }
+  .toc h3 { font-size: 14px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; }
+
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #f5f3ff 0%, #f0fdf4 100%); border: 1px solid #ddd6fe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 6px; }
+
+  .compare-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+  .compare-table th { background: var(--accent-light); font-weight: 600; padding: 10px 14px; border: 1px solid #ddd6fe; text-align: left; }
+  .compare-table td { padding: 10px 14px; border: 1px solid var(--border); }
+  .compare-table tr:nth-child(even) { background: #fafafa; }
+
+  .diagram-container { margin: 24px 0; padding: 24px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #6d28d9; border-radius: 4px; }
+
+  .module-card { margin: 24px 0; padding: 24px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .module-card .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+  .module-card .module-meta span { padding: 2px 10px; background: var(--bg-alt); border-radius: 20px; }
+
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #bbf7d0; }
+  .eval-card.weakness { background: #fffbeb; border-color: #fde68a; }
+  .eval-card h4 { margin: 0 0 12px; font-size: 16px; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  .callout { margin: 20px 0; padding: 14px 18px; border-radius: 8px; border-left: 4px solid var(--accent); background: var(--accent-light); font-size: 14px; }
+
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 与 playwright-mcp 的定位对比</a>
+  <a href="#section-1-3" class="toc-h3">1.3 项目预期</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 CLI 优先于 MCP（Token 经济学）</a>
+  <a href="#section-2-2" class="toc-h3">2.2 Daemon 持久化 + Socket 通信</a>
+  <a href="#section-2-3" class="toc-h3">2.3 SKILL.md：Agent 原生接口层</a>
+  <a href="#section-2-4" class="toc-h3">2.4 Spec-Driven 三阶段测试工作流</a>
+  <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+  <a href="#section-3-1" class="toc-h3">3.1 系统架构设计</a>
+  <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
+  <a href="#section-3-2-1" class="toc-h4">3.2.1 程序入口与命令分发</a>
+  <a href="#section-3-2-2" class="toc-h4">3.2.2 Session & Daemon 管理</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 Registry：工作区感知会话注册表</a>
+  <a href="#section-3-2-4" class="toc-h4">3.2.4 SKILL.md：Agent 工作流指令集</a>
+  <a href="#section-3-2-5" class="toc-h4">3.2.5 --debug=cli + attach：测试调试集成</a>
+  <a href="#section-4" class="toc-h2">4 方案评价</a>
+  <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+  <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Playwright CLI 深度解读</h1>
+    <div class="subtitle">面向 AI 编程 Agent 的 Token 高效浏览器自动化 CLI 工具</div>
+    <div class="lead">
+      Playwright CLI 是 Microsoft 在 playwright-mcp 之后推出的第二个 Playwright AI Agent 接口，核心思想是：与其把 LLM 困在 MCP 的"工具模式"里，不如让它像一个真正的开发者一样直接在 shell 里敲命令。它通过 Daemon + Socket 架构保持浏览器持久化，用 SKILL.md 文件教会 AI Agent 使用方法，并提供了完整的"规格驱动测试"（Plan → Generate → Heal）工作流。拥有 10.8k Star，已成为 Claude Code、GitHub Copilot 等编程 Agent 的首选浏览器自动化方案。
+    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>CLI vs MCP 的本质区别在于 token 经济学：CLI 每次调用只有一行 shell 命令，MCP 每次需要加载完整 JSON Schema 和无障碍树，高吞吐量编程 Agent 的偏好正在从 MCP 迁移到 CLI。</li>
+      <li>Daemon + Unix Socket 架构是关键创新：浏览器以后台守护进程形式持久运行，每次 CLI 调用只是一个轻量级 socket 客户端，会话间无需重启浏览器。</li>
+      <li>SKILL.md 是 "Agent 原生接口"的新范式：通过 <code>playwright-cli install --skills</code> 将操作手册注入 Agent 的上下文，让 AI 无需读大型文档即可掌握工具使用方法。</li>
+      <li>Spec-Driven 工作流（Plan→Generate→Heal）是 AI 测试工程的完整闭环，通过 <code>--debug=cli</code> 将 playwright-cli 深度集成进 Playwright 测试调试流程。</li>
+      <li><code>--raw</code> 和 <code>--json</code> 模式让工具输出可管道化、可编程消费，是 Agent 编排多命令工作流的基础。</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>
+    Playwright MCP 发布后虽然迅速走红（33k Star），但 Microsoft 团队意识到了一个更深层的问题：<strong>MCP 模式并不是所有 Agent 场景的最优解</strong>。对于 Claude Code、GitHub Copilot 这类"编程 Agent"（coding agent），它们的工作模式是在大型代码仓库中推理、读写文件、运行命令，浏览器操作只是偶发需求。在这种场景下，MCP 的负担变得显著：每次工具调用都需要传输完整的 JSON Schema（工具定义），每次快照响应都包含冗长的 ARIA 树，这些都消耗了宝贵的上下文窗口。
+  </p>
+  <p>
+    Playwright CLI 于 2026 年推出，定位是：<strong>让 AI Agent 像人类开发者一样使用命令行</strong>。一行 <code>playwright-cli click e15</code> 替代了 MCP 中一次完整的 <code>tools/call browser_click</code> JSON 往返。工具不通过协议层暴露，而是通过 <strong>SKILL.md 文件</strong>——一份专为 AI Agent 设计的操作手册——直接注入 Agent 的系统提示或项目文档中。
+  </p>
+
+  <h3 id="section-1-2">1.2 与 playwright-mcp 的定位对比</h3>
+  <table class="compare-table">
+    <tr>
+      <th>维度</th>
+      <th>playwright-mcp</th>
+      <th>playwright-cli</th>
+    </tr>
+    <tr>
+      <td>接口类型</td>
+      <td>MCP 协议（JSON-RPC over stdio/HTTP）</td>
+      <td>Shell 命令行 (CLI)</td>
+    </tr>
+    <tr>
+      <td>目标用户</td>
+      <td>持续浏览器状态的专用 Agent 循环</td>
+      <td>编程 Agent（Claude Code / GitHub Copilot）</td>
+    </tr>
+    <tr>
+      <td>Token 消耗</td>
+      <td>较高（Schema + ARIA 树随每次调用传输）</td>
+      <td>极低（一行 shell 命令）</td>
+    </tr>
+    <tr>
+      <td>浏览器持久化</td>
+      <td>连接期间持久（进程内）</td>
+      <td>跨 CLI 调用持久（Daemon 进程）</td>
+    </tr>
+    <tr>
+      <td>会话管理</td>
+      <td>单一连接 / 共享上下文</td>
+      <td>多命名会话（<code>-s=name</code>），工作区隔离</td>
+    </tr>
+    <tr>
+      <td>Agent 发现机制</td>
+      <td>MCP 协议 <code>tools/list</code></td>
+      <td>SKILL.md 文件（<code>playwright-cli install --skills</code>）</td>
+    </tr>
+    <tr>
+      <td>测试工作流集成</td>
+      <td>无直接集成</td>
+      <td><code>--debug=cli</code> 暂停、<code>attach</code> 接管测试</td>
+    </tr>
+    <tr>
+      <td>视觉仪表板</td>
+      <td>无</td>
+      <td><code>playwright-cli show</code>（实时截图网格）</td>
+    </tr>
+  </table>
+
+  <h3 id="section-1-3">1.3 项目预期</h3>
+
+  <h4 id="section-1-3-1">1.3.1 预期一：Token 高效的浏览器自动化</h4>
+  <p>
+    在编程 Agent 场景中，Token 预算极为宝贵——Agent 需要同时持有大段代码、测试文件、推理链。Playwright CLI 的每条命令极其简洁（<code>playwright-cli click e15</code>），只在需要时返回快照（文件链接而非内联 YAML），彻底避免了 MCP 模式下"每次调用都返回整棵 ARIA 树"的 token 浪费。<code>--raw</code> 模式进一步剥离所有装饰性输出，<code>--json</code> 模式支持机器可读，方便 Agent 编排管道。
+  </p>
+
+  <h4 id="section-1-3-2">1.3.2 预期二：为 AI Agent 提供完整的测试生命周期支持</h4>
+  <p>
+    项目内置了"规格驱动测试"（Spec-Driven Testing）工作流，覆盖测试生命周期的三个阶段：<strong>Plan</strong>（探索应用，写 <code>.plan.md</code> 规格文件）、<strong>Generate</strong>（逐步执行规格，自动生成 Playwright TypeScript 测试）、<strong>Heal</strong>（发现失败测试，attach 到调试会话，修复后回写规格）。这三阶段都通过 SKILL.md 中的参考文档详细指导 Agent 完成，无需任何 LLM 预训练知识。
+  </p>
+
+  <h4 id="section-1-3-3">1.3.3 预期三：工作区感知的多会话并发管理</h4>
+  <p>
+    通过 Registry 注册表和 Daemon 守护进程，Playwright CLI 支持同一工作区内多个命名浏览器会话并发运行（<code>-s=auth</code>、<code>-s=public</code>），每个会话有独立的 Cookie、LocalStorage、历史记录。会话通过 Unix domain socket 通信，轻量且低延迟。工作区识别通过向上遍历 <code>.playwright</code> 目录实现，同一项目的所有 CLI 调用自动共享同一会话命名空间。
+  </p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 CLI 优先于 MCP（Token 经济学）</h3>
+  <p>
+    这是 playwright-cli 存在的根本理由。MCP 工具调用的开销包括：① 连接时传输所有工具的 JSON Schema（playwright-mcp 有 50+ 个工具）；② 每次调用返回完整 ARIA 快照（可能数百行 YAML）。对于只需偶发浏览器操作的编程 Agent 来说，这些开销喧宾夺主。
+  </p>
+  <p>
+    CLI 模式的开销几乎可以忽略：Agent 在需要时执行一行 shell 命令，获得一个文件链接（快照保存到 <code>.playwright-cli/</code> 目录），后续需要时再按需读取。SKILL.md 只需在会话初始化时加载一次，之后每次调用仅传递命令本身。
+  </p>
+
+  <h3 id="section-2-2">2.2 Daemon 持久化 + Socket 通信</h3>
+  <p>
+    最朴素的 CLI 浏览器工具实现方式是：每次命令启动一个浏览器、执行操作、关闭浏览器。但这代价极高（Chromium 冷启动 ~1-2 秒，加载页面更久）。playwright-cli 的解法是：<strong>第一次 <code>open</code> 时启动后台守护进程（Daemon），后续命令通过 Unix domain socket 发送请求到 Daemon，Daemon 在同一个浏览器实例中执行操作后返回结果</strong>。从用户视角看，是多次独立的 CLI 调用共享同一个持久化浏览器状态——这与 MCP 长连接的效果相同，但不需要维持一个持续的 JSON-RPC 连接。
+  </p>
+
+  <h3 id="section-2-3">2.3 SKILL.md：Agent 原生接口层</h3>
+  <p>
+    传统工具的文档是给人类读的，放在 README 或官网上。Playwright CLI 引入了一个新范式：<strong>为 AI Agent 专门设计的操作手册</strong>，以 SKILL.md 格式存放，通过 <code>playwright-cli install --skills</code> 自动安装到 <code>.claude/skills/</code>（Claude Code）或等效位置。SKILL.md 包含快速开始、所有命令参考、常用场景示例，结构紧凑、无废话，专为 Agent 上下文窗口优化。
+  </p>
+  <p>
+    更进一步，SKILL.md 还包含 10 份专题参考文档（<code>references/</code>），覆盖会话管理、测试生成、规格驱动测试、网络 mock 等完整工作流。Agent 可以按需加载这些参考，而不是把所有信息一次性塞入上下文。
+  </p>
+
+  <h3 id="section-2-4">2.4 Spec-Driven 三阶段测试工作流</h3>
+  <p>
+    playwright-cli 不只是一个"让 Agent 点击网页"的工具，它还包含一套完整的 AI 测试工程方法论：
+  </p>
+  <ul>
+    <li><strong>Plan（规划）</strong>：用 <code>--debug=cli</code> 启动种子测试（seed test），Agent attach 后探索应用，记录测试场景，写入 <code>specs/*.plan.md</code> 文件</li>
+    <li><strong>Generate（生成）</strong>：从规格文件逐步执行，每次操作生成对应 TypeScript 代码（codegen），收集后写入 <code>.spec.ts</code> 测试文件</li>
+    <li><strong>Heal（修复）</strong>：运行失败的测试，attach 到暂停的测试会话诊断原因，修复代码，同步更新规格文件</li>
+  </ul>
+  <p>
+    这三个阶段都通过 SKILL.md 的参考文档详细指导，形成了一个完整的"AI 驱动测试闭环"。
+  </p>
+
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>
+    Playwright CLI 分为三层：<strong>CLI 客户端层</strong>（<code>playwright-cli.js</code>，解析命令行参数，通过 socket 发送请求）、<strong>Daemon 服务层</strong>（后台进程，运行 MCP 工具服务器，处理来自 socket 的请求）、<strong>浏览器层</strong>（与 playwright-mcp 共享相同的 browserFactory + BrowserBackend）。Registry 注册表横跨客户端和 Daemon，通过 <code>.session</code> 文件记录所有会话状态。
+  </p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    subgraph Agent编程环境
+        A[AI Agent\nClaude Code / Copilot]
+        SK[SKILL.md\n操作手册]
+        A -->|读取| SK
+    end
+
+    subgraph CLI客户端进程
+        B[playwright-cli.js\n3行入口]
+        C[program.ts\n命令分发器]
+        D[Registry\n加载.session文件]
+        E[Session.run\nUnix Socket客户端]
+        B --> C
+        C --> D
+        D --> E
+    end
+
+    subgraph 注册表文件系统
+        F[~/.cache/ms-playwright/daemon\n工作区哈希目录\nsessionName.session JSON]
+    end
+
+    subgraph Daemon后台进程
+        G[cliDaemon.js\nSocket服务器]
+        H[BrowserBackend\n工具执行引擎]
+        I[browserFactory\n浏览器工厂]
+    end
+
+    subgraph 浏览器
+        J[Chromium / Firefox / WebKit\n持久化会话]
+    end
+
+    A -->|运行命令| B
+    E -->|Unix Socket\nJSON-RPC| G
+    C -->|startDaemon spawn| G
+    G --> H
+    H --> I
+    I --> J
+    D <-->|读写| F
+    G -->|写入| F
+    </div>
+    <div class="caption">图 3-1：Playwright CLI 系统架构图</div>
+  </div>
+
+  <p>
+    <strong>CLI 客户端层</strong>是极度轻量的：<code>playwright-cli.js</code> 只有 3 行，调用 <code>playwright-core</code> 内嵌的 <code>program.ts</code>。<code>program.ts</code> 使用自定义的 <code>minimist</code>（轻量参数解析，无需 Commander.js）解析 argv，根据命令名分发到对应的处理逻辑。<br>
+    <strong>Daemon 层</strong>：通过 <code>Session.startDaemon()</code> <code>spawn</code> 一个 detached 子进程（<code>cliDaemon.js</code>），子进程在后台持续运行，监听 Unix domain socket。Socket 路径记录在 <code>.session</code> 文件中，客户端通过 Registry 找到这个文件后直接建立连接。<br>
+    <strong>浏览器层</strong>：与 playwright-mcp 共用 <code>browserFactory</code> 和 <code>BrowserBackend</code>，通过相同的 4 种接入模式管理浏览器。
+  </p>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <h4 id="section-3-2-1">3.2.1 关键模块一：程序入口与命令分发</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/cli-client/program.ts</span>
+      <span>🏷️ 命令分发器 + minimist 参数解析</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：CLI 需要支持 60+ 个命令，每个命令有不同的参数和校验规则，同时要支持 <code>-s=name</code> 全局 session 切换、<code>--raw</code> / <code>--json</code> 输出模式，以及 <code>open</code>/<code>attach</code> 这类启动型命令（需要先 spawn daemon 再执行操作）。
+    </p>
+    <p>
+      <strong>核心设计</strong>：使用 <code>minimist</code> 而非 Commander.js，因为 CLI 命令的语法极其简单（命令名 + 位置参数），不需要 Commander 的子命令树。命令的校验规则（支持的 flags、位置参数数量）从 <code>help.json</code>（构建时生成）加载，实现了"命令定义与分发逻辑分离"。启动型命令（open/attach）先 spawn daemon，然后复用 <code>runInSession</code> 执行首次操作（goto/snapshot），失败时自动停止 daemon 避免僵尸进程。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant User as AI Agent
+    participant CLI as program.ts
+    participant Reg as Registry
+    participant Sess as Session
+    participant Dae as Daemon进程
+
+    User->>CLI: playwright-cli open https://example.com
+    CLI->>CLI: minimist 解析 argv
+    CLI->>Reg: Registry.load() 读取.session文件
+    CLI->>Sess: Session.startDaemon(args, "open")
+    Sess->>Dae: spawn cliDaemon.js [detached]
+    Dae-->>Sess: stdout "Daemon listening on..."
+    Sess-->>CLI: { pid, sessionName }
+    CLI->>Reg: registry.loadEntry(clientInfo, sessionName)
+    CLI->>Sess: session.run({goto, url})
+    Sess->>Dae: Unix Socket: {method:"run", args:{goto, url}}
+    Dae-->>Sess: {text: "### Page\n..."}
+    CLI->>User: 输出 "Browser opened" + 快照链接
+      </div>
+      <div class="caption">图 3-2：open 命令执行时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/cli-client/program.ts（open 命令核心逻辑）
+case 'open': {
+  // 1. 如果已有同名会话，先停止它（确保干净启动）
+  const { pid } = await startSession(sessionName, registry, clientInfo, args, 'open');
+
+  // 2. 从磁盘重新加载 .session 文件（Daemon 刚写入）
+  const newEntry = await registry.loadEntry(clientInfo, sessionName);
+
+  // 3. 提取第一个位置参数作为 URL，通过 socket 执行 goto
+  const params = args._.slice(1);
+  const toolText = await runInSessionOrStop(
+    newEntry, clientInfo,
+    { _: ['goto', ...(params.length ? params : ['about:blank'])] },
+    output
+  );
+  output.open(sessionName, pid, toolText);
+  return;
+}
+
+// 启动 Daemon 的关键：spawn detached 子进程，等待 "listening" 信号
+static async startDaemon(clientInfo, cliArgs, mode) {
+  const child = spawn(process.execPath, [cliPath, sessionName, ...daemonArgs], {
+    detached: true,   // 父进程退出后 Daemon 继续运行
+    stdio: ['ignore', 'pipe', err],
+  });
+
+  // 等待 Daemon 输出 "Daemon listening on" 才返回
+  await new Promise((resolve, reject) => {
+    child.stdout.on('data', data => {
+      if (data.includes('Daemon listening on')) resolve();
+    });
+    child.on('close', code => reject(new Error(`Daemon exited: ${code}`)));
+  });
+
+  child.stdout.destroy();
+  child.unref(); // 从父进程事件循环解耦，允许父进程正常退出
+  return { pid: child.pid, sessionName };
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-2">3.2.2 关键模块二：Session & Daemon — Daemon 持久化管理</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/cli-client/session.ts</span>
+      <span>🏷️ Unix Socket IPC + 简单 JSON-RPC</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：多次独立的 CLI 调用需要操作同一个浏览器实例，但进程间无法共享内存。需要一个轻量、低延迟的进程间通信机制，同时要能检测 Daemon 是否仍然存活。
+    </p>
+    <p>
+      <strong>核心设计</strong>：使用 <strong>Unix domain socket</strong>（Linux/Mac）或命名管道（Windows）——它是最轻量的本地 IPC 机制，比 TCP 快（无 TCP 握手），比 HTTP 简单（无头部开销）。通信协议是手写的极简 JSON-RPC：<code>{id, method, params}</code> 请求 + <code>{id, result?/error?}</code> 响应。<code>SocketConnectionClient</code> 管理 Promise 回调 map，实现请求-响应配对。版本兼容性检查（<code>compareSemver</code>）防止旧版本 Daemon 被新版客户端误用。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant CLI as CLI客户端
+    participant FS as .session 文件
+    participant Sock as Unix Socket
+    participant Dae as Daemon进程
+
+    CLI->>FS: 读取 socketPath
+    CLI->>Sock: net.createConnection(socketPath)
+
+    alt 连接成功
+        Sock-->>CLI: connected
+        CLI->>Sock: {id:1, method:"run", params:{args, cwd, raw}}
+        Sock->>Dae: 转发请求
+        Dae->>Dae: 执行工具（click/snapshot/...）
+        Dae->>Sock: {id:1, result:{text:"### Page\n..."}}
+        Sock-->>CLI: 响应
+        CLI->>Sock: close()
+    else 连接失败 (ENOENT/ECONNREFUSED)
+        Sock-->>CLI: error
+        CLI->>FS: 删除 .session 文件（Daemon 已死）
+        CLI->>CLI: throw "Browser not open"
+    end
+      </div>
+      <div class="caption">图 3-3：Session Socket 通信时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/cli-client/session.ts（socket 通信核心）
+async run(clientInfo: ClientInfo, args, options): Promise<{ text: string }> {
+  // 版本兼容检查：客户端版本必须 >= Daemon 版本
+  if (!this.isCompatible(clientInfo))
+    throw new Error(`Client v${clientInfo.version}, session v${this.config.version}. Re-open browser.`);
+
+  const { socket } = await this._connect();
+  if (!socket)
+    throw new Error(`Browser '${this.name}' not open. Run playwright-cli open first.`);
+
+  // 单次发送 + 关闭：无需保持长连接
+  return await SocketConnectionClient.sendAndClose(socket, 'run', {
+    args,
+    cwd: process.cwd(),    // 传入工作目录，Daemon 用于解析相对路径
+    raw: options?.raw,
+    json: options?.json,
+  });
+}
+
+private async _connect(): Promise<{ socket?: net.Socket, error?: Error }> {
+  return await new Promise(resolve => {
+    const socket = net.createConnection(this.config.socketPath, () => resolve({ socket }));
+    socket.on('error', error => {
+      // 连接失败时清理过期的 socket 文件（Unix only）
+      if (os.platform() !== 'win32')
+        void fs.promises.unlink(this.config.socketPath).catch(() => {}).then(() => resolve({ error }));
+      else
+        resolve({ error });
+    });
+  });
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-3">3.2.3 关键模块三：Registry — 工作区感知会话注册表</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/cli-client/registry.ts</span>
+      <span>🏷️ 文件系统注册表 + 工作区哈希隔离</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：多个项目目录可能同时运行多个 playwright-cli 会话，需要防止不同项目的会话互相干扰。同时需要跨进程共享会话状态（socket 路径、浏览器配置等），但不能依赖内存或数据库。
+    </p>
+    <p>
+      <strong>核心设计</strong>：以<strong>文件系统作为注册表</strong>——每个会话对应 <code>~/.cache/ms-playwright/daemon/{workspaceHash}/{sessionName}.session</code> 一个 JSON 文件，包含 socketPath、浏览器配置、时间戳等。工作区通过 <code>findWorkspaceDir</code>（向上查找 <code>.playwright</code> 目录）识别，哈希为 SHA1 前 16 位，确保不同项目使用不同的 daemon 目录，避免会话名冲突。<code>clientKey</code> 优先使用工作区绝对路径（可读），找不到 <code>.playwright</code> 目录时退回到哈希。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+graph LR
+    subgraph 项目A
+        A1[cwd = /projects/app-a]
+        A2[.playwright 目录]
+        A3[workspaceDir = /projects/app-a]
+        A4[hash = sha1 16位]
+    end
+
+    subgraph 项目B
+        B1[cwd = /projects/app-b/src]
+        B2[向上查找 .playwright]
+        B3[workspaceDir = /projects/app-b]
+        B4[hash = 不同值]
+    end
+
+    subgraph 注册表文件系统
+        R1[daemon/hashA/default.session]
+        R2[daemon/hashA/auth.session]
+        R3[daemon/hashB/default.session]
+    end
+
+    A3 --> A4
+    A4 -->|写入| R1
+    A4 -->|写入| R2
+    B3 --> B4
+    B4 -->|写入| R3
+      </div>
+      <div class="caption">图 3-4：Registry 工作区隔离机制</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/cli-client/registry.ts（工作区发现与哈希）
+export function createClientInfo(): ClientInfo {
+  const workspaceDir = findWorkspaceDir(process.cwd());
+
+  // SHA1 哈希 + 前16位，确保唯一性
+  const hash = crypto.createHash('sha1');
+  hash.update(workspaceDir || packageRoot);
+  const workspaceDirHash = hash.digest('hex').substring(0, 16);
+
+  return {
+    version: packageJSON.version,
+    workspaceDir,              // 真实路径（若找到 .playwright 目录）
+    workspaceDirHash,          // 哈希（始终存在，作为后备 key）
+    daemonProfilesDir: path.join(baseDaemonDir, workspaceDirHash),
+    homeDir: os.homedir(),
+  };
+}
+
+// 向上遍历找 .playwright 目录（最多10层）
+function findWorkspaceDir(startDir: string): string | undefined {
+  let dir = startDir;
+  for (let i = 0; i < 10; i++) {
+    if (fs.existsSync(path.join(dir, '.playwright')))
+      return dir;
+    const parentDir = path.dirname(dir);
+    if (parentDir === dir) break; // 到达文件系统根目录
+    dir = parentDir;
+  }
+  return undefined;
+}
+
+// clientKey: 优先使用可读的绝对路径，其次用哈希
+export function clientKey(clientInfo: ClientInfo): string {
+  return clientInfo.workspaceDir || clientInfo.workspaceDirHash;
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-4">3.2.4 关键模块四：SKILL.md — Agent 工作流指令集</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 skills/playwright-cli/SKILL.md + references/</span>
+      <span>🏷️ Agent 原生文档范式</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：传统工具文档是给人读的，格式冗长，充斥 GitHub UI 元素。AI Agent 需要的是结构紧凑、立即可用的操作手册，最好能按需加载特定子主题而非一次性吃下全部文档。
+    </p>
+    <p>
+      <strong>核心设计</strong>：SKILL.md 采用专为 AI Agent 优化的格式——<strong>frontmatter 元数据</strong>（<code>name</code>、<code>description</code>、<code>allowed-tools</code>）告诉 Agent 框架如何发现和使用这个 skill；<strong>正文</strong>是简洁的命令参考（bash 代码块 + 注释），按功能分节，包含大量具体示例。SKILL.md 还包含 10 份专题 <code>references/</code> 文档，通过链接引用，Agent 可以按需 Read 具体参考而不必一次性加载所有内容。
+    </p>
+    <p>
+      <strong>安装机制</strong>：<code>playwright-cli install --skills</code> 将 SKILL.md 及 references/ 安装到 <code>.claude/skills/playwright-cli/</code>（Claude Code 约定目录）。<code>scripts/update.js</code> 实现了 skill 的自动更新——先运行 <code>install --skills</code>，再把生成的文件覆盖到 repo 的 <code>skills/</code> 目录提交，使 repo 里的 skills 与安装版本保持同步。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+graph LR
+    subgraph 安装流程
+        A[playwright-cli install --skills]
+        B[cliDaemon.js --init-workspace --init-skills]
+        C[生成 .claude/skills/playwright-cli/SKILL.md]
+        D[references/ 10份专题文档]
+        A --> B --> C --> D
+    end
+
+    subgraph Agent使用流程
+        E[Claude Code / GitHub Copilot]
+        F[自动加载 .claude/skills/SKILL.md]
+        G[主命令参考]
+        H[按需 Read references/spec-driven-testing.md]
+        I[生成 playwright-cli 命令序列]
+        E --> F --> G
+        F --> H --> I
+    end
+
+    D -.->|已安装| F
+      </div>
+      <div class="caption">图 3-5：SKILL.md 安装与使用流程</div>
+    </div>
+
+<pre><code class="language-yaml"># 文件: skills/playwright-cli/SKILL.md (frontmatter)
+---
+name: playwright-cli
+description: Automate browser interactions, test web pages and work with Playwright tests.
+allowed-tools: Bash(playwright-cli:*) Bash(npx:*) Bash(npm:*)
+---
+# Browser Automation with playwright-cli
+
+## Quick start
+```bash
+playwright-cli open                  # 打开浏览器
+playwright-cli goto https://playwright.dev  # 导航
+playwright-cli click e15             # 用快照 ref 精准定位点击
+playwright-cli screenshot            # 截图（较少用，快照更常用）
+playwright-cli close                 # 关闭
+```
+# ... 其余按功能分节的命令参考 ...
+# Specific tasks (按需加载的专题参考)
+# * Running Playwright tests [references/playwright-tests.md]
+# * Spec-driven testing     [references/spec-driven-testing.md]
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-5">3.2.5 关键模块五：<code>--debug=cli</code> + attach 测试调试集成</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 skills/playwright-cli/references/playwright-tests.md + spec-driven-testing.md</span>
+      <span>🏷️ 测试运行时钩子 + 会话 attach</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：AI Agent 修复失败的 Playwright 测试时，需要在测试运行的中间状态下探索页面（此时 URL、DOM 状态是最真实的错误现场），而不是凭空猜测。如何让 Agent 在测试暂停时接管浏览器控制权？
+    </p>
+    <p>
+      <strong>核心设计</strong>：Playwright 测试框架支持 <code>--debug=cli</code> 启动模式——测试在开始处暂停，打印 <strong>调试指令</strong>（包含一个唯一 session 名，格式 <code>tw-XXXX</code>）。playwright-cli 的 <code>attach tw-XXXX</code> 命令连接到这个已暂停的测试会话，Agent 可以自由执行 <code>snapshot</code>、<code>click</code>、<code>eval</code> 等命令探索错误现场，生成的代码可直接复制回测试文件。结束后通过 <code>resume</code>/<code>step</code> 恢复测试执行或停止后台进程。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Agent as AI Agent
+    participant Shell as Shell后台
+    participant PW as Playwright测试runner
+    participant CLI as playwright-cli
+
+    Agent->>Shell: PLAYWRIGHT_HTML_OPEN=never npx playwright test --debug=cli &
+    Shell->>PW: 启动测试，暂停在test开始处
+    PW-->>Shell: "Debugging Instructions for 'tw-abcdef' session"
+    Agent->>CLI: playwright-cli attach tw-abcdef
+    CLI->>PW: Socket连接到 tw-abcdef 会话
+    CLI-->>Agent: 输出当前页面快照
+
+    Agent->>CLI: playwright-cli snapshot
+    CLI-->>Agent: ARIA树，含元素refs
+
+    Agent->>CLI: playwright-cli click e42
+    CLI-->>Agent: "Ran Playwright code: await page.getByRole(...).click()"
+
+    Note over Agent: 分析问题，找到正确定位方式
+
+    Agent->>CLI: playwright-cli resume
+    CLI->>PW: 恢复测试执行
+    PW-->>Shell: 测试继续运行
+    Agent->>Shell: stop background test
+      </div>
+      <div class="caption">图 3-6：--debug=cli + attach 测试调试时序图</div>
+    </div>
+
+<pre><code class="language-bash"># 规格驱动测试 Heal 阶段示例
+
+# 1. 运行失败的测试，后台 debug 模式
+PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/login.spec.ts:15 --debug=cli &
+# ... 等待输出 "Debugging Instructions for 'tw-abc123' session" ...
+
+# 2. attach 到暂停的测试会话
+playwright-cli attach tw-abc123
+# 输出: Session 'tw-abc123' created, attached to 'tw-abc123'.
+# 输出: [快照链接，可查看当前页面状态]
+
+# 3. 用 resume 恢复到失败行
+playwright-cli resume --location=tests/login.spec.ts:23
+
+# 4. 探索实际页面状态
+playwright-cli snapshot
+# 发现: 按钮文本从 "Sign In" 改为 "Log In"，定位符需更新
+
+# 5. 验证修复方案
+playwright-cli click "getByRole('button', { name: 'Log In' })"
+# Ran Playwright code: await page.getByRole('button', { name: 'Log In' }).click();
+
+# 6. 停止调试会话，将生成代码更新回测试文件
+</code></pre>
+  </div>
+
+  <h2 id="section-4">4 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>4.1 优势分析</h4>
+      <ul>
+        <li><strong>Token 效率显著优于 MCP</strong>：CLI 调用本质上是 shell 命令，不携带 Schema，不强制返回 ARIA 树，高频操作的上下文开销接近于零。</li>
+        <li><strong>Daemon 架构完美平衡持久性与无状态 CLI</strong>：浏览器会话持久（无冷启动延迟），但 CLI 调用是无状态的（每次独立进程），两全其美。</li>
+        <li><strong>SKILL.md 范式引领 Agent 原生工具设计</strong>：将操作文档从"给人读"变为"给 Agent 读"，按需加载专题参考，是工具设计方法论的创新。</li>
+        <li><strong>Spec-Driven 工作流形成完整测试闭环</strong>：Plan → Generate → Heal 覆盖了 AI 测试工程师的完整职责，并通过 <code>--debug=cli</code> 与 Playwright 测试框架深度集成。</li>
+        <li><strong>多命名会话支持高并发场景</strong>：<code>-s=name</code> 轻松实现多浏览器并发（如 A/B 测试对比、并行爬取），会话间完全隔离。</li>
+        <li><strong>可视化仪表板提升 Agent 可观测性</strong>：<code>playwright-cli show</code> 提供实时截图网格，人类可随时介入观察或接管 Agent 的浏览器操作。</li>
+        <li><strong><code>--raw</code> / <code>--json</code> 使输出管道化</strong>：Agent 可以方便地通过 <code>| jq</code>、diff、重定向等方式处理工具输出，与其他 shell 工具链集成。</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>4.2 局限分析</h4>
+      <ul>
+        <li><strong>源码依然在 playwright 主仓库</strong>：与 playwright-mcp 相同，核心实现在 <code>packages/playwright-core/src/tools/cli-client/</code>，外部贡献门槛高。</li>
+        <li><strong>Daemon 状态管理有僵尸进程风险</strong>：若 Daemon 意外退出而未清理 <code>.session</code> 文件，下次 CLI 调用会报"browser not open"，需要手动 <code>kill-all</code>，用户体验较差。</li>
+        <li><strong>不适合需要持续上下文推理的场景</strong>：MCP 模式下 LLM 可以在同一连接内连续推理多步，CLI 每次调用是独立的，不适合需要 LLM "观察→推理→操作" 紧密循环的探索型自动化。</li>
+        <li><strong>SKILL.md 需要手动安装</strong>：Agent 需要先运行 <code>playwright-cli install --skills</code>，若未安装只能依赖 <code>--help</code> 输出（较简略），初次上手体验依赖手册。</li>
+        <li><strong>Windows 上 Unix Socket 变为命名管道</strong>：跨平台行为有差异，Windows 的命名管道性能和可靠性与 Unix socket 不完全等同，可能导致偶发连接问题。</li>
+        <li><strong>版本兼容性问题</strong>：若 Daemon 版本与 CLI 版本不匹配，会报错要求重新 open。在自动更新 npm 包的场景下（如 CI），可能出现版本不一致的困扰。</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#ede9fe',
+      primaryBorderColor: '#7c3aed',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: {
+      diagramMarginX: 20,
+      diagramMarginY: 20,
+      actorMargin: 60,
+      mirrorActors: false,
+      messageAlign: 'center'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20
+    }
+  });
+
+  hljs.highlightAll();
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>

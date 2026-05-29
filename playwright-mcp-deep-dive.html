@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright MCP 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  .toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+  }
+  .toc h3 {
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .toc a:hover, .toc a.active {
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  .content {
+    margin-left: 260px;
+    max-width: 860px;
+    padding: 48px 40px 120px;
+  }
+
+  .header { margin-bottom: 48px; }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+  }
+  .header .lead {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    padding: 16px 20px;
+    background: var(--bg-alt);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+  }
+
+  .conclusions {
+    margin: 32px 0;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+  }
+  .conclusions h3 {
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .conclusions ul {
+    list-style: none;
+    padding: 0;
+  }
+  .conclusions li {
+    padding: 6px 0 6px 24px;
+    position: relative;
+    font-size: 15px;
+  }
+  .conclusions li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 32px 0 12px;
+  }
+  h4 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 24px 0 8px;
+  }
+
+  p {
+    font-size: 15px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  ul, ol {
+    margin: 8px 0 16px 24px;
+    font-size: 15px;
+  }
+  li { margin-bottom: 6px; }
+
+  .diagram-container {
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .diagram-container .caption {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+  }
+
+  pre {
+    margin: 16px 0;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 16px !important;
+  }
+  code:not(pre code) {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 13px;
+    padding: 2px 6px;
+    background: #f1f5f9;
+    color: #c7254e;
+    border-radius: 4px;
+  }
+
+  .module-card {
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .module-card .module-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .module-card .module-meta span {
+    padding: 2px 10px;
+    background: var(--bg-alt);
+    border-radius: 20px;
+  }
+
+  .eval-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 16px 0;
+  }
+  .eval-card {
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .eval-card.strength {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .eval-card.weakness {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+  .eval-card h4 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 无障碍树优先于截图</a>
+  <a href="#section-2-2" class="toc-h3">2.2 工具即代码（Codegen-First）</a>
+  <a href="#section-2-3" class="toc-h3">2.3 能力门控（Capability Gating）</a>
+  <a href="#section-2-4" class="toc-h3">2.4 多模式浏览器接入</a>
+  <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+  <a href="#section-3-1" class="toc-h3">3.1 系统架构设计</a>
+  <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
+  <a href="#section-3-2-1" class="toc-h4">3.2.1 MCP 服务端 & 传输层</a>
+  <a href="#section-3-2-2" class="toc-h4">3.2.2 工具调度：BrowserBackend</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 响应构建：Response 类</a>
+  <a href="#section-3-2-4" class="toc-h4">3.2.4 浏览器工厂：四种接入模式</a>
+  <a href="#section-3-2-5" class="toc-h4">3.2.5 浏览器扩展 CDP 中继</a>
+  <a href="#section-4" class="toc-h2">4 方案评价</a>
+  <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+  <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+</nav>
+
+<main class="content">
+
+  <header class="header">
+    <h1>Playwright MCP 深度解读</h1>
+    <div class="subtitle">基于 Playwright 无障碍树的 LLM 浏览器自动化 MCP 服务器</div>
+    <div class="lead">
+      Playwright MCP 是 Microsoft 开源的 Model Context Protocol 服务器，让 LLM 可以像人一样操控浏览器——但不依赖截图，而是通过解析 HTML 无障碍树（Accessibility Tree）进行确定性交互。它在 GitHub 上收获了 33k+ Star，已成为 AI Agent 浏览器自动化领域事实上的标准工具包。读完这篇解读，你将理解它的分层架构、核心技术决策，以及为什么无障碍树方案在 token 效率和确定性上全面优于截图方案。
+    </div>
+  </header>
+
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>核心代码不在此仓库：实际源码位于 Playwright 主仓库 <code>packages/playwright-core/src/tools/</code>，此包只是发行版薄封装。</li>
+      <li>无障碍树是核心护城河：<code>browser_snapshot</code> 返回 ARIA 结构而非像素，彻底绕开了视觉模型需求，token 消耗更低、定位更精准。</li>
+      <li>每次操作都生成 Playwright 代码：LLM 在执行 <code>browser_click</code> 的同时，响应里夹带了对应的 TypeScript 代码，天然形成可复用的测试脚本。</li>
+      <li>四种浏览器接入模式满足不同场景：持久化 Profile（默认）、隔离（测试）、CDP 直连（已有浏览器）、Chrome 扩展（复用登录态）。</li>
+      <li>能力门控（Capability Gating）：通过 <code>--caps</code> 参数动态暴露工具子集，避免向 LLM 上下文注入冗余 schema，是一种典型的 token 经济学优化。</li>
+    </ul>
+  </div>
+
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>
+    随着 LLM（大语言模型）能力的快速提升，"让 AI 自主操控浏览器完成任务"成为 2024—2025 年 AI Agent 领域最热门的研究方向之一。早期方案（如 Browser-use、MultiOn 等）普遍采用<strong>截图 + 视觉模型</strong>的路径：截图 → GPT-4V / Claude 分析 → 生成鼠标坐标 → 点击。这条路的问题是：截图体积大（消耗大量 token）、坐标定位随窗口尺寸变化而不稳定、需要依赖昂贵的视觉模型。
+  </p>
+  <p>
+    Model Context Protocol（MCP）是 Anthropic 于 2024 年 11 月推出的开放协议，定义了 LLM 与外部工具之间的标准化接口。Microsoft Playwright 团队随即推出了 <strong>Playwright MCP</strong>，将 Playwright 成熟的浏览器自动化能力封装为 MCP 工具集，并以<strong>无障碍树（Accessibility Tree）</strong>作为页面表示层——这一决策使其在准确性和效率上均优于截图方案。
+  </p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+
+  <h4 id="section-1-2-1">1.2.1 预期一：让 LLM 无需视觉模型即可操控浏览器</h4>
+  <p>
+    Playwright MCP 的首要设计目标是<strong>去除对视觉模型的依赖</strong>。通过 <code>browser_snapshot</code> 工具返回 ARIA 快照（YAML 格式的树状结构），LLM 可以看到页面上所有可交互元素的语义描述，如 <code>button "Submit" [ref=e42]</code>，再用 <code>ref</code> 引用精准定位元素。整个流程不需要任何图像处理能力。
+  </p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：作为 AI Agent 自动化测试的生成工具</h4>
+  <p>
+    项目内置了 codegen（代码生成）功能。每一个写操作工具（点击、输入、导航等）执行后，响应体中都会附带等价的 Playwright TypeScript 代码片段（在 <code>### Ran Playwright code</code> 节）。这意味着 LLM 在完成一次自动化任务的同时，等价地生成了一份 E2E 测试脚本，可直接复用于 CI 流水线。
+  </p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：支持多客户端、多场景的灵活部署</h4>
+  <p>
+    项目同时支持 stdio（进程通信，适合本地 IDE 插件）和 HTTP/SSE（网络服务，适合云端 Agent 或多客户端共用一个浏览器实例）两种传输模式。浏览器可以是全新启动的（持久化 / 隔离）、通过 CDP 连接的已有实例，或者通过 Chrome 扩展复用用户的真实登录态。这使得从本地开发助手到云端自动化流水线的全场景覆盖成为可能。
+  </p>
+
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 无障碍树优先于截图（Accessibility-First）</h3>
+  <p>
+    这是整个项目最核心的设计决策。ARIA（Accessible Rich Internet Applications）无障碍树是浏览器为屏幕阅读器提供的语义化页面表示，它天然是<strong>结构化文本</strong>——每个元素都有角色（role）、名称（name）、状态（state）和唯一引用 ID（ref）。与截图相比，ARIA 快照体积小数十倍，且元素定位是确定性的（通过 ref，不依赖坐标）。这一选择决定了整个工具集的设计：所有交互工具接受 <code>target</code>（ref 字符串）而非像素坐标（坐标模式通过 <code>--caps=vision</code> 可选开启）。
+  </p>
+
+  <h3 id="section-2-2">2.2 工具即代码（Codegen-First）</h3>
+  <p>
+    每个工具的 <code>handle</code> 函数在执行真实 Playwright 操作的同时，还调用 <code>response.addCode()</code> 记录等价代码。这不是事后日志，而是<strong>前置设计决策</strong>：让 LLM 看到自己的操作被翻译为代码，形成"看见即学会"的效果。这也使得 Playwright MCP 可以直接作为 Playwright 测试录制器使用——完整的会话结束后，收集所有 <code>### Ran Playwright code</code> 段即可得到完整测试脚本。
+  </p>
+
+  <h3 id="section-2-3">2.3 能力门控（Capability Gating）</h3>
+  <p>
+    MCP 协议在连接时会向客户端发送完整的工具列表（<code>tools/list</code>），每个工具的 JSON Schema 都会进入 LLM 的上下文。Playwright MCP 将工具按功能分为多个 Capability（<code>core</code>、<code>vision</code>、<code>pdf</code>、<code>devtools</code>、<code>storage</code>、<code>network</code>、<code>testing</code>），通过 <code>--caps</code> 参数动态决定哪些工具被暴露。默认只暴露 <code>core</code>，极大减少了工具 schema 的 token 占用，避免了"工具太多导致 LLM 选择困难"的问题。
+  </p>
+
+  <h3 id="section-2-4">2.4 多模式浏览器接入（Pluggable Browser Factory）</h3>
+  <p>
+    <code>browserFactory.ts</code> 中定义了 5 种浏览器接入路径，通过策略模式在运行时选择：
+    <strong>持久化模式</strong>（默认，复用用户 Profile，Profile 路径由工作目录哈希决定）、
+    <strong>隔离模式</strong>（<code>--isolated</code>，每次会话独立内存 Profile，适合测试）、
+    <strong>CDP 直连</strong>（<code>--cdp-endpoint</code>，连接已有 Chromium 实例）、
+    <strong>远端 Playwright 服务器</strong>（<code>--endpoint</code>，接入 playwright server）、
+    <strong>Chrome 扩展</strong>（<code>--extension</code>，通过 BrowserModel 中继将 chrome.debugger API 翻译为 CDP）。这种工厂模式使核心工具逻辑与底层浏览器接入方式完全解耦。
+  </p>
+
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>
+    Playwright MCP 整体分为三层：<strong>传输层</strong>（MCP 协议通信，stdio 或 HTTP/SSE）、<strong>执行层</strong>（BrowserBackend 工具调度 + Context/Tab 浏览器状态管理）、<strong>浏览器层</strong>（Playwright 或 CDP/Extension 接入）。三层通过接口完全解耦，使得传输协议升级或浏览器接入方式变化不影响工具实现。
+  </p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    subgraph 客户端
+        A[LLM / IDE / MCP客户端]
+    end
+
+    subgraph 传输层
+        B[stdio传输\nStdioServerTransport]
+        C[HTTP/SSE传输\nstartMcpHttpServer]
+    end
+
+    subgraph MCP服务层
+        D[MCP Server\n@modelcontextprotocol/sdk]
+        E[BackendManager\n后端生命周期管理]
+    end
+
+    subgraph 执行层
+        F[BrowserBackend\n工具调度 + Zod校验]
+        G[Context\n浏览器上下文管理]
+        H[Tab\n页面状态管理]
+        I[Response\n响应构建器]
+    end
+
+    subgraph 工具层
+        J[core工具集\nnavgate/click/type/snapshot...]
+        K[devtools/pdf/storage/network]
+        L[vision工具集\n坐标模式]
+    end
+
+    subgraph 浏览器层
+        M[browserFactory\n四种接入模式]
+        N[Playwright Browser\nChromium/Firefox/WebKit]
+        O[CDP直连/远端服务]
+        P[Chrome扩展+BrowserModel]
+    end
+
+    A -->|tools/call| B
+    A -->|HTTP POST| C
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    F --> J
+    F --> K
+    F --> L
+    G --> M
+    M --> N
+    M --> O
+    M --> P
+    </div>
+    <div class="caption">图 3-1：Playwright MCP 系统架构图</div>
+  </div>
+
+  <p>
+    <strong>传输层</strong>：stdio 模式下，MCP SDK 的 <code>StdioServerTransport</code> 监听 stdin/stdout，每个工具调用都是一次 JSON-RPC 请求。HTTP 模式下，项目自研的 <code>startMcpHttpServer</code> 同时支持新版 Streamable HTTP 和旧版 SSE（兼容不同版本的 MCP 客户端）。<br>
+    <strong>执行层</strong>：<code>BrowserBackend</code> 持有工具列表和浏览器上下文，负责 Zod schema 校验 + 工具分发。<code>Context</code> 管理标签页列表、路由规则、视频录制等跨标签状态。<code>Response</code> 是响应构建器，在工具执行完成后序列化为 markdown 格式返回给 LLM。<br>
+    <strong>工具层</strong>：每个工具文件定义一组 <code>defineTabTool()</code> 工具，工具被按 capability 分组，启动时通过 <code>filteredTools(config)</code> 过滤出当前启用的工具集。
+  </p>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <h4 id="section-3-2-1">3.2.1 关键模块一：MCP 服务端 &amp; 传输层</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/utils/mcp/server.ts</span>
+      <span>🏷️ 工厂模式 + 懒初始化</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：MCP 协议要求服务端在收到第一个 <code>tools/call</code> 请求时才真正创建浏览器（而不是在连接时），因为客户端可能只调用 <code>tools/list</code>，此时不应启动浏览器浪费资源。同时需要处理浏览器断连后的自动清理。
+    </p>
+    <p>
+      <strong>选择了什么，为什么</strong>：<code>createServer</code> 中使用 <code>backendPromise</code>（一个 Promise 类型的懒初始化变量）实现了<strong>按需创建</strong>：只有在第一次 <code>CallToolRequest</code> 时才调用 <code>backendFactory.create()</code>，创建失败后清空 promise 允许重试。当工具返回 <code>isClose: true</code>（浏览器关闭）时自动销毁后端并允许下次重建。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Client as MCP客户端
+    participant Server as MCP Server
+    participant BE as BrowserBackend
+    participant BF as browserFactory
+
+    Client->>Server: tools/list
+    Server-->>Client: toolSchemas (Zod→JSON Schema)
+
+    Client->>Server: tools/call browser_navigate
+    Server->>Server: backendPromise 尚未初始化?
+    Server->>BF: createBrowserWithInfo(config, clientInfo)
+    BF-->>Server: browser (persistent/isolated/cdp/ext)
+    Server->>BE: new BrowserBackend(config, context, tools)
+    BE-->>Server: backend
+    Server->>BE: callTool("browser_navigate", args)
+    BE->>BE: Zod.parse(args)
+    BE-->>Server: CallToolResult {content, code, snapshot}
+    Server-->>Client: 工具响应（markdown格式）
+      </div>
+      <div class="caption">图 3-2：MCP 服务端懒初始化与工具调用时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/utils/mcp/server.ts（核心片段）
+export function createServer(name, version, factory, runHeartbeat) {
+  const server = new Server({ name, version }, { capabilities: { tools: {} } });
+
+  // tools/list: 直接返回工具 schema，无需启动浏览器
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: factory.toolSchemas.map(s => toMcpTool(s))
+  }));
+
+  let backendPromise: Promise | undefined;
+
+  // 浏览器关闭时清理后端
+  addServerListener(server, 'close', () =>
+    backendPromise?.then(b => backendManager.disposeBackend(b))
+  );
+
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    // 懒初始化：第一次调用时才真正创建浏览器
+    if (!backendPromise) {
+      backendPromise = initializeServer(server, factory, runHeartbeat)
+        .catch(e => { backendPromise = undefined; throw e; }); // 失败后清空允许重试
+    }
+
+    const backend = await backendPromise;
+    const toolResult = await backend.callTool(
+      request.params.name,
+      request.params.arguments || {},
+      extra.signal  // 支持 AbortSignal 取消正在执行的工具
+    );
+
+    // 浏览器已关闭：清理后端，允许下次重建
+    if (toolResult.isClose) {
+      await backendManager.disposeBackend(backend);
+      backendPromise = undefined;
+    }
+    return mergeTextParts(toolResult);  // 合并相邻 text 块
+  });
+  return server;
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-2">3.2.2 关键模块二：工具调度 — BrowserBackend</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/backend/browserBackend.ts</span>
+      <span>🏷️ 命令模式 + Zod运行时校验</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：MCP 协议传入的参数是 JSON，需要在调用工具前做类型检验；工具执行过程中可能产生 unhandled rejection（如 Playwright 异步错误），需要收集并附加到响应；浏览器断连需要标记以触发后端重建。
+    </p>
+    <p>
+      <strong>核心设计</strong>：<code>callTool</code> 使用每个工具自带的 Zod schema（<code>tool.schema.inputSchema.parse(rawArguments)</code>）做运行时校验，失败后返回 <code>ZodError</code> 格式化信息而非抛出异常。对 <code>unhandledRejection</code> 事件的收集（而不是忽略）是一个细节上的巧妙处理——Playwright 的部分异步操作（如导航的副作用）可能在工具返回后才报错，这些错误会被 <code>context.drainPendingUnhandledRejections()</code> 追加到响应中。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant S as MCP Server
+    participant BB as BrowserBackend
+    participant Tool as Tool.handle()
+    participant Ctx as Context
+    participant Resp as Response
+
+    S->>BB: callTool("browser_click", rawArgs)
+    BB->>BB: tool.schema.inputSchema.parse(rawArgs)
+    Note over BB: ZodError → 返回格式化错误，不抛出
+    BB->>Resp: new Response(context, name, args)
+    BB->>Ctx: setRunningTool("browser_click")
+    BB->>Tool: tool.handle(context, parsedArgs, response)
+    Tool->>Resp: response.setIncludeSnapshot()
+    Tool->>Resp: response.addCode("await page.locator(...).click()")
+    Tool->>Ctx: tab.waitForCompletion(async () => locator.click())
+    BB->>Ctx: drainPendingUnhandledRejections()
+    Note over BB: 收集导航副作用中的异步错误
+    BB->>Resp: response.serialize()
+    Resp-->>BB: CallToolResult {content, isError?}
+    BB->>Ctx: setRunningTool(undefined)
+    BB-->>S: CallToolResult
+      </div>
+      <div class="caption">图 3-3：BrowserBackend 工具调度时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/backend/browserBackend.ts
+async callTool(name, rawArguments = {}, signal) {
+  const tool = this._tools.find(t => t.schema.name === name)!;
+
+  // 使用工具自带的 Zod schema 做运行时类型校验
+  let parsedArguments;
+  try {
+    parsedArguments = tool.schema.inputSchema.parse(rawArguments);
+  } catch (error) {
+    if (error instanceof z.ZodError)
+      return formatError(`Invalid arguments:\n${z.prettifyError(error)}`);
+    throw error;
+  }
+
+  const response = new Response(context, name, parsedArguments, options);
+  context.setRunningTool(name);  // 标记正在运行的工具
+  try {
+    await tool.handle(context, parsedArguments, response, signal);
+
+    // 收集工具执行后冒出的异步错误（Playwright 副作用）
+    for (const reason of context.drainPendingUnhandledRejections())
+      response.addError(formatRejectionReason(reason));
+
+    return await response.serialize();
+  } catch (error) {
+    return formatError(String(error));
+  } finally {
+    context.setRunningTool(undefined);
+  }
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-3">3.2.3 关键模块三：响应构建 — Response 类</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/backend/response.ts</span>
+      <span>🏷️ Builder模式 + 段式 Markdown 序列化</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：LLM 期望的工具响应是结构化的可读文本，需要把错误、执行结果、自动生成的代码、ARIA 快照、图像等异构数据合并为一份响应。同时还要处理文件输出预算（自动删除过旧的截图/快照），以及密钥脱敏（防止 LLM 看到真实 token/密码）。
+    </p>
+    <p>
+      <strong>核心设计</strong>：<code>Response</code> 是一个 Builder，工具执行期间通过 <code>addCode()</code>、<code>addTextResult()</code>、<code>setIncludeSnapshot()</code> 等方法积累数据。<code>serialize()</code> 在最后统一组装成 MCP 规范的 <code>CallToolResult</code>（包含 <code>content</code> 数组）。输出格式是带 <code>### 节名</code> 分隔的 Markdown，LLM 和工具测试代码都通过 <code>parseResponse()</code> 解析。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Tool as Tool.handle
+    participant Resp as Response
+    participant Tab as Tab
+    participant FS as 文件系统
+
+    Tool->>Resp: addCode("await page.click(...)")
+    Tool->>Resp: setIncludeSnapshot()
+
+    Note over Resp: serialize() 被调用
+
+    Resp->>Tab: captureSnapshot(root, depth, boxes)
+    Tab-->>Resp: ariaSnapshot (YAML文本)
+
+    alt outputMode = "file"
+        Resp->>FS: 写入 page-xxx.yml
+        Resp->>Resp: addSection("Snapshot", "[Snapshot](./page-xxx.yml)")
+    else outputMode = "stdout"
+        Resp->>Resp: addSection("Snapshot", ariaYaml内联)
+    end
+
+    Resp->>Resp: _redactSecrets(text) 替换密钥为占位符
+    Resp->>Resp: 合并所有Section为Markdown文本
+    Resp-->>Tool: CallToolResult { content: [{type:"text", text}] }
+      </div>
+      <div class="caption">图 3-4：Response 序列化时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/backend/response.ts（_build 核心逻辑）
+private async _build(): Promise {
+  const sections: Section[] = [];
+
+  // 错误优先输出
+  if (this._errors.length)
+    addSection('Error', this._errors);
+
+  // 工具返回的文本结果
+  if (this._results.length)
+    addSection('Result', this._results);
+
+  // Codegen: 附加等价 Playwright 代码（可配置关闭）
+  if (this._context.config.codegen !== 'none' && this._code.length)
+    addSection('Ran Playwright code', this._code, 'js');  // 带 ```js 代码块
+
+  // ARIA 快照: full模式才包含
+  if (this._includeSnapshot !== 'none') {
+    const tabSnapshot = await tab.captureSnapshot(...);
+    if (outputMode === 'file') {
+      // 写文件，返回链接（节省响应 token）
+      addSection('Snapshot', [`- [Snapshot](${relativePath})`]);
+    } else {
+      // 内联 YAML（适合调试）
+      addSection('Snapshot', [ariaSnapshot], 'yaml');
+    }
+  }
+  // 密钥自动脱敏: 将 secrets config 中的值替换为变量名
+  // text.replaceAll(secretValue, ` ${secretName} `)
+  return sections;
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-4">3.2.4 关键模块四：浏览器工厂 — 四种接入模式</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/mcp/browserFactory.ts</span>
+      <span>🏷️ 策略模式 + Profile锁检测</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：不同场景需要不同的浏览器接入策略，同时要防止多个客户端同时使用同一个 Profile 目录（Chromium 单例锁机制限制）。持久化 Profile 的路径需要按工作目录隔离，避免不同项目互相污染浏览器状态。
+    </p>
+    <p>
+      <strong>核心设计</strong>：<code>createBrowserWithInfo</code> 是一个策略分发函数，根据 <code>config</code> 中的标志位选择不同的创建路径。持久化模式用 <code>sha256(clientInfo.cwd).slice(0, 7)</code> 作为 Profile 后缀，天然实现"项目隔离"。锁检测通过读取 <code>SingletonLock</code>（Linux/Mac）或 <code>lockfile</code>（Windows）符号链接中的 PID 判断进程是否存活（重试 5 次，每次间隔 1 秒），避免对 Chromium 资源的争抢。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+graph LR
+    A[createBrowserWithInfo] -->|remoteEndpoint?| B[createRemoteBrowser\n接入远程Playwright服务]
+    A -->|cdpEndpoint?| C[createCDPBrowser\nconnectOverCDP]
+    A -->|isolated?| D[createIsolatedBrowser\nlaunch 内存Profile]
+    A -->|extension?| E[createExtensionBrowser\nChrome扩展+BrowserModel]
+    A -->|默认| F[createPersistentBrowser\nlaunchPersistentContext]
+    F --> G[sha256 cwd → Profile路径]
+    F --> H[SingletonLock 检测\n重试5次 × 1s]
+      </div>
+      <div class="caption">图 3-5：浏览器工厂策略分支图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/mcp/browserFactory.ts（关键片段）
+async function createPersistentBrowser(config, clientInfo) {
+  // Profile 路径 = 缓存目录 + 浏览器类型 + 工作目录哈希前7位
+  const userDataDir = config.browser.userDataDir
+    ?? await createUserDataDir(config, clientInfo);
+
+  // 等待 Profile 锁释放（最多重试5次）
+  if (await isProfileLocked5Times(userDataDir))
+    throw new Error(`Browser already in use for ${userDataDir}, use --isolated`);
+
+  // 持久化上下文 = 浏览器 + 上下文合并为一体
+  const browserContext = await browserType.launchPersistentContext(userDataDir, {
+    ...config.browser.launchOptions,
+    ...config.browser.contextOptions,
+    handleSIGINT: false,   // 不拦截 Ctrl+C（由 watchdog.ts 处理）
+    handleSIGTERM: false,
+    ignoreDefaultArgs: ['--disable-extensions', ...],  // 允许扩展
+  });
+  return browserContext.browser()!;
+}
+
+// Profile 路径隔离：不同项目目录 → 不同 Profile
+async function createUserDataDir(config, clientInfo) {
+  const browserToken = config.browser.launchOptions?.channel ?? config.browser.browserName;
+  const rootPathToken = crypto.createHash('sha256')
+    .update(clientInfo.cwd).digest('hex').slice(0, 7);
+  return path.join(cacheDir, `mcp-${browserToken}-${rootPathToken}`);
+}
+</code></pre>
+  </div>
+
+  <h4 id="section-3-2-5">3.2.5 关键模块五：Chrome 扩展 CDP 中继 — BrowserModel</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/tools/mcp/browserModel.ts + cdpRelay*.ts</span>
+      <span>🏷️ 适配器模式 + 协议翻译</span>
+    </div>
+    <p>
+      <strong>要解决的问题</strong>：Chrome 扩展通过 <code>chrome.debugger.*</code> API 操控标签页，而 Playwright 需要标准 CDP（Chrome DevTools Protocol）会话。两者的事件模型和寻址方式不同：chrome.debugger 使用 tabId，CDP 使用 sessionId。需要在两者之间做协议翻译，让 Playwright 完全感知不到底层使用的是扩展 API。
+    </p>
+    <p>
+      <strong>核心设计</strong>：<code>BrowserModel</code> 维护了两张映射表（<code>_knownTabs</code> 和 <code>_tabSessions</code>），实现 tabId ↔ sessionId 的双向映射。当 Playwright 发送 <code>Target.setAutoAttach</code> 时，模型会为所有已知标签页调用 <code>chrome.debugger.attach</code> 并分配合成 sessionId（<code>pw-tab-N</code>），随后向 Playwright 发送 <code>Target.attachedToTarget</code> 事件——完整模拟了 Chromium 的 Target 协议，但底层驱动的是 chrome.debugger API。
+    </p>
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant PW as Playwright CDP客户端
+    participant BM as BrowserModel
+    participant EXT as Chrome扩展
+
+    EXT->>BM: onTabCreated(tab)
+    Note over BM: 记录 _knownTabs.set(tabId, tab)
+
+    PW->>BM: Target.setAutoAttach
+    BM->>EXT: chrome.debugger.attach({tabId}, "1.3")
+    EXT-->>BM: OK
+    BM->>EXT: chrome.debugger.sendCommand({tabId}, "Target.getTargetInfo")
+    EXT-->>BM: targetInfo
+    BM->>BM: 生成 sessionId = "pw-tab-1"
+    BM-->>PW: Target.attachedToTarget {sessionId:"pw-tab-1", targetInfo}
+
+    PW->>BM: CDP Command {sessionId:"pw-tab-1", method:"DOM.getDocument"}
+    BM->>BM: 找到 tabId by sessionId
+    BM->>EXT: chrome.debugger.sendCommand({tabId}, "DOM.getDocument")
+    EXT-->>BM: result
+    BM-->>PW: CDP Response
+      </div>
+      <div class="caption">图 3-6：BrowserModel Chrome 扩展 CDP 协议翻译时序图</div>
+    </div>
+
+<pre><code class="language-typescript">// 文件: src/tools/mcp/browserModel.ts（核心路由逻辑）
+async sendCommand(sessionId: string, method: string, params: any) {
+  // 两种路由情况:
+  // 1. relay 层 tab session (pw-tab-N) → 用 tabId 路由，不带 cdpSessionId
+  let tabSession = this._findTabSession(s => s.sessionId === sessionId);
+  let cdpSessionId: string | undefined;
+
+  // 2. 子 CDP session (worker, oopif) → 找到所属 tab，保留原 sessionId
+  if (!tabSession) {
+    tabSession = this._findTabSession(s => s.childSessions.has(sessionId));
+    cdpSessionId = sessionId;  // 子 session 保留原 ID 让扩展转发
+  }
+
+  return await this._sendToExtension('chrome.debugger.sendCommand', [
+    { tabId: tabSession.tabId, sessionId: cdpSessionId },
+    method,
+    params,
+  ]);
+}
+
+// tab 创建时: 记录到 _knownTabs，若 autoAttach 已启用则立即 attach
+onTabCreated(tab: Tab): void {
+  this._knownTabs.set(tab.id, tab);
+  if (this._autoAttach)
+    void this._attachTab(tab.id).catch(logUnhandledError);
+}
+</code></pre>
+  </div>
+
+  <h2 id="section-4">4 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>4.1 优势分析</h4>
+      <ul>
+        <li><strong>无障碍树方案确立技术优势</strong>：ARIA 快照是纯文本结构，体积远小于截图，定位确定性远高于坐标，无需视觉模型即可让 LLM 精准理解页面。</li>
+        <li><strong>内置 Codegen 形成正向飞轮</strong>：每次操作附带等价 Playwright 代码，LLM 在完成任务的同时生成了可复用测试脚本，是截图方案无法实现的。</li>
+        <li><strong>能力门控是工程上的精妙设计</strong>：按需暴露工具子集，既减少了 LLM 上下文 token 消耗，也降低了 LLM 选错工具的概率。</li>
+        <li><strong>多模式浏览器接入覆盖全场景</strong>：从本地开发到云端 CI，从全新 Profile 到复用用户登录态，一套工具链全覆盖。</li>
+        <li><strong>与 Playwright 生态深度整合</strong>：依托 Playwright 成熟的跨浏览器支持（Chromium/Firefox/WebKit）、强大的 locator 引擎和自动等待机制。</li>
+        <li><strong>密钥脱敏机制</strong>：<code>secrets</code> 配置可自动将响应中的敏感值替换为占位符，防止意外泄露给 LLM。</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>4.2 局限分析</h4>
+      <ul>
+        <li><strong>源码分布在两个仓库</strong>：核心实现在 Playwright 主仓库，贡献门槛高，外部贡献者需要了解整个 Playwright 构建系统才能开发工具。</li>
+        <li><strong>ARIA 快照对动态渲染支持有限</strong>：Canvas、WebGL、部分 SPA 动态内容在 ARIA 树中无可读信息，此时仍需退回到截图（<code>--caps=vision</code>）。</li>
+        <li><strong>持久化 Profile 并发冲突</strong>：同一工作目录的多个 MCP 客户端共享 Profile 会冲突，必须用 <code>--isolated</code> 或不同 <code>--user-data-dir</code> 规避，运维复杂度较高。</li>
+        <li><strong>ARIA 快照可能信息过载</strong>：复杂页面（如 Google 文档）的完整 ARIA 树可能包含数千行，仍然消耗大量 token，<code>depth</code> 参数是缓解但非解决。</li>
+        <li><strong>安全模型较弱</strong>：文档明确声明 "Playwright MCP is not a security boundary"，网络过滤（allowedOrigins/blockedOrigins）只是便利性防护而非安全边界，生产环境需依赖容器隔离。</li>
+        <li><strong>stdio 模式无法检测客户端断连</strong>：MCP SDK 的 StdioServerTransport 未监听 stdin EOF（已在代码中用 <code>process.stdin.on('end')</code> 补丁修复，但属于主动补偿而非协议层保证）。</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: {
+      diagramMarginX: 20,
+      diagramMarginY: 20,
+      actorMargin: 60,
+      mirrorActors: false,
+      messageAlign: 'center'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20
+    }
+  });
+
+  hljs.highlightAll();
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>
