@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMad TEA 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    z-index: 100;
+  }
+  .toc h3 {
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .toc a:hover, .toc a.active {
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+
+  /* --- Main Content --- */
+  .content {
+    margin-left: 260px;
+    max-width: 860px;
+    padding: 48px 40px 120px;
+  }
+
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .header .subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+  }
+  .header .lead {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    padding: 16px 20px;
+    background: var(--bg-alt);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+  }
+
+  /* --- Core Conclusions Box --- */
+  .conclusions {
+    margin: 32px 0;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+  }
+  .conclusions h3 {
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .conclusions ul {
+    list-style: none;
+    padding: 0;
+  }
+  .conclusions li {
+    padding: 6px 0 6px 24px;
+    position: relative;
+    font-size: 15px;
+  }
+  .conclusions li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  /* --- Section Headings --- */
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 32px 0 12px;
+  }
+  h4 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 24px 0 8px;
+  }
+
+  /* --- Body Text --- */
+  p {
+    font-size: 15px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  ul, ol {
+    margin: 8px 0 16px 24px;
+    font-size: 15px;
+  }
+  li { margin-bottom: 6px; }
+
+  /* --- Mermaid Diagrams --- */
+  .diagram-container {
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+  .diagram-container .caption {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+  }
+
+  /* --- Code Blocks --- */
+  pre {
+    margin: 16px 0;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 16px !important;
+  }
+  code:not(pre code) {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 13px;
+    padding: 2px 6px;
+    background: #f1f5f9;
+    color: #c7254e;
+    border-radius: 4px;
+  }
+
+  /* --- Module Card --- */
+  .module-card {
+    margin: 24px 0;
+    padding: 24px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .module-card .module-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .module-card .module-meta span {
+    padding: 2px 10px;
+    background: var(--bg-alt);
+    border-radius: 20px;
+  }
+
+  /* --- Evaluation Section --- */
+  .eval-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 16px 0;
+  }
+  .eval-card {
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .eval-card.strength {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+  .eval-card.weakness {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+  .eval-card h4 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+
+  /* --- Table --- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th {
+    background: var(--bg-alt);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* --- Mobile --- */
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar TOC -->
+<nav class="toc">
+  <h3>目录</h3>
+  <a href="#section-1" class="toc-h2">1 摘要</a>
+  <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+  <a href="#section-1-2" class="toc-h3">1.2 项目预期</a>
+  <a href="#section-1-2-1" class="toc-h4">1.2.1 AI 原生测试工程师</a>
+  <a href="#section-1-2-2" class="toc-h4">1.2.2 可衡量的质量门控</a>
+  <a href="#section-1-2-3" class="toc-h4">1.2.3 跨平台多框架支持</a>
+  <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+  <a href="#section-2-1" class="toc-h3">2.1 LLM 即引擎</a>
+  <a href="#section-2-2" class="toc-h3">2.2 按需加载上下文</a>
+  <a href="#section-2-3" class="toc-h3">2.3 置信门控防止幻觉</a>
+  <a href="#section-2-4" class="toc-h3">2.4 风险驱动测试策略</a>
+  <a href="#section-2-5" class="toc-h3">2.5 可组合式定制层</a>
+  <a href="#section-3" class="toc-h2">3 系统详细设计</a>
+  <a href="#section-3-1" class="toc-h3">3.1 系统架构设计</a>
+  <a href="#section-3-2" class="toc-h3">3.2 关键模块实现细节</a>
+  <a href="#section-3-2-1" class="toc-h4">3.2.1 Agent 人格层</a>
+  <a href="#section-3-2-2" class="toc-h4">3.2.2 工作流三态架构</a>
+  <a href="#section-3-2-3" class="toc-h4">3.2.3 分层知识库</a>
+  <a href="#section-3-2-4" class="toc-h4">3.2.4 Automate 旗舰工作流</a>
+  <a href="#section-3-2-5" class="toc-h4">3.2.5 置信门控机制</a>
+  <a href="#section-3-2-6" class="toc-h4">3.2.6 定制化覆盖系统</a>
+  <a href="#section-4" class="toc-h2">4 方案评价</a>
+  <a href="#section-4-1" class="toc-h3">4.1 优势分析</a>
+  <a href="#section-4-2" class="toc-h3">4.2 局限分析</a>
+</nav>
+
+<!-- Main Content -->
+<main class="content">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>BMad TEA 深度解读</h1>
+    <div class="subtitle">Test Engineering Architect — AI 原生测试方法论框架</div>
+    <div class="lead">
+      BMad TEA（Test Engineering Architect）是 BMad Method 生态的专项测试模块，它提供了一位 AI 测试架构师「Murat」和 9 条结构化工作流，通过将结构化 Markdown 指令注入 LLM 上下文窗口，使 LLM 本身成为执行引擎——无需任何外部运行时，就能输出风险驱动的测试计划、自动化脚本和发布质量门决策。
+    </div>
+  </header>
+
+  <!-- Core Conclusions -->
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>「LLM 即引擎」是其最大设计创新：工作流是结构化 Markdown，LLM 逐步文件执行，无外部调度器，可运行于任何指令遵循能力足够的模型。</li>
+      <li>三大机制协同降低上下文消耗：按需步骤加载（JIT）、分级知识索引（core / extended / specialized）、子 Agent 隔离并行——综合节省上下文 40–50%。</li>
+      <li>置信门控（Confidence Gate）是防止 LLM 幻觉的核心安全机制，要求在生成任何非平凡测试产出前，先提供带证据的置信度评分，低于阈值则强制停止并向用户提问。</li>
+    </ul>
+  </div>
+
+  <!-- Section 1: 摘要 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>
+    AI 编码工具（Claude Code、GitHub Copilot、Cursor、Codex 等）在生成业务代码方面已相当成熟，但在测试工程领域却长期缺乏系统化方法论支撑。开发团队面临的痛点包括：
+  </p>
+  <ul>
+    <li>AI 生成的测试代码往往「看起来正确但测不到真实逻辑」——选择器拼造、接口路径凭空捏造、风险评估凭直觉；</li>
+    <li>测试覆盖率缺乏可量化的风险基线，无法支撑「是否可以发布」的质量门决策；</li>
+    <li>单次 Prompt 无法处理跨越多步骤、多文件的复杂测试工程任务（框架搭建、ATDD 红阶段、全量覆盖扩展）；</li>
+    <li>不同 AI 工具（Claude、Codex、Cursor、Windsurf）各自为政，无法共享统一的测试最佳实践库。</li>
+  </ul>
+  <p>
+    BMad Method 是 bmad-code 组织构建的「结构化 AI 工作流」生态，其核心思想是：将大型模糊任务拆解为有明确交接点的小步骤，再配以共享知识库，使 AI 输出具有可重复性。TEA（Test Engineering Architect）是 BMad Method 的专项测试模块，于 2025 年末正式发布，到 2026 年 5 月已迭代至 v1.19.0，积累了 47 个版本发布。
+  </p>
+
+  <h3 id="section-1-2">1.2 项目预期</h3>
+
+  <h4 id="section-1-2-1">1.2.1 预期一：AI 原生测试工程师</h4>
+  <p>
+    TEA 的目标不是「生成测试代码的工具」，而是为每个项目配备一位具有明确身份和原则的 AI 测试架构师「Murat」。Murat 能够主导风险评估、制定测试策略、选择测试框架、评审现有测试质量，并在发布前做出量化的 go / no-go 决策——覆盖测试工程师从需求阶段到 CI/CD 上线的完整职责链。
+  </p>
+
+  <h4 id="section-1-2-2">1.2.2 预期二：可衡量的质量门控</h4>
+  <p>
+    传统的「是否可以发布」决策依赖主观经验和团队共识。TEA 通过风险矩阵（概率 × 影响 = P0–P3 优先级）、需求到测试的可追溯性矩阵（Trace 工作流）、NFR 证据审计（NFR 工作流）三个维度，将发布决策转化为可量化、可审计的数据——满足 FDA、SOC2、ISO 等合规要求。
+  </p>
+
+  <h4 id="section-1-2-3">1.2.3 预期三：跨平台多框架覆盖</h4>
+  <p>
+    TEA 设计之初就面向多样化的技术栈和 AI 工具生态。在测试框架侧支持 Playwright、Cypress、Jest、Vitest、pytest、JUnit、Go test、dotnet test、RSpec；在 AI 工具侧通过安装器生成针对 10+ 平台的启动产物（Claude Code 的 .claude/commands/、Codex 的 .agents/skills/、Cursor 的 .cursor/rules/ 等），一套工作流定义多端复用。
+  </p>
+
+  <!-- Section 2: 设计理念 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 LLM 即引擎（No External Runtime）</h3>
+  <p>
+    BMad 最根本的设计决策是：<strong>不引入任何外部调度器或运行时</strong>。整个工作流完全由结构化 Markdown 文件驱动，LLM 本身就是执行引擎。每个步骤文件在末尾明确指向下一个步骤文件的路径（<code>{skill-root}/steps-c/step-02-identify-targets.md</code>），LLM 读取、执行、保存输出，然后自行加载下一文件——这使得 TEA 能在任何具备足够指令遵循能力的 LLM 上运行，不依赖任何特定平台的 API。
+  </p>
+  <p>
+    与之形成对比的是传统 AI Agent 框架（LangChain、AutoGPT）的做法：由 Python/JS 代码编排 LLM 调用序列，工作流逻辑存在于宿主程序中。BMad 则将逻辑完全内化到 LLM 上下文，消除了对特定语言运行时的依赖。
+  </p>
+
+  <h3 id="section-2-2">2.2 按需加载上下文（Just-in-Time Loading）</h3>
+  <p>
+    LLM 上下文窗口是稀缺资源。TEA 通过三层机制最小化上下文占用：
+  </p>
+  <ol>
+    <li><strong>步骤 JIT 加载</strong>：任何时刻上下文中只有当前步骤文件；未来步骤从不预加载。每个步骤执行完毕才加载下一个，历史步骤内容不在窗口中保留。</li>
+    <li><strong>分级知识注入</strong>：50+ 知识碎片按 <code>core（始终加载）/ extended（按需）/ specialized（仅当相关时）</code>三级分类。一个纯后端项目约加载 1,800 行知识内容，全栈项目约 4,500 行，比全量加载节省 40–50%。</li>
+    <li><strong>子 Agent 隔离</strong>：重量级工作流（如 Automate）将 API 测试生成和 E2E 测试生成分派给独立的子 Agent，各自运行在隔离上下文中，仅将结构化 JSON 结果写入临时文件，父工作流只读取聚合后的结果，不接触子 Agent 的完整历史。</li>
+  </ol>
+
+  <h3 id="section-2-3">2.3 置信门控防止幻觉（Confidence Gate）</h3>
+  <p>
+    LLM 生成测试代码的核心风险不是「拒绝生成」，而是「生成看起来可信实则虚构的内容」——凭空拼造的 CSS 选择器、不存在的 API 路径、凭感觉给出的风险分数。TEA 通过 <strong>Confidence Gate</strong> 强制要求：在生成任何非平凡的测试产物之前，先输出带证据的置信评分。评分低于 5 时强制停止生成并向用户提问，5–6 时生成但暴露假设，≥7 时方可正常生成。
+  </p>
+
+  <h3 id="section-2-4">2.4 风险驱动测试策略（Risk-Based Testing）</h3>
+  <p>
+    测试资源永远有限，不可能覆盖所有场景。TEA 以「概率 × 影响」风险矩阵为核心，将测试场景分为 P0（必须测试）到 P3（时间允许时测试）四个优先级，使团队始终聚焦于最高价值的测试。每个风险项需要明确的所有者、缓解计划和截止日期——这既是工程纪律，也是合规审计的证据链。
+  </p>
+
+  <h3 id="section-2-5">2.5 可组合式定制层（Layered Customization）</h3>
+  <p>
+    TEA 采用「三层覆盖」模型处理团队差异：<code>customize.toml</code>（基础默认值）→ <code>_bmad/custom/{skill-name}.toml</code>（团队覆盖）→ <code>_bmad/custom/{skill-name}.user.toml</code>（个人覆盖）。标量值直接替换，表格深度合并，数组按 code/id 键追加或替换。这使同一套 TEA 工作流可以在不同项目、不同团队角色之间共享，同时保留各自的定制化空间，且不需要修改核心文件。
+  </p>
+
+  <!-- Section 3: 系统详细设计 -->
+  <h2 id="section-3">3 系统详细设计</h2>
+
+  <h3 id="section-3-1">3.1 系统架构设计</h3>
+  <p>
+    TEA 由四个层次组成：用户通过 AI 工具触发 Agent 人格层，人格层根据用户意图分派到具体工作流的入口 SKILL.md，工作流入口按三态（Create/Edit/Validate）路由到步骤文件链，步骤文件按需从知识库读取知识碎片、填充模板，最终写出测试产物（测试计划、测试代码、可追溯性矩阵、质量门报告）。
+  </p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+flowchart TD
+    U["👤 用户"] --> T["AI 工具\n(Claude / Cursor / Codex)"]
+    T --> A["🧪 Agent 人格层\nsrc/agents/bmad-tea/SKILL.md\n(Murat 人格 + 菜单分发)"]
+    A --> W["工作流入口\nworkflows/testarch/*/SKILL.md\n9 条工作流"]
+    W --> M{"模式判断\nCreate / Edit / Validate"}
+    M -->|Create| SC["steps-c/*.md\n逐步执行链"]
+    M -->|Edit| SE["steps-e/*.md\n评估 + 应用修改"]
+    M -->|Validate| SV["steps-v/*.md\n对照 checklist 评估"]
+    SC --> K["知识库\ntea-index.csv → knowledge/*.md\n分级按需注入"]
+    SC --> TP["模板层\n*-template.md\n{PLACEHOLDER} 填充"]
+    SC --> SA["子 Agent 隔离\n(Automate/ATDD 并行)\n写 JSON → /tmp/"]
+    SA --> AG["聚合步骤\nstep-03c-aggregate.md\n读 JSON, 生成 fixtures"]
+    K --> O["测试产物输出\n测试计划 / 测试代码 / 可追溯矩阵 / 质量门报告"]
+    TP --> O
+    AG --> O
+    O --> V["Validate 模式\nchecklist.md 评估\n输出 PASS/CONCERNS/FAIL"]
+    </div>
+    <div class="caption">图 3-1: BMad TEA 系统整体架构图</div>
+  </div>
+
+  <p>
+    整体数据流的关键特征是单向性和步骤原子性：每个步骤文件是一个独立的执行单元，读取前序步骤写出的 YAML frontmatter 进行恢复，执行后追加结果到输出文件。Validate 模式是整个工作流的质量反馈环，可以随时对已有产物进行独立的评估，无需重新执行 Create 链。
+  </p>
+
+  <h3 id="section-3-2">3.2 关键模块实现细节</h3>
+
+  <!-- Module 1: Agent 人格层 -->
+  <h4 id="section-3-2-1">3.2.1 关键模块一：Agent 人格层（Murat Persona）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/agents/bmad-tea/SKILL.md</span>
+      <span>🏷️ Persona Injection Pattern</span>
+      <span>🏷️ Menu Dispatch</span>
+    </div>
+    <p>
+      Agent 人格层是整个 TEA 的「门面」，它完成三件事：将 Murat 的身份、原则和能力表注入 LLM 上下文；解析定制化配置（customize.toml 三层覆盖）；根据用户初始意图直接分派或展示菜单。
+    </p>
+    <p>
+      激活序列设计为 8 步，顺序严格：①解析定制块（运行 Python 解析器或手工合并三层 TOML）→②执行前置步骤 → ③注入人格 → ④加载持久事实 → ⑤加载项目配置 → ⑥向用户打招呼 → ⑦执行后置步骤 → ⑧分派菜单或直接执行意图。其中「持久事实」可以是任意字符串，也可以是以 <code>file:</code> 前缀指向的文件路径——这允许团队将项目约定、API 规范等注入为 Murat 的长期记忆。
+    </p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant L as LLM
+    participant S as SKILL.md
+    participant C as customize.toml
+    participant M as 菜单/工作流
+
+    U->>L: 触发 /bmad:tea 或 $bmad-tea
+    L->>S: 读取 Agent SKILL.md
+    S->>C: resolve_customization.py --key agent
+    C-->>L: 合并后的 agent 配置块
+    L->>L: 注入 Murat 人格 + 持久事实 + 项目 config
+    L->>U: 打招呼 (带 🧪 图标前缀)
+    U->>L: 发起意图 (如 "设计测试")
+    L->>M: 精确匹配 → 直接分派工作流 SKILL.md
+    L->>U: 或展示菜单等待选择
+      </div>
+      <div class="caption">图 3-2: Murat Agent 激活与分派时序图</div>
+    </div>
+
+    <pre><code class="language-yaml"># src/agents/bmad-tea/SKILL.md (核心激活逻辑摘要)
+# Step 1: 解析定制化
+# 优先调用 Python 解析器，失败时手工合并三层 TOML:
+#   customize.toml (base) → _bmad/custom/bmad-tea.toml (team) → .user.toml (personal)
+
+# Step 7: 菜单分发规则
+# 若用户初始消息已明确映射到某菜单项 → 直接分派，跳过菜单渲染
+# 否则渲染 {agent.menu} 为编号表格: Code | Description | Action
+# 接受数字、菜单 code 或模糊匹配描述
+# 两项高度相似时才提一个澄清问题，不做确认仪式</code></pre>
+  </div>
+
+  <!-- Module 2: 工作流三态架构 -->
+  <h4 id="section-3-2-2">3.2.2 关键模块二：工作流三态架构（Tri-Modal Workflow）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/workflows/testarch/*/SKILL.md + steps-c/ + steps-e/ + steps-v/</span>
+      <span>🏷️ State Machine Pattern</span>
+      <span>🏷️ YAML Frontmatter Progress</span>
+    </div>
+    <p>
+      每条工作流包含三条独立的步骤链，对应三种执行模式：<strong>Create 模式</strong>（steps-c/，5-9 个顺序文件，新建产出）、<strong>Edit 模式</strong>（steps-e/，固定 2 个文件：评估目标 + 应用修改）、<strong>Validate 模式</strong>（steps-v/，固定 1 个文件：对照 checklist 评估）。三态之间相互独立，但 Edit 和 Validate 依赖 Create 的输出文件。
+    </p>
+    <p>
+      恢复（Resume）机制通过 YAML frontmatter 实现：每个步骤在执行后向输出文件追加 <code>stepsCompleted</code>、<code>lastStep</code>、<code>lastSaved</code> 字段。Resume 时，步骤 01b 读取这些字段，直接路由到下一个未完成步骤，无需重跑已完成步骤。这使得即使 LLM 上下文被中断（超时、切换会话），工作流也能从断点续跑。
+    </p>
+    <p>
+      以旗舰工作流 <strong>Automate（测试自动化扩展）</strong>为例，其 Create 链包含 9 个步骤文件：
+    </p>
+    <table>
+      <tr><th>步骤文件</th><th>职责</th><th>输出</th></tr>
+      <tr><td>step-01-preflight-and-context.md</td><td>栈检测、框架验证、执行模式判断、知识加载</td><td>detected_stack, execution_mode</td></tr>
+      <tr><td>step-01b-resume.md</td><td>恢复路由（从 frontmatter 跳转）</td><td>路由到 lastStep+1</td></tr>
+      <tr><td>step-02-identify-targets.md</td><td>分析代码库，生成覆盖计划（哪些 API / E2E 需要测试）</td><td>coverage_plan JSON</td></tr>
+      <tr><td>step-03-generate-tests.md</td><td>编排执行模式（子 Agent / 顺序），分发测试生成</td><td>timestamp, subagentContext</td></tr>
+      <tr><td>step-03a-subagent-api.md</td><td>子 Agent: 仅生成 API 测试，输出结构化 JSON 到 /tmp/</td><td>/tmp/tea-automate-api-tests-*.json</td></tr>
+      <tr><td>step-03b-subagent-e2e.md</td><td>子 Agent: 仅生成 E2E 测试，输出结构化 JSON 到 /tmp/</td><td>/tmp/tea-automate-e2e-tests-*.json</td></tr>
+      <tr><td>step-03b-subagent-backend.md</td><td>子 Agent: 仅生成后端测试（backend/fullstack 栈）</td><td>/tmp/tea-automate-backend-tests-*.json</td></tr>
+      <tr><td>step-03c-aggregate.md</td><td>读取所有子 Agent JSON, 生成共享 fixtures, 写入磁盘</td><td>实际测试文件 + fixtures</td></tr>
+      <tr><td>step-04-validate-and-summarize.md</td><td>（可选）运行测试套件, 生成 automation-summary.md</td><td>automation-summary.md</td></tr>
+    </table>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> ModeSelect: 激活工作流
+    ModeSelect --> Create: [C] 全新执行
+    ModeSelect --> Resume: [R] 从断点恢复
+    ModeSelect --> Validate: [V] 校验现有产出
+    ModeSelect --> Edit: [E] 修改现有产出
+
+    Create --> Step01: Preflight & 上下文加载
+    Step01 --> Step02: 分析代码库
+    Step02 --> Step03: 编排测试生成
+    Step03 --> SubAgentAPI: 并行：API 子 Agent
+    Step03 --> SubAgentE2E: 并行：E2E 子 Agent
+    SubAgentAPI --> Aggregate: 写 JSON 到 /tmp/
+    SubAgentE2E --> Aggregate: 写 JSON 到 /tmp/
+    Aggregate --> Step04: 生成 fixtures + 写测试文件
+    Step04 --> [*]: 输出 automation-summary.md
+
+    Resume --> step01b: 读取 YAML frontmatter
+    step01b --> Step02: 路由到 lastStep+1
+
+    Validate --> StepV: 对照 checklist.md
+    StepV --> [*]: PASS / CONCERNS / FAIL
+
+    Edit --> StepE1: 评估目标
+    StepE1 --> StepE2: 应用修改
+    StepE2 --> [*]
+      </div>
+      <div class="caption">图 3-3: Automate 工作流三态状态机</div>
+    </div>
+  </div>
+
+  <!-- Module 3: 分层知识库 -->
+  <h4 id="section-3-2-3">3.2.3 关键模块三：分层知识库（Tiered Knowledge Base）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/agents/bmad-tea/resources/tea-index.csv</span>
+      <span>📁 src/agents/bmad-tea/resources/knowledge/*.md</span>
+      <span>🏷️ Tiered Index Pattern</span>
+    </div>
+    <p>
+      知识库是 TEA 输出质量的核心基础设施。它由一个 CSV 索引文件（tea-index.csv）和 50+ 个 Markdown 知识碎片组成，覆盖从夹具架构到 Pact 合同测试、从 Webhook 测试到 CI 燃尽策略的全域测试工程知识。
+    </p>
+    <p>
+      知识碎片按三个层级分类，驱动选择性加载：
+    </p>
+    <ul>
+      <li><strong>core（核心）</strong>：20 个碎片，始终加载。包含夹具架构、网络优先安全守卫、数据工厂、风险治理、P0-P3 优先级矩阵、置信门控等基础知识。</li>
+      <li><strong>extended（扩展）</strong>：18 个碎片，按需加载。包含 Playwright 配置守护、时序调试、CI 燃尽策略、NFR 评审标准等进阶知识。</li>
+      <li><strong>specialized（专项）</strong>：12 个碎片，仅当特定配置标志或检测到相关技术栈时加载。包含 Pact 合同测试全套（pactjs-utils-overview / zod-to-pact / consumer-helpers / provider-verifier / request-filter / pact-consumer-framework-setup）、Pact Broker Webhooks、邮件认证测试等。</li>
+    </ul>
+    <p>
+      每个碎片在 CSV 中有 <code>id, name, description, tags, tier, fragment_file</code> 六列。步骤文件在执行前读取 CSV，根据当前任务的标签（如 <code>api, backend, contract-testing</code>）和配置标志（<code>tea_use_pactjs_utils: true</code>）筛选并加载相关碎片。这实现了「只将当前任务需要的知识注入上下文」的精准控制。
+    </p>
+    <p>
+      值得注意的是，每条工作流的 <code>resources/</code> 目录都<strong>刻意复制</strong>了所需的 TEA 知识子集，而不是在运行时跨技能边界引用中央路径。这确保每条工作流可以被独立安装、复制或调用，不依赖其他技能的文件系统位置。
+    </p>
+
+    <pre><code class="language-csv"># tea-index.csv 片段（展示分级和标签设计）
+id,name,description,tags,tier,fragment_file
+fixture-architecture,Fixture Architecture,"Composable fixture patterns",fixtures,architecture,playwright,core,knowledge/fixture-architecture.md
+risk-governance,Risk Governance,"Scoring matrix, category ownership, gate decision rules",risk,governance,gates,core,knowledge/risk-governance.md
+confidence-gate,Confidence Gate,"1-10 confidence scoring with stop-and-ask rule",reliability,agent-safety,generation,core,knowledge/confidence-gate.md
+contract-testing,Contract Testing,"Pact publishing, provider verification, PactV4 FFI safety",contract-testing,pact,api,specialized,knowledge/contract-testing.md
+pact-consumer-framework-setup,Pact Framework Setup,"vitest fileParallelism:false + pool:forks FFI safety",pactjs-utils,consumer,vitest,ffi,specialized,knowledge/pact-consumer-framework-setup.md</code></pre>
+  </div>
+
+  <!-- Module 4: Automate 旗舰工作流 -->
+  <h4 id="section-3-2-4">3.2.4 关键模块四：Automate 旗舰工作流（子 Agent 并行编排）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/workflows/testarch/bmad-testarch-automate/steps-c/</span>
+      <span>🏷️ Adaptive Orchestration</span>
+      <span>🏷️ Subagent Isolation</span>
+    </div>
+    <p>
+      Automate 是 TEA 最重量级的工作流，也是其并行架构最典型的展示。其设计解决了一个核心矛盾：生成全量 API + E2E 测试需要大量推理，但单次 LLM 上下文无法容纳所有中间状态。
+    </p>
+    <p>
+      解决方案是 <strong>自适应执行模式</strong>（由 <code>tea_execution_mode</code> 配置控制）：
+    </p>
+    <ul>
+      <li><strong>agent-team 模式</strong>：若运行时支持 Agent 团队/委托（如 Codex 的多 Agent 模式），优先使用，实现真正的并行。</li>
+      <li><strong>subagent 模式</strong>：若支持孤立子 Agent（如 Claude Code 的 subagent），API 测试 Agent 和 E2E 测试 Agent 并行运行在各自隔离上下文中，通过 <code>/tmp/tea-automate-*-{timestamp}.json</code> 临时文件传递结构化输出。</li>
+      <li><strong>sequential 模式</strong>：降级为顺序执行，确保跨环境兼容性。</li>
+      <li><strong>auto 模式</strong>（默认）：在步骤 03 执行前探测运行时能力（<code>tea_capability_probe: true</code>），按优先级选择最佳模式。</li>
+    </ul>
+    <p>
+      关键的上下文隔离设计：父工作流在分派子 Agent 时，只传入一个精简的 <code>subagentContext</code> JSON，包含覆盖计划、已加载的知识碎片列表、配置标志——子 Agent 不需要重新读取整个代码库，只需在给定的约束内完成单一任务（API 测试 / E2E 测试），并将结果以固定 JSON schema 输出到临时文件。聚合步骤（step-03c）读取这些 JSON，生成共享的 fixtures，避免重复代码。
+    </p>
+    <p>
+      Pact 合同测试（当 <code>tea_use_pactjs_utils: true</code>）的生成特别复杂，子 Agent 3A 需强制遵循 Vitest FFI 安全规则：
+    </p>
+
+    <pre><code class="language-typescript">// 子 Agent 3A 生成的 Pact Consumer Vitest 配置必须包含以下三重安全保障:
+// vitest.config.pact.ts
+export default defineConfig({
+  test: {
+    // 1. fileParallelism: false — 防止 workers 并发竞争共享 pact JSON 文件
+    fileParallelism: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        // 2. singleFork: true — 防止 @pact-foundation/pact 的 Rust FFI
+        //    在 Linux CI 上跨文件泄漏状态 (PactV4 breaking change)
+        singleFork: true,
+      },
+    },
+  },
+});
+
+// Consumer 测试: 每个 it() 块必须只有一个 addInteraction()
+// PactV4 Rust FFI 会丢弃多余的 interactions
+it('should fetch user', async () => {
+  await pact.addInteraction({...}); // 恰好一个
+  const result = await fetchUser(pact.mockService.baseUrl);
+  expect(result).toEqual({...});
+});</code></pre>
+  </div>
+
+  <!-- Module 5: 置信门控 -->
+  <h4 id="section-3-2-5">3.2.5 关键模块五：置信门控（Confidence Gate）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/agents/bmad-tea/resources/knowledge/confidence-gate.md</span>
+      <span>🏷️ Anti-Hallucination Pattern</span>
+      <span>🏷️ Evidence-Based Generation</span>
+    </div>
+    <p>
+      置信门控是 TEA 最具独创性的设计之一，它将「LLM 不应该生成虚假测试代码」这一工程原则编码为一个强制输出格式要求，嵌入到所有非平凡测试产出的生成流程中。
+    </p>
+    <p>
+      核心机制是：在生成选择器、API 路径、风险评分、数据工厂或 Zod Schema 之前，LLM 必须先输出一个标准化的置信评估块，包含 1-10 分的置信分、支撑该分数的具体证据引用（必须是文件路径、合约文档或实际观察到的模式）、以及未解决的未知项列表。
+    </p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+flowchart LR
+    A["需要生成测试产物"] --> B{"评估置信度\n(1-10)"}
+    B -->|"≥ 7\n有充分证据"| C["正常生成\n✅ 无需干预"]
+    B -->|"5-6\n证据部分"| D["生成但暴露假设\n⚠️ 提醒用户检查"]
+    B -->|"< 5\n证据不足"| E["🛑 停止生成\n提一个具体问题\n解决最关键的未知项"]
+    E --> F["用户提供信息\n证据增强"]
+    F --> B
+    C --> G["产出：真实反映\n代码库现状的测试"]
+    D --> G
+      </div>
+      <div class="caption">图 3-4: Confidence Gate 决策流程</div>
+    </div>
+
+    <p>门控适用范围精确划定，避免过度官僚化：</p>
+    <ul>
+      <li>✅ <strong>必须应用</strong>：选择器/页面对象（需探索真实应用）、API 端点路径（需读取 OpenAPI 规范）、风险分类（需引用概率-影响证据）、Fixture 组合（需理解现有 mergeTests 模式）、Schema 生成（需有合约来源）、数据工厂（需理解生产数据约束）。</li>
+      <li>❌ <strong>不应用</strong>：机械性重构（重命名变量、添加标签）、读取和汇总现有产物、从已收集数据生成报告、完全复制现有模式的简单测试补充。</li>
+    </ul>
+
+    <pre><code class="language-markdown"># 置信门控输出示例（生成 API 测试前）
+
+Confidence: 8
+Rationale: 已读取 `src/openapi/users.yaml` 第 142-167 行，确认 POST /users/{id}/role 端点存在，
+           请求体 schema 为 {role: string, expiresAt?: Date}；已找到同类测试模式在
+           `tests/api/user-profile.spec.ts` 中。
+Unknowns:
+- /users/{id}/role 在 E2E 测试套件中是否已有覆盖（避免重复）
+- expiresAt 为 null 时的行为是否在 OpenAPI 文档中有明确说明</code></pre>
+  </div>
+
+  <!-- Module 6: 定制化系统 -->
+  <h4 id="section-3-2-6">3.2.6 关键模块六：定制化覆盖系统（Layered Customization）</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 src/agents/bmad-tea/customize.toml</span>
+      <span>📁 _bmad/custom/{skill-name}.toml (团队)</span>
+      <span>📁 _bmad/custom/{skill-name}.user.toml (个人)</span>
+      <span>🏷️ Three-Layer Override Pattern</span>
+    </div>
+    <p>
+      定制化系统允许在不修改 TEA 核心文件的前提下，通过 TOML 文件叠加覆盖 Agent 行为和工作流参数。系统在每次激活时由 Python 脚本 <code>_bmad/scripts/resolve_customization.py</code> 计算最终配置，脚本不可用时 LLM 手动应用相同的合并规则。
+    </p>
+    <p>
+      合并规则：标量值直接覆盖（后者赢）；TOML 表（<code>[table]</code>）深度合并（只覆盖有值的键）；带 <code>code</code> 或 <code>id</code> 键的表数组，匹配则替换对应条目，不匹配则追加；其他数组直接追加。这套规则使团队可以在不复制整个 customize.toml 的情况下，仅覆盖需要变更的菜单项或参数。
+    </p>
+    <p>
+      典型使用场景：团队 customize.toml 中禁用 Pact 相关菜单项（若项目不使用合同测试）；个人 .user.toml 中调整 Murat 的沟通语言为中文；CI 环境注入固定的配置标志（<code>tea_execution_mode: sequential</code>）以确保确定性执行。
+    </p>
+
+    <pre><code class="language-toml"># _bmad/custom/bmad-tea.toml (团队覆盖示例)
+[agent]
+communication_style = "concise, bullet-point preferred"  # 覆盖默认风格
+
+# 禁用 Pact 合同测试菜单项（本团队不使用）
+[[agent.menu]]
+code = "CT"
+label = "Contract Testing"
+disabled = true  # 追加 disabled 字段到匹配项
+
+# _bmad/custom/bmad-tea.user.toml (个人覆盖示例)
+[agent]
+role = "senior QA engineer with focus on performance testing"
+communication_language = "Chinese"</code></pre>
+  </div>
+
+  <!-- Section 4: 方案评价 -->
+  <h2 id="section-4">4 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4>4.1 优势分析</h4>
+      <ul>
+        <li><strong>零运行时依赖</strong>：无需 Python/JS 编排引擎，在任何支持指令遵循的 LLM 上开箱即用，迁移成本极低。</li>
+        <li><strong>上下文工程领先</strong>：JIT 步骤加载 + 分级知识注入 + 子 Agent 隔离三重机制，显著延长有效工作深度，一次会话可完成原本需要多轮的复杂任务。</li>
+        <li><strong>防幻觉机制内建</strong>：Confidence Gate 将 AI 安全原则编码为强制输出格式，不依赖模型自律，可靠性更强。</li>
+        <li><strong>全覆盖测试生命周期</strong>：9 条工作流覆盖从 ATDD 红阶段、框架搭建、CI 配置到可追溯性矩阵和发布门决策的完整链路。</li>
+        <li><strong>10+ 平台一次安装</strong>：Claude Code、Cursor、Codex、GitHub Copilot、Windsurf、Cline 等平台通过统一安装器生成各自的启动产物，维护成本集中在核心工作流定义。</li>
+        <li><strong>丰富的专项知识库</strong>：Pact V4 FFI 安全规则、Webhook 异步测试模式、Playwright-utils 全套工具等稀缺知识已系统化沉淀，避免团队重复踩坑。</li>
+        <li><strong>渐进式配置设计</strong>：大多数变量提供合理默认值（auto 检测栈类型、CI 平台），新团队可零配置上手，按需深化。</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4>4.2 局限分析</h4>
+      <ul>
+        <li><strong>不执行测试，只生成代码</strong>：TEA 是测试代码生成器而非测试运行器，生成质量依赖 LLM 推理能力，无法自动验证生成的测试是否真正有效。</li>
+        <li><strong>模型质量强依赖</strong>：置信门控等机制假设 LLM 能可靠地遵循结构化指令；弱指令遵循的模型可能跳过步骤或忽略停止规则，导致产出不一致。</li>
+        <li><strong>知识库维护成本高</strong>：每条工作流刻意复制所需知识（自包含原则），当核心知识碎片更新时需同步传播到所有相关工作流的 resources/ 目录，存在维护分散风险。</li>
+        <li><strong>复杂的配置变量体系</strong>：module.yaml 中有 12 个配置变量，部分标注为 FUTURE（尚未激活），新用户难以判断哪些变量当前有实际效果。</li>
+        <li><strong>子 Agent 特性平台依赖</strong>：并行子 Agent 模式依赖特定平台能力（如 Claude Code subagent），auto 模式虽有降级，但降级到 sequential 时性能差异显著。</li>
+        <li><strong>文件路径系统脆弱性</strong>：步骤文件间通过 <code>{skill-root}</code> 变量传递路径，安装位置变化或路径解析错误会导致工作流中断，调试难度较高。</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: {
+      diagramMarginX: 20,
+      diagramMarginY: 20,
+      actorMargin: 60,
+      mirrorActors: false,
+      messageAlign: 'center'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20
+    }
+  });
+
+  hljs.highlightAll();
+
+  // TOC active highlight on scroll
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    tocLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>
