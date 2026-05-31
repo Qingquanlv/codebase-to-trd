@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>andrej-karpathy-skills 深度解读</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-alt: #f8f9fa;
+    --text: #1a1a2e;
+    --text-secondary: #555;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --border: #e5e7eb;
+    --code-bg: #1e1e2e;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    display: flex;
+  }
+  /* --- Sidebar TOC --- */
+  .toc {
+    position: fixed; top: 0; left: 0;
+    width: 260px; height: 100vh; overflow-y: auto;
+    padding: 24px 16px;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
+    font-size: 13px; z-index: 100;
+    transition: width 0.25s ease, padding 0.25s ease;
+  }
+  .toc.collapsed { width: 42px; padding: 16px 0; overflow: hidden; }
+  .toc.collapsed .toc-links { display: none; }
+  .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .toc h3 { font-size: 14px; color: var(--accent); margin: 0; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; }
+  .toc-toggle { width: 26px; height: 26px; border: none; background: transparent; cursor: pointer; color: var(--text-secondary); font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .toc-toggle:hover { background: var(--border); color: var(--accent); }
+  .toc.collapsed .toc-header { justify-content: center; }
+  .toc.collapsed h3 { display: none; }
+  .toc a { display: block; padding: 4px 8px; color: var(--text-secondary); text-decoration: none; border-radius: 4px; transition: all 0.2s; }
+  .toc a:hover, .toc a.active { color: var(--accent); background: var(--accent-light); }
+  .toc .toc-h2 { padding-left: 8px; font-weight: 600; margin-top: 8px; }
+  .toc .toc-h3 { padding-left: 24px; font-size: 12px; }
+  .toc .toc-h4 { padding-left: 40px; font-size: 12px; color: #888; }
+  /* --- Main Content --- */
+  .content { margin-left: 260px; max-width: 860px; padding: 48px 40px 120px; transition: margin-left 0.25s ease; }
+  .content.toc-collapsed { margin-left: 42px; }
+  /* --- Header --- */
+  .header { margin-bottom: 48px; }
+  .header h1 { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .header .subtitle { font-size: 18px; color: var(--text-secondary); margin-bottom: 16px; }
+  .header .lead { font-size: 16px; color: var(--text-secondary); line-height: 1.8; padding: 16px 20px; background: var(--bg-alt); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+  /* --- Core Conclusions Box --- */
+  .conclusions { margin: 32px 0; padding: 20px 24px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 12px; }
+  .conclusions h3 { font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .conclusions ul { list-style: none; padding: 0; }
+  .conclusions li { padding: 6px 0 6px 24px; position: relative; font-size: 15px; }
+  .conclusions li::before { content: "✦"; position: absolute; left: 0; color: var(--accent); }
+  /* --- Section Headings --- */
+  h2 { font-size: 24px; font-weight: 700; color: var(--text); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; color: var(--text); margin: 32px 0 12px; }
+  h4 { font-size: 17px; font-weight: 600; color: var(--text-secondary); margin: 24px 0 8px; }
+  /* --- Body Text --- */
+  p { font-size: 15px; margin-bottom: 16px; color: var(--text); }
+  ul, ol { margin: 8px 0 16px 24px; font-size: 15px; }
+  li { margin-bottom: 6px; }
+  /* --- Mermaid Diagrams --- */
+  .diagram-container { margin: 24px 0; padding: 24px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; position: relative; cursor: zoom-in; }
+  .diagram-container .caption { text-align: center; font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .diagram-zoom-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); opacity: 0; transition: opacity 0.15s; z-index: 5; }
+  .diagram-container:hover .diagram-zoom-btn { opacity: 1; }
+  .diagram-lightbox { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,.75); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .diagram-lightbox-inner { background: white; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,.4); max-width: 92vw; max-height: 90vh; }
+  /* --- Code Blocks --- */
+  pre { margin: 16px 0; border-radius: 8px; overflow-x: auto; }
+  pre code { font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6; padding: 16px !important; }
+  code:not(pre code) { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; padding: 2px 6px; background: #f1f5f9; color: #c7254e; border-radius: 4px; }
+  /* --- Command Flow Block --- */
+  .cmd-flow { margin: 16px 0; padding: 16px 20px; background: #0f172a; color: #e2e8f0; border-radius: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 2; }
+  .cmd-flow .cmd-comment { color: #64748b; }
+  .cmd-flow .cmd-line { color: #7dd3fc; }
+  /* --- Usage Mode Cards --- */
+  .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 20px 0; }
+  .usage-card { padding: 20px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .usage-card .usage-title { font-size: 15px; font-weight: 600; color: var(--accent); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .usage-card .usage-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+  .usage-card .usage-label { color: var(--text-secondary); min-width: 52px; font-weight: 500; }
+  .usage-card .usage-value { color: var(--text); }
+  /* --- Fit/Unfit Section --- */
+  .fit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .fit-card { padding: 16px 20px; border-radius: 10px; border: 1px solid var(--border); }
+  .fit-card.fit { background: #f0fdf4; border-color: #bbf7d0; }
+  .fit-card.unfit { background: #fef9f0; border-color: #fed7aa; }
+  .fit-card h4 { margin: 0 0 10px; font-size: 14px; }
+  .fit-card.fit h4 { color: var(--success); }
+  .fit-card.unfit h4 { color: var(--warning); }
+  .fit-card ul { margin: 0; padding-left: 18px; font-size: 14px; }
+  /* --- Walkthrough Timeline --- */
+  .timeline { margin: 20px 0; position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 10px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+  .timeline-step { position: relative; margin-bottom: 20px; }
+  .timeline-step::before { content: ''; position: absolute; left: -22px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid white; box-shadow: 0 0 0 2px var(--accent); }
+  .timeline-step .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .timeline-step .step-desc { font-size: 13px; color: var(--text-secondary); }
+  /* --- Module Card --- */
+  .module-card { margin: 24px 0; padding: 24px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .module-card .module-meta { display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; }
+  .module-card .module-meta span { padding: 2px 10px; background: var(--bg-alt); border-radius: 20px; }
+  /* --- Directory Table --- */
+  .dir-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 14px; }
+  .dir-table th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); }
+  .dir-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .dir-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--accent); white-space: nowrap; width: 240px; }
+  /* --- Directory Group Rationale --- */
+  .dir-rationale { font-size: 13px !important; color: var(--text-secondary) !important; font-style: italic; margin: 4px 0 8px !important; padding: 8px 12px; background: var(--bg-alt); border-left: 3px solid var(--border); border-radius: 0 4px 4px 0; }
+  /* --- Directory Tree --- */
+  .dir-tree { margin: 16px 0 24px; padding: 18px 22px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+  .dir-tree pre { margin: 0; background: transparent; font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace; font-size: 13px; line-height: 1.9; white-space: pre; }
+  .dir-tree .tree-root  { color: #1a1a2e; font-weight: 700; font-size: 14px; }
+  .dir-tree .tree-branch { color: #9ca3af; user-select: none; }
+  .dir-tree .tree-dir   { color: var(--accent); font-weight: 600; }
+  .dir-tree .tree-entry { color: #c7254e; font-weight: 600; }
+  .dir-tree .tree-file  { color: #374151; }
+  .dir-tree .tree-comment { color: #9ca3af; font-style: italic; }
+  /* --- Cast of Characters Table --- */
+  .cast-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  .cast-table th { background: var(--accent); color: #ffffff; font-weight: 600; text-align: left; padding: 10px 14px; border: 1px solid var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cast-table td { padding: 10px 14px; border: 1px solid var(--border); vertical-align: top; }
+  .cast-table tr:nth-child(even) td { background: var(--bg-alt); }
+  .cast-table td:first-child { font-weight: 600; color: var(--accent); }
+  .cast-table td:nth-child(2) code { font-size: 12px; color: #c7254e; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; }
+  .cast-table td:last-child { font-size: 13px; color: var(--text-secondary); }
+  /* --- Evaluation Section --- */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+  .eval-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+  .eval-card.strength { background: #f0fdf4; border-color: #bbf7d0; }
+  .eval-card.weakness { background: #fffbeb; border-color: #fde68a; }
+  .eval-card h4 { margin: 0 0 12px; font-size: 16px; }
+  .eval-card.strength h4 { color: var(--success); }
+  .eval-card.weakness h4 { color: var(--warning); }
+  /* --- Table (generic) --- */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th { background: var(--bg-alt); font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid var(--border); }
+  td { padding: 10px 12px; border: 1px solid var(--border); }
+  /* --- arch-read-table, schema-table, seq-table, chain-table --- */
+  .arch-read-table th { background: #dbeafe; color: var(--accent); }
+  .schema-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: #c7254e; }
+  .seq-table th, .chain-table th { background: #1e1e2e; color: #cdd6f4; }
+  .seq-table td:first-child, .chain-table td:first-child { font-family: 'JetBrains Mono', Consolas, monospace; color: var(--accent); font-size: 12px; text-align: center; }
+  .seq-table-caption { font-size: 13px; color: var(--text-secondary); font-style: italic; margin: -8px 0 8px; }
+  /* --- Section Lead --- */
+  .section-lead { font-size: 15px; padding: 12px 16px; background: #fffbeb; border-left: 4px solid var(--warning); border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+  /* --- Mobile --- */
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-left: 0; padding: 24px 16px 80px; }
+    .eval-grid, .fit-grid, .usage-grid { grid-template-columns: 1fr; }
+  }
+  /* ─── Interactive Panel System ──────────────────────────────── */
+  .code-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.38); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .code-backdrop.open { opacity:1; pointer-events:auto; }
+  .code-panel { position:fixed; top:0; right:0; height:100vh; width:min(820px,65vw); min-width:300px; max-width:96vw; background:#1e1e2e; color:#cdd6f4; transform:translateX(100%); transition:transform .26s cubic-bezier(.4,0,.2,1); z-index:201; display:flex; flex-direction:column; box-shadow:-4px 0 32px rgba(0,0,0,.3); }
+  .code-panel.open { transform:translateX(0); }
+  .panel-resize-grip { position:absolute; left:0; top:0; width:6px; height:100%; cursor:ew-resize; z-index:10; background:transparent; border-radius:3px 0 0 3px; }
+  .panel-resize-grip:hover,.panel-resize-grip.dragging { background:rgba(89,174,250,.35); }
+  .code-panel-header { display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; height:48px; border-bottom:1px solid #313244; flex-shrink:0; background:#181825; overflow:hidden; }
+  .code-panel-path { font-size:13px; font-family:'JetBrains Mono',Consolas,monospace; color:#cdd6f4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .code-panel-badge { font-size:11px; padding:2px 8px; border-radius:4px; background:#313244; color:#89b4fa; white-space:nowrap; flex-shrink:0; }
+  .panel-gh-link { font-size:12px; color:#89b4fa; text-decoration:none; white-space:nowrap; border:1px solid #89b4fa44; padding:2px 9px; border-radius:4px; flex-shrink:0; transition:background .15s; }
+  .panel-gh-link:hover { background:#89b4fa22; }
+  .code-panel-close { width:28px; height:28px; border:none; background:transparent; color:#9399b2; cursor:pointer; font-size:22px; line-height:1; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:all .15s; flex-shrink:0; }
+  .code-panel-close:hover { background:#313244; color:#cdd6f4; }
+  #iframePanelBody { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  #iframePanelBody iframe { width:100%; flex:1; border:none; display:none; }
+  .iframe-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; color:#6c7086; gap:12px; font-size:14px; }
+  .iframe-spin { width:32px; height:32px; border:3px solid #313244; border-top-color:#89b4fa; border-radius:50%; animation:panel-spin .8s linear infinite; }
+  @keyframes panel-spin { to { transform:rotate(360deg); } }
+  #termPanelBody { display:none; flex:1; overflow-y:auto; padding:20px 22px 32px; }
+  .term-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .term-tag { font-size:11px; padding:2px 8px; border-radius:12px; background:#313244; color:#89b4fa; }
+  .term-title-h { font-size:18px; font-weight:700; color:#cdd6f4; margin-bottom:12px; }
+  .term-def { font-size:14px; line-height:1.75; color:#bac2de; margin-bottom:16px; padding:12px 14px; background:#181825; border-left:3px solid #89b4fa; border-radius:0 6px 6px 0; }
+  .term-def code,.term-mechanics code { background:#313244; color:#f38ba8; padding:1px 5px; border-radius:3px; font-size:12px; }
+  .term-sec { font-size:11px; font-weight:700; color:#89b4fa; text-transform:uppercase; letter-spacing:.5px; margin:14px 0 8px; }
+  .term-mechanics { list-style:none; padding:0; margin:0; }
+  .term-mechanics li { font-size:13px; color:#bac2de; padding:6px 0 6px 18px; position:relative; border-bottom:1px solid #313244; line-height:1.6; }
+  .term-mechanics li::before { content:"·"; position:absolute; left:4px; color:#6c7086; font-size:18px; line-height:1.4; }
+  .term-mechanics li:last-child { border-bottom:none; }
+  .term-related-list { display:flex; gap:8px; flex-wrap:wrap; }
+  .term-rel-btn { font-size:12px; padding:3px 10px; border-radius:4px; background:#313244; color:#a6e3a1; border:1px solid #45475a; cursor:pointer; transition:all .15s; }
+  .term-rel-btn:hover { background:#45475a; }
+  .term-files-list { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+  .term-file-btn { font-size:12px; font-family:'JetBrains Mono',Consolas,monospace; padding:5px 10px; background:#181825; color:#89b4fa; border:1px solid #313244; border-radius:4px; cursor:pointer; text-align:left; transition:all .15s; }
+  .term-file-btn:hover { background:#313244; }
+  .file-link { color:#2563eb !important; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .file-link:hover { color:#1d4ed8 !important; }
+  .term-link { color:#7c3aed; text-decoration:underline; text-decoration-style:dotted; cursor:pointer; }
+  .term-link:hover { color:#6d28d9; }
+  .panel-nav-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-nav-btn:hover:not(:disabled) { background:#313244;color:#cdd6f4; }
+  .panel-nav-btn:disabled { opacity:.28;cursor:default; }
+  .panel-pin-btn { width:26px;height:26px;border:none;background:transparent;color:#9399b2;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all .15s;flex-shrink:0; }
+  .panel-pin-btn:hover { background:#313244; }
+  .panel-pin-btn.active { color:#89b4fa;background:#313244; }
+  .code-panel.pinned { box-shadow:-2px 0 20px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar TOC -->
+<nav class="toc" id="tocNav">
+  <div class="toc-header">
+    <h3>目录</h3>
+    <button class="toc-toggle" id="tocToggle" title="收起/展开目录">◀</button>
+  </div>
+  <div class="toc-links">
+    <a href="#section-1" class="toc-h2">1 摘要</a>
+    <a href="#section-1-1" class="toc-h3">1.1 项目背景</a>
+    <a href="#section-1-2" class="toc-h3">1.2 能解决的问题</a>
+    <a href="#section-1-2-1" class="toc-h4">1.2.1 默认假设执行</a>
+    <a href="#section-1-2-2" class="toc-h4">1.2.2 代码过度复杂</a>
+    <a href="#section-1-2-3" class="toc-h4">1.2.3 过度侧写扩散</a>
+    <a href="#section-1-2-4" class="toc-h4">1.2.4 目标模糊无法自主完成</a>
+    <a href="#section-2" class="toc-h2">2 项目设计理念</a>
+    <a href="#section-2-1" class="toc-h3">2.1 单文件内聚</a>
+    <a href="#section-2-2" class="toc-h3">2.2 行为约束而非功能增强</a>
+    <a href="#section-2-3" class="toc-h3">2.3 跨工具标准化（竞品对比）</a>
+    <a href="#section-2-4" class="toc-h3">2.4 适合解决什么问题</a>
+    <a href="#section-3" class="toc-h2">3 核心对象与术语</a>
+    <a href="#section-3-1" class="toc-h3">3.1 术语表</a>
+    <a href="#section-3-2" class="toc-h3">3.2 对象之间的关系</a>
+    <a href="#section-3-3" class="toc-h3">3.3 状态存储载体</a>
+    <a href="#section-3-4" class="toc-h3">3.4 常见误解</a>
+    <a href="#section-4" class="toc-h2">4 项目使用方式</a>
+    <a href="#section-4-1" class="toc-h3">4.1 从需求到交付的完整过程</a>
+    <a href="#section-4-2" class="toc-h3">4.2 最小可运行路径</a>
+    <a href="#section-4-3" class="toc-h3">4.3 核心使用模式</a>
+    <a href="#section-5" class="toc-h2">5 系统详细设计</a>
+    <a href="#section-5-1" class="toc-h3">5.1 系统架构设计</a>
+    <a href="#section-5-1-1" class="toc-h4">5.1.1 架构图</a>
+    <a href="#section-5-2" class="toc-h3">5.2 关键执行链路</a>
+    <a href="#section-5-3" class="toc-h3">5.3 关键模块实现细节</a>
+    <a href="#section-5-3-1" class="toc-h4">5.3.1 Think Before Coding</a>
+    <a href="#section-5-3-2" class="toc-h4">5.3.2 Goal-Driven Execution</a>
+    <a href="#section-5-3-3" class="toc-h4">5.3.3 Claude Code Plugin 分发</a>
+    <a href="#section-5-3-4" class="toc-h4">5.3.4 Cursor Rule 激活</a>
+    <a href="#section-6" class="toc-h2">6 方案评价</a>
+    <a href="#section-6-1" class="toc-h3">6.1 优势分析</a>
+    <a href="#section-6-2" class="toc-h3">6.2 局限分析</a>
+    <a href="#section-7" class="toc-h2">7 版本化维护区</a>
+    <a href="#section-7-1" class="toc-h3">7.1 本文观察基线</a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="content">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>andrej-karpathy-skills 深度解读</h1>
+    <div class="subtitle">一套让 LLM 编码助手更可预测的行为约束框架 · 163k ⭐</div>
+    <div class="lead">
+      andrej-karpathy-skills 是一套提炼自 Andrej Karpathy 对 LLM 编码观察的行为约束指令集，将四条原则编码为纯 Markdown，以插件、规则文件、Agent Skill 多种格式分发。通过注入 LLM 上下文（全局或按项目）来约束其编码行为，使其在开始编码前思考、始终保持简洁、修改时精准克制、执行任务时绑定可验证目标。通过 Claude Code 插件市场一键安装，或复制单个 Markdown 文件到项目中即可使用。
+    </div>
+  </header>
+
+  <!-- Core Conclusions -->
+  <div class="conclusions">
+    <h3>核心结论</h3>
+    <ul>
+      <li>本质是一份「提示词宪法」——不添加任何新功能，只约束 LLM 的决策过程，通过消除四类高频错误行为来提升编码质量。</li>
+      <li>四条原则（编码前思考、简洁优先、精准修改、目标驱动执行）每条都对应一个具体的 LLM 反模式，且互相独立，可单独使用。</li>
+      <li>同一份原则同时以 Claude Code Plugin、CLAUDE.md、Cursor Rule、Cursor Agent Skill 四种格式分发，采用哪种格式不影响约束效果，选择权留给用户。</li>
+    </ul>
+  </div>
+
+  <!-- 1 摘要 -->
+  <h2 id="section-1">1 摘要</h2>
+
+  <h3 id="section-1-1">1.1 项目背景</h3>
+  <p>2024 年底，Andrej Karpathy 在 X（原 Twitter）发帖总结了他使用 AI 编码助手的核心痛点：模型会代用户做假设然后默默执行、倾向于把代码写得过度复杂、修复一个 bug 时会顺手"改进"不相关的代码、以及面对模糊任务时缺乏可自主循环完成的能力。</p>
+  <p>forrestchang（@jiayuan_jy）将这些观察提炼成四条原则，打包成单个 <code>CLAUDE.md</code> 文件发布到 GitHub。项目在数天内获得 163k Star，成为当时 GitHub 上增长最快的仓库之一。multica-ai fork 版本在原版基础上增加了 Claude Code 插件市场和 Cursor Agent Skill 支持，使分发路径从"复制文件"升级为"一行命令安装"。</p>
+
+  <h3 id="section-1-2">1.2 能解决的问题</h3>
+
+  <h4 id="section-1-2-1">1.2.1「模型默默假设执行」——编码前显式声明假设</h4>
+  <p>LLM 面对模糊请求时倾向于选择一种解读然后立即执行，不告知用户它做了哪些假设。Think Before Coding 原则要求 LLM 在开始写代码前，先列出前提假设、呈现多种解读方案、在存在更简单路径时主动说出来。用户得以在实现偏离方向之前进行纠正，而不是在收到一大段错误代码后再返工。</p>
+
+  <h4 id="section-1-2-2">1.2.2「代码越写越复杂」——最小代码解决当前问题</h4>
+  <p>LLM 倾向于添加"以防万一"的功能、为一次性代码引入策略模式、把 5 行能完成的事写成 50 行类层次结构。Simplicity First 原则用一个判断标准来约束：资深工程师会不会说"这太复杂了"？通过明确禁止推测性功能和不必要的抽象，将代码的认知负担保持在任务的最小边界内。</p>
+
+  <h4 id="section-1-2-3">1.2.3「改一处顺便改其他」——只碰必须碰的代码</h4>
+  <p>LLM 在修复 bug 时会顺手更改引号风格、添加类型注解、重构相邻函数，使 diff 充满噪音且难以 review。Surgical Changes 原则要求每一行修改都必须能直接追溯到用户的请求，对不相关的死代码只提及不删除，匹配现有代码风格而不是统一成自己的偏好。</p>
+
+  <h4 id="section-1-2-4">1.2.4「目标模糊无法无人值守完成」——绑定可验证的成功标准</h4>
+  <p>弱任务描述（"修一下认证系统"）需要 LLM 不断向用户要求澄清，或自行猜测完成范围；任何一种情况都会打断用户的工作流。Goal-Driven Execution 原则将指令式任务转化为可验证目标，例如"写出重现 bug 的测试，再让它通过"，给 LLM 足够的退出条件来独立循环完成任务，不需要人工持续在场。</p>
+
+  <!-- 2 设计理念 -->
+  <h2 id="section-2">2 项目设计理念</h2>
+
+  <h3 id="section-2-1">2.1 单文件内聚：原则即指令</h3>
+  <p>整个项目最核心的产物是一个 66 行的 <code>CLAUDE.md</code> 文件。项目刻意不引入任何配置格式、工具链或运行时依赖——原则本身就是指令，LLM 读到即执行。这一决策使"安装"的成本降低到一次 <code>curl</code>，也使维护成本降至最低：改一处（<code>CLAUDE.md</code>），同步到其他格式文件即完成。</p>
+
+  <h3 id="section-2-2">2.2 行为约束，不是功能增强</h3>
+  <p>市面上大多数 AI 编码工具的竞争点在于"能做到什么"——更强的代码补全、更好的 RAG 索引、更大的上下文窗口。这个项目反其道而行，关注的是"什么不能做"：不能默默假设、不能过度抽象、不能修改不相关代码、不能在没有验证标准的情况下认为任务完成。约束 LLM 的边界比扩展其能力边界更容易量化效果（观察 diff 即可）。</p>
+
+  <h3 id="section-2-3">2.3 跨工具标准化（竞品横向对比）</h3>
+  <p>同一套原则通过四种格式在两个主流 LLM 编码工具中可用，而不是各自维护一套工具特定的指令。这种设计降低了用户的认知负担，也让原则本身的效果更易于跨工具比较。</p>
+  <table>
+    <thead>
+      <tr><th>工具/方法</th><th>定位</th><th>优势</th><th>劣势</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>andrej-karpathy-skills</td>
+        <td>跨工具行为约束指令集</td>
+        <td>极简安装、跨工具通用、原则来自实践观察、可合并到已有指令</td>
+        <td>只约束行为不增加能力、需用户自行判断何时生效、原则固定无法自适应</td>
+      </tr>
+      <tr>
+        <td>GitHub Copilot Instructions</td>
+        <td>项目级自定义指令（<code>.github/copilot-instructions.md</code>）</td>
+        <td>原生集成 VS Code/GitHub、团队共享方便</td>
+        <td>仅限 Copilot、无法跨工具使用、社区规则库较少</td>
+      </tr>
+      <tr>
+        <td>Cursor Rules (.cursorrules)</td>
+        <td>项目级或全局 Cursor 行为规则</td>
+        <td>灵活度高、支持 glob 匹配不同文件类型、社区规则库丰富</td>
+        <td>仅限 Cursor、格式与 Claude Code 不兼容、需自己提炼原则</td>
+      </tr>
+      <tr>
+        <td>自定义 System Prompt</td>
+        <td>直接向 LLM 注入全局指令</td>
+        <td>最灵活、不依赖任何工具</td>
+        <td>需手动维护、无版本管理、无法在团队间共享</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>andrej-karpathy-skills 在"低安装成本"和"跨工具通用"这两个维度上胜出；在"自适应调整"和"工具深度集成"上落后于工具原生方案。最适合的用户是同时使用 Claude Code 和 Cursor、希望在两者之间保持一致约束的开发者。</p>
+
+  <h3 id="section-2-4">2.4 当前适合解决什么问题</h3>
+  <div class="fit-grid">
+    <div class="fit-card fit">
+      <h4>✅ 适合的场景</h4>
+      <ul>
+        <li>新功能开发（需要 LLM 在动手前先澄清边界）</li>
+        <li>对已有代码库做局部修改（防止 diff 污染）</li>
+        <li>需要无人值守长任务（绑定验证标准后 LLM 可自主循环）</li>
+        <li>团队希望对 AI 编码行为建立共识规范</li>
+        <li>同时使用 Claude Code 和 Cursor 的混合工作流</li>
+      </ul>
+    </div>
+    <div class="fit-card unfit">
+      <h4>⚠️ 不太适合的场景</h4>
+      <ul>
+        <li>一次性简单任务（"帮我改个变量名"不需要完整的 Think Before Coding 流程）</li>
+        <li>纯探索性原型（要求快速迭代，过度谨慎会拖慢节奏）</li>
+        <li>需要动态调整约束的场景（原则是静态的，无法根据任务类型自动松紧）</li>
+        <li>期望 LLM 主动生成更多功能的场景（本项目的取向是"约束"而非"激发"）</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 3 核心对象与术语 -->
+  <h2 id="section-3">3 核心对象与术语</h2>
+
+  <h3 id="section-3-1">3.1 术语表</h3>
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>术语</th><th>所在文件</th><th>层级</th><th>核心说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="term-link" data-term="Think Before Coding">Think Before Coding</span></td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+        <td>行为原则</td>
+        <td>要求编码前声明假设、呈现多种解读、主动提出更简单路径</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Simplicity First">Simplicity First</span></td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+        <td>行为原则</td>
+        <td>最少代码解决当前问题，禁止推测性功能和不必要的抽象</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Surgical Changes">Surgical Changes</span></td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+        <td>行为原则</td>
+        <td>只修改必须修改的部分，每行改动都能追溯到用户请求</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Goal-Driven Execution">Goal-Driven Execution</span></td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+        <td>行为原则</td>
+        <td>将任务转化为可验证目标，使 LLM 能自主循环到完成</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Claude Code Plugin">Claude Code Plugin</span></td>
+        <td><span class="file-link" data-file="plugin.json">.claude-plugin/plugin.json</span></td>
+        <td>分发格式</td>
+        <td>通过插件市场全局安装，无需在每个项目复制文件</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Cursor Rule">Cursor Rule</span></td>
+        <td><span class="file-link" data-file="karpathy-guidelines.mdc">karpathy-guidelines.mdc</span></td>
+        <td>分发格式</td>
+        <td>alwaysApply: true，在 Cursor 中自动注入所有会话上下文</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="CLAUDE.md (per-project)">CLAUDE.md（按项目）</span></td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+        <td>分发格式</td>
+        <td>curl 一行下载到项目根目录，只影响当前项目</td>
+      </tr>
+      <tr>
+        <td><span class="term-link" data-term="Agent Skill">Agent Skill</span></td>
+        <td><span class="file-link" data-file="SKILL.md">SKILL.md</span></td>
+        <td>分发格式</td>
+        <td>放入 ~/.cursor/skills/ 后按需加载，与 Cursor Rule 的区别：按需而非总是生效</td>
+      </tr>
+      <tr>
+        <td>alwaysApply</td>
+        <td><span class="file-link" data-file="karpathy-guidelines.mdc">karpathy-guidelines.mdc</span></td>
+        <td>Cursor 配置项</td>
+        <td>Cursor Rule 的 frontmatter 字段，设为 true 时规则在所有会话中持续生效</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-2">3.2 对象之间的关系</h3>
+  <table>
+    <thead>
+      <tr><th>对象</th><th>定义</th><th>分属模块</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>原则（Principle）</td>
+        <td>具体的行为约束条目，共 4 条，是项目的核心内容</td>
+        <td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td>
+      </tr>
+      <tr>
+        <td>分发格式（Distribution Format）</td>
+        <td>将原则注入 LLM 上下文的载体，共 4 种，内容相同但激活方式不同</td>
+        <td><span class="file-link" data-file="plugin.json">plugin.json</span> / <span class="file-link" data-file="karpathy-guidelines.mdc">karpathy-guidelines.mdc</span> / <span class="file-link" data-file="SKILL.md">SKILL.md</span></td>
+      </tr>
+      <tr>
+        <td>插件清单（Plugin Manifest）</td>
+        <td>驱动 Claude Code 插件市场安装的 JSON 配置，描述插件元数据和技能路径</td>
+        <td><span class="file-link" data-file="plugin.json">.claude-plugin/plugin.json</span> / <span class="file-link" data-file="marketplace.json">marketplace.json</span></td>
+      </tr>
+      <tr>
+        <td>反模式图鉴（Anti-Pattern Examples）</td>
+        <td>对每条原则配套"错误做法 vs 正确做法"代码示例，帮助理解原则边界</td>
+        <td><span class="file-link" data-file="EXAMPLES.md">EXAMPLES.md</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>CLAUDE.md 文件结构（来自真实源码）：</strong></p>
+  <table class="schema-table">
+    <thead><tr><th>字段（Section）</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>## 1. Think Before Coding</td><td>Markdown Section</td><td>假设声明原则：编码前先列假设、呈现多解、主动异议</td></tr>
+      <tr><td>## 2. Simplicity First</td><td>Markdown Section</td><td>简洁优先原则：最少代码、无推测功能、无单次抽象</td></tr>
+      <tr><td>## 3. Surgical Changes</td><td>Markdown Section</td><td>精准修改原则：只碰必须碰的、匹配已有风格、只清理自己造成的孤儿</td></tr>
+      <tr><td>## 4. Goal-Driven Execution</td><td>Markdown Section</td><td>目标驱动原则：任务转化为可验证目标、多步任务先出计划</td></tr>
+      <tr><td>Tradeoff Note（尾注）</td><td>Plain text</td><td>说明原则偏向谨慎而非速度，对琐碎任务需自行判断</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>plugin.json 文件结构（来自真实源码）：</strong></p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>name</td><td>string</td><td>插件唯一标识符，如 "andrej-karpathy-skills"</td></tr>
+      <tr><td>description</td><td>string</td><td>插件描述，展示在 Claude Code 插件市场</td></tr>
+      <tr><td>version</td><td>string</td><td>语义版本号，如 "1.0.0"</td></tr>
+      <tr><td>author.name</td><td>string</td><td>作者名，如 "forrestchang"</td></tr>
+      <tr><td>license</td><td>string</td><td>开源协议，如 "MIT"</td></tr>
+      <tr><td>keywords</td><td>string[]</td><td>市场搜索关键词，["guidelines","best-practices","coding","karpathy"]</td></tr>
+      <tr><td>skills</td><td>string[]</td><td>插件包含的 Skill 路径列表，如 ["./skills/karpathy-guidelines"]</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>karpathy-guidelines.mdc 文件结构（来自真实源码）：</strong></p>
+  <table class="schema-table">
+    <thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td>description（frontmatter）</td><td>string</td><td>规则用途描述，展示在 Cursor Rules 面板</td></tr>
+      <tr><td>alwaysApply（frontmatter）</td><td>boolean</td><td>设为 true 时规则在所有文件和会话中持续注入</td></tr>
+      <tr><td>正文（body）</td><td>Markdown</td><td>与 CLAUDE.md 内容相同的四条原则</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-3">3.3 状态存储载体</h3>
+  <p>这是一个纯 Markdown 框架，没有运行时数据库。"状态"存在于以下三层：</p>
+  <table>
+    <thead><tr><th>层次</th><th>载体</th><th>持久性</th><th>职责与真相来源</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>源码层</td>
+        <td>Git 仓库 + <code>CLAUDE.md</code></td>
+        <td>永久</td>
+        <td><strong>原则内容的唯一真相来源</strong>。所有分发格式必须与此同步</td>
+      </tr>
+      <tr>
+        <td>安装层</td>
+        <td>Claude Code 插件目录 / 项目 <code>.cursor/rules/</code> / <code>~/.cursor/skills/</code></td>
+        <td>持久（直到卸载）</td>
+        <td>原则在特定工具环境的本地副本，用户无需手动维护</td>
+      </tr>
+      <tr>
+        <td>会话层</td>
+        <td>LLM 上下文窗口（Context Window）</td>
+        <td>临时（会话结束后消失）</td>
+        <td>原则在 AI 编码会话中的运行时实例；<code>alwaysApply: true</code> 确保每次会话都重新注入</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="section-3-4">3.4 常见误解</h3>
+  <ol>
+    <li><strong>误解：这是一个代码生成工具或 AI 能力增强工具。</strong> — 实际上它只是一份注入 LLM 上下文的行为约束文本，不给 LLM 增加任何新能力，只限制它的某些行为倾向。</li>
+    <li><strong>误解：安装后所有任务都会变慢，因为 LLM 要先"想"。</strong> — 原则末尾明确说明偏向谨慎而非速度，对琐碎任务（简单拼写错误修复）用户应自行判断是否需要完整流程。</li>
+    <li><strong>误解：四种分发格式效果不同，应该选"最强的"那种。</strong> — 四种格式载体不同，激活时机不同，但注入的原则内容完全相同，效果取决于 LLM 是否读到，而不是格式本身。</li>
+    <li><strong>误解：Cursor Rule（alwaysApply）比 Agent Skill 更强，应优先选用。</strong> — alwaysApply 意味着每个任务都带着这套约束，包括不需要它的简单任务；Agent Skill 是按需加载，适合不想让规则干扰所有对话的用户。二者是"总是生效"对"按需调用"的取舍，不存在孰优孰劣。</li>
+    <li><strong>误解：项目内容固定，无法扩展。</strong> — README 明确说明这套原则被设计为"可合并"的：用户可以把它 append 到已有 CLAUDE.md，再添加项目特定章节，如"使用 TypeScript 严格模式"。</li>
+  </ol>
+
+  <!-- 4 项目使用方式 -->
+  <h2 id="section-4">4 项目使用方式</h2>
+
+  <h3 id="section-4-1">4.1 从需求到交付的一次完整过程</h3>
+  <p class="section-lead">以一个真实场景为例：<strong>开发者向 Claude Code 提出"帮我给用户上传接口加速率限制"</strong>，希望 LLM 能在不引入过度复杂性的前提下完成任务。</p>
+
+  <div class="timeline">
+    <div class="timeline-step">
+      <div class="step-title">① 原则注入上下文</div>
+      <div class="step-desc">Claude Code 启动时自动读取项目中的 <code>CLAUDE.md</code>（或全局插件版本），将四条原则注入 LLM 的 system prompt 上下文。此步骤对用户透明。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">② LLM 触发 Think Before Coding</div>
+      <div class="step-desc">收到"加速率限制"请求后，LLM 不立即开始写代码，而是先声明假设：「速率限制的粒度是按 IP、按用户还是按 API Key？限额是多少？后端是单机还是多实例？超限返回 429 还是排队？」然后等待用户确认。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">③ 用户澄清 → LLM 制定计划</div>
+      <div class="step-desc">用户确认「按 IP，10 次/分钟，单机部署，429 响应」后，LLM 提出分步计划：<br><code>1. 添加 in-memory 计数器 → verify: 测试 11 次请求，第 11 次收到 429</code><br><code>2. 提取为中间件 → verify: 现有测试通过</code>。这一步体现了 Goal-Driven Execution 原则。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">④ LLM 执行 step 1 并验证</div>
+      <div class="step-desc">LLM 写出最小实现：一个 <code>Map</code> 存储 IP 计数、一段 middleware 逻辑、一个测试文件。不添加 Redis 后端（未被要求）、不添加配置文件（未被要求），体现 Simplicity First 原则。运行测试，验证通过。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑤ LLM 执行 step 2，Surgical Changes</div>
+      <div class="step-desc">提取为 middleware 时，LLM 只修改相关的路由注册代码，不更改其他路由的签名、不添加类型注解（原有代码没有）、不改变引号风格。diff 仅包含与任务直接相关的行。</div>
+    </div>
+    <div class="timeline-step">
+      <div class="step-title">⑥ 计划完成，LLM 报告结果</div>
+      <div class="step-desc">两步均通过验证，LLM 报告：「速率限制已添加，两个测试均通过，未修改其他代码。如需 Redis 后端支持多实例，可在之后单独提出。」用户得到一个干净的、最小的实现。</div>
+    </div>
+  </div>
+
+  <h3 id="section-4-2">4.2 最小可运行路径</h3>
+  <p>以 Claude Code 插件市场安装为最小路径（推荐）：</p>
+
+  <div class="cmd-flow">
+    <span class="cmd-comment"># 第一步：在 Claude Code 中添加插件市场</span><br>
+    <span class="cmd-line">/plugin marketplace add forrestchang/andrej-karpathy-skills</span><br>
+    <br>
+    <span class="cmd-comment"># 第二步：安装插件（使原则全局生效）</span><br>
+    <span class="cmd-line">/plugin install andrej-karpathy-skills@karpathy-skills</span><br>
+    <br>
+    <span class="cmd-comment"># 替代方案 A：按项目安装（复制 CLAUDE.md 到项目根目录）</span><br>
+    <span class="cmd-line">curl -o CLAUDE.md https://raw.githubusercontent.com/multica-ai/andrej-karpathy-skills/main/CLAUDE.md</span><br>
+    <br>
+    <span class="cmd-comment"># 替代方案 B：Cursor 用户，将规则文件复制到项目</span><br>
+    <span class="cmd-line">cp .cursor/rules/karpathy-guidelines.mdc YOUR_PROJECT/.cursor/rules/</span><br>
+    <br>
+    <span class="cmd-comment"># 验证：提出一个模糊需求，观察 LLM 是否在写代码前主动澄清假设</span><br>
+    <span class="cmd-line"># 如果看到 LLM 列出假设列表并询问，原则已生效</span>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph LR
+    A["选择安装方式"] --> B["插件市场安装\n或复制 CLAUDE.md"]
+    B --> C["原则注入 LLM 上下文"]
+    C --> D["提出模糊需求"]
+    D --> E["观察 LLM 行为\n是否先澄清假设"]
+    E --> F["合并项目特定规则\n可选"]
+    </div>
+    <div class="caption">图 4-1：从安装到验证生效的最小路径</div>
+  </div>
+
+  <h3 id="section-4-3">4.3 核心使用模式</h3>
+  <div class="usage-grid">
+    <div class="usage-card">
+      <div class="usage-title">方式一：Claude Code 全局插件</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">希望原则在所有项目中全局生效，无需按项目维护</span></div>
+      <div class="usage-row"><span class="usage-label">输入</span><span class="usage-value">两条 /plugin 命令</span></div>
+      <div class="usage-row"><span class="usage-label">输出</span><span class="usage-value">所有 Claude Code 会话自动带上四条原则</span></div>
+      <div class="usage-row"><span class="usage-label">文件</span><span class="usage-value"><code>plugin.json</code>, <code>marketplace.json</code></span></div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">方式二：CLAUDE.md 按项目</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">需要将原则与项目特定规则合并，或只对某个项目生效</span></div>
+      <div class="usage-row"><span class="usage-label">输入</span><span class="usage-value">curl 下载 + 可选 append 合并</span></div>
+      <div class="usage-row"><span class="usage-value">只影响当前项目，其他项目不受干扰</span></div>
+      <div class="usage-row"><span class="usage-label">文件</span><span class="usage-value"><code>CLAUDE.md</code></span></div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">方式三：Cursor Rule（总是生效）</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">Cursor 用户，希望规则在打开任意文件时自动注入</span></div>
+      <div class="usage-row"><span class="usage-label">输入</span><span class="usage-value">复制 .mdc 文件到 .cursor/rules/</span></div>
+      <div class="usage-row"><span class="usage-value">alwaysApply: true 保证每个会话都带原则</span></div>
+      <div class="usage-row"><span class="usage-label">文件</span><span class="usage-value"><code>karpathy-guidelines.mdc</code></span></div>
+    </div>
+    <div class="usage-card">
+      <div class="usage-title">方式四：Cursor Agent Skill（按需）</div>
+      <div class="usage-row"><span class="usage-label">何时用</span><span class="usage-value">不希望规则干扰所有对话，只在重要任务时手动调用</span></div>
+      <div class="usage-row"><span class="usage-label">输入</span><span class="usage-value">复制到 ~/.cursor/skills/ 目录</span></div>
+      <div class="usage-row"><span class="usage-value">Agent 按需加载，不影响日常简单对话</span></div>
+      <div class="usage-row"><span class="usage-label">文件</span><span class="usage-value"><code>SKILL.md</code></span></div>
+    </div>
+  </div>
+
+  <!-- 5 系统详细设计 -->
+  <h2 id="section-5">5 系统详细设计</h2>
+
+  <h3 id="section-5-1">5.1 系统架构设计</h3>
+
+  <h4 id="section-5-1-1">5.1.1 架构图</h4>
+
+  <p>先从目录结构了解整体轮廓（<code>★</code> 为关键入口文件）——</p>
+  <div class="dir-tree">
+    <pre><span class="tree-root">andrej-karpathy-skills/</span>
+<span class="tree-branch">├── </span><span class="tree-entry">★ CLAUDE.md</span>                          <span class="tree-comment">← 核心原则载体，所有格式的内容源头</span>
+<span class="tree-branch">├── </span><span class="tree-entry">★ README.md</span>                          <span class="tree-comment">← 项目门面：原则详解 + 安装指南（英文）</span>
+<span class="tree-branch">├── </span><span class="tree-file">README.zh.md</span>                         <span class="tree-comment">← 中文版说明</span>
+<span class="tree-branch">├── </span><span class="tree-file">EXAMPLES.md</span>                          <span class="tree-comment">← 每条原则的反模式 vs 正确做法代码示例</span>
+<span class="tree-branch">├── </span><span class="tree-file">CURSOR.md</span>                            <span class="tree-comment">← Cursor 专属设置说明</span>
+<span class="tree-branch">├── </span><span class="tree-dir">.claude-plugin/</span>                      <span class="tree-comment">← Claude Code 插件市场分发配置</span>
+<span class="tree-branch">│   ├── </span><span class="tree-entry">★ plugin.json</span>                    <span class="tree-comment">← 插件元数据 + 指向 skills/ 的路径</span>
+<span class="tree-branch">│   └── </span><span class="tree-file">marketplace.json</span>                 <span class="tree-comment">← 市场清单，供 /plugin marketplace add 使用</span>
+<span class="tree-branch">├── </span><span class="tree-dir">.cursor/</span>                             <span class="tree-comment">← Cursor 规则配置</span>
+<span class="tree-branch">│   └── </span><span class="tree-dir">rules/</span>
+<span class="tree-branch">│       └── </span><span class="tree-entry">★ karpathy-guidelines.mdc</span>   <span class="tree-comment">← alwaysApply:true，自动注入 Cursor 会话</span>
+<span class="tree-branch">└── </span><span class="tree-dir">skills/</span>                              <span class="tree-comment">← Cursor Agent Skill 按需加载</span>
+<span class="tree-branch">    └── </span><span class="tree-dir">karpathy-guidelines/</span>
+<span class="tree-branch">        └── </span><span class="tree-entry">★ SKILL.md</span>                   <span class="tree-comment">← 与 CLAUDE.md 内容相同，但按需触发</span></pre>
+  </div>
+
+  <p>在看架构图之前，先认识系统里的主要"演员"——</p>
+  <table class="cast-table">
+    <thead>
+      <tr><th>角色</th><th>代表文件</th><th>职责一句话</th><th>与谁交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>原则核心</td>
+        <td><code>★ CLAUDE.md</code></td>
+        <td>记录四条行为约束原则，是整个项目的唯一内容真相来源</td>
+        <td>所有分发格式载体</td>
+      </tr>
+      <tr>
+        <td>示例图鉴</td>
+        <td><code>EXAMPLES.md</code></td>
+        <td>用代码对比展示每条原则的"错误 vs 正确"，帮助理解原则边界</td>
+        <td>原则核心（内容参照）</td>
+      </tr>
+      <tr>
+        <td>Claude Code 插件清单</td>
+        <td><code>★ plugin.json</code></td>
+        <td>驱动 Claude Code 插件市场分发，将 SKILL.md 注册为可安装插件</td>
+        <td>marketplace.json, skills/</td>
+      </tr>
+      <tr>
+        <td>市场注册表</td>
+        <td><code>marketplace.json</code></td>
+        <td>供 /plugin marketplace add 命令读取，向 Claude Code 声明插件来源</td>
+        <td>Claude Code 插件清单</td>
+      </tr>
+      <tr>
+        <td>Cursor 规则（总是生效）</td>
+        <td><code>★ karpathy-guidelines.mdc</code></td>
+        <td>以 alwaysApply:true 将原则持续注入所有 Cursor 会话上下文</td>
+        <td>Cursor IDE（运行时读取）</td>
+      </tr>
+      <tr>
+        <td>Cursor Agent Skill（按需）</td>
+        <td><code>★ SKILL.md</code></td>
+        <td>存储于 ~/.cursor/skills/ 后，Agent 在判断需要行为指导时按需加载</td>
+        <td>Cursor IDE（运行时读取）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>系统分为"内容层"（原则文本）和"分发层"（将文本注入 LLM 上下文的四种机制）。核心流是：用户安装其中一种分发格式 → 工具在创建 LLM 会话时将原则注入上下文 → LLM 受约束编码。</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+graph TD
+    %% 主链路: 用户 → 选择安装方式 → 工具读取 → LLM 上下文注入 → 约束编码行为
+    subgraph 内容层
+      A["CLAUDE.md\n原则唯一真相来源"]
+    end
+    subgraph 分发层
+      B["plugin.json\nClaude Code 插件市场"]
+      C["CLAUDE.md (per-project)\n项目级指令文件"]
+      D["karpathy-guidelines.mdc\nCursor Rule alwaysApply"]
+      E["SKILL.md\nCursor Agent Skill"]
+    end
+    subgraph 工具运行时
+      F["Claude Code\n读取 CLAUDE.md / Plugin"]
+      G["Cursor IDE\n读取 .mdc / SKILL.md"]
+    end
+    subgraph LLM 会话
+      H["LLM 上下文窗口\n原则注入为 system 指令"]
+    end
+    A -->|内容同步| B
+    A -->|内容同步| C
+    A -->|内容同步| D
+    A -->|内容同步| E
+    B --> F
+    C --> F
+    D --> G
+    E --> G
+    F --> H
+    G --> H
+    H --> I["约束后的编码行为\n先思考・简洁・精准・目标驱动"]
+    </div>
+    <div class="caption">图 5-1：系统架构图（内容层 → 分发层 → 工具运行时 → LLM 会话）</div>
+  </div>
+
+  <p><strong>如何读这张图：</strong>从内容层出发，<code>CLAUDE.md</code> 是整个系统的唯一内容真相来源，所有分发格式都是它的副本或载体。分发层的四个节点代表四种安装方式：plugin.json 驱动 Claude Code 插件市场（全局安装），CLAUDE.md per-project 直接放在项目根目录，karpathy-guidelines.mdc 通过 alwaysApply:true 持续激活，SKILL.md 按需加载。工具运行时（Claude Code / Cursor）在创建 LLM 会话时读取对应格式并将原则注入上下文窗口。最终 LLM 在这套约束下执行编码任务。</p>
+
+  <table class="arch-read-table">
+    <thead>
+      <tr><th>层级</th><th>核心文件</th><th>核心职责</th><th>主要交互</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>内容层</td>
+        <td><code>CLAUDE.md</code></td>
+        <td>存储四条行为约束原则，所有分发格式的内容来源</td>
+        <td>→ 所有分发层文件（内容同步）</td>
+      </tr>
+      <tr>
+        <td>分发层（Claude Code）</td>
+        <td><code>plugin.json</code>, <code>marketplace.json</code></td>
+        <td>通过插件市场将原则作为插件分发，支持全局安装</td>
+        <td>→ Claude Code 运行时</td>
+      </tr>
+      <tr>
+        <td>分发层（Cursor 总是生效）</td>
+        <td><code>karpathy-guidelines.mdc</code></td>
+        <td>以 alwaysApply:true 在所有 Cursor 会话中持续注入原则</td>
+        <td>→ Cursor IDE 运行时</td>
+      </tr>
+      <tr>
+        <td>分发层（Cursor 按需）</td>
+        <td><code>SKILL.md</code></td>
+        <td>在 ~/.cursor/skills/ 中注册为可复用技能，Agent 按需调用</td>
+        <td>→ Cursor IDE 运行时</td>
+      </tr>
+      <tr>
+        <td>LLM 会话层</td>
+        <td>（LLM 上下文窗口）</td>
+        <td>在 system prompt 中注入原则，约束 LLM 行为</td>
+        <td>← 工具运行时注入；→ 约束后的编码输出</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 5.2 关键执行链路 -->
+  <h3 id="section-5-2">5.2 关键执行链路</h3>
+  <p>以"开发者通过 Claude Code 插件全局安装后提出编码需求"为端到端链路：</p>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant Dev as 开发者
+    participant CC as Claude Code
+    participant Plugin as 插件系统
+    participant LLM as LLM
+    participant Code as 代码库
+
+    Dev->>CC: /plugin marketplace add forrestchang/andrej-karpathy-skills
+    CC->>Plugin: 获取 marketplace.json
+    Plugin-->>CC: 插件清单（含 plugin.json 路径）
+    Dev->>CC: /plugin install andrej-karpathy-skills@karpathy-skills
+    CC->>Plugin: 读取 plugin.json → 找到 skills/karpathy-guidelines/SKILL.md
+    Plugin-->>CC: 安装成功，原则注册为全局技能
+    Dev->>CC: "帮我给上传接口加速率限制"
+    CC->>LLM: system prompt 注入 CLAUDE.md 原则 + 用户请求
+    LLM-->>CC: Think Before Coding 触发：列出 4 个假设待确认
+    Dev->>CC: 确认假设 + Goal-Driven Execution：提供验证标准
+    CC->>LLM: 带假设确认和验证标准的完整上下文
+    LLM->>Code: Simplicity First：最小实现（in-memory 计数器）
+    LLM->>Code: Surgical Changes：只修改路由注册，匹配已有风格
+    LLM-->>CC: 实现完成 + 测试通过报告
+    CC-->>Dev: 结果：干净的 diff + 验证报告
+    </div>
+    <div class="caption">图 5-2：从插件安装到约束编码的完整端到端链路</div>
+  </div>
+
+  <table class="chain-table">
+    <thead>
+      <tr><th>#</th><th>阶段</th><th>动作/命令</th><th>所在模块</th><th>作用简述</th><th>关键约束</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>市场注册</td><td>/plugin marketplace add</td><td><span class="file-link" data-file="marketplace.json">marketplace.json</span></td><td>将仓库注册为 Claude Code 插件源</td><td>需要网络访问 GitHub</td></tr>
+      <tr><td>2</td><td>清单获取</td><td>获取 marketplace.json</td><td><span class="file-link" data-file="marketplace.json">marketplace.json</span></td><td>Claude Code 读取市场清单，找到插件元数据</td><td>JSON 格式必须合法</td></tr>
+      <tr><td>3</td><td>插件安装</td><td>/plugin install</td><td><span class="file-link" data-file="plugin.json">plugin.json</span></td><td>读取 plugin.json，将 SKILL.md 路径注册到本地技能库</td><td>skills[] 路径必须有效</td></tr>
+      <tr><td>4</td><td>安装确认</td><td>安装成功响应</td><td><span class="file-link" data-file="SKILL.md">SKILL.md</span></td><td>原则内容写入全局技能，后续所有会话可用</td><td>无需重启 Claude Code</td></tr>
+      <tr><td>5</td><td>需求输入</td><td>用户提出请求</td><td>（用户）</td><td>开发者输入编码需求</td><td>需求越模糊，原则价值越大</td></tr>
+      <tr><td>6</td><td>原则注入</td><td>system prompt 构建</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md</span></td><td>Claude Code 将 CLAUDE.md 原则 + 用户请求合并为完整上下文</td><td>上下文长度有限，原则66行占用极少</td></tr>
+      <tr><td>7</td><td>假设声明</td><td>LLM 列出假设</td><td>（LLM 行为）</td><td>Think Before Coding 触发，LLM 主动澄清不确定项</td><td>对话回合增加但减少返工</td></tr>
+      <tr><td>8</td><td>目标确认</td><td>用户提供验证标准</td><td>（用户）</td><td>Goal-Driven Execution 要求用户或 LLM 定义可验证目标</td><td>标准越具体 LLM 越能自主</td></tr>
+      <tr><td>9</td><td>最小实现</td><td>LLM 编写代码</td><td><span class="file-link" data-file="EXAMPLES.md">EXAMPLES.md</span></td><td>Simplicity First + Surgical Changes 约束下的精准最小实现</td><td>不添加推测性功能</td></tr>
+      <tr><td>10</td><td>结果报告</td><td>测试通过 + diff</td><td>（LLM 行为）</td><td>返回干净的修改集和验证结果</td><td>diff 仅含任务相关行</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 5.3 关键模块实现细节 -->
+  <h3 id="section-5-3">5.3 关键模块实现细节</h3>
+
+  <!-- 模块 1 -->
+  <h4 id="section-5-3-1">5.3.1 Think Before Coding 原则</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 CLAUDE.md · ## 1. Think Before Coding</span>
+      <span>🏷️ 防御性决策</span>
+      <span>⏱️ 每次收到用户请求时触发</span>
+    </div>
+    <p><strong>要解决的问题：</strong>LLM 的默认行为是在面对歧义时选择一种解读然后立即执行。这不是因为模型"懒"，而是因为"回答"比"澄清"更符合训练数据中的对话模式。当需求模糊（"优化搜索"、"重构这段代码"）时，这种默认行为会导致大量无效工作：用户拿到一个完全方向错误的实现，然后不得不从零开始解释真实需求。</p>
+    <p><strong>解决方案：</strong>原则通过四条具体指令改变这一默认行为：显式声明假设（而非隐式选择）、呈现多种解读（而非沉默选择一种）、主动提出更简单路径（而非总是服从）、遇到困惑时停下来命名不清楚的是什么（而非猜测继续）。关键是"停下来"的阈值被明确降低了——LLM 被授权打断对话去澄清，而不是必须给出一个答案。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant LLM as LLM（受原则约束）
+    participant Code as 代码库
+
+    U->>LLM: "把搜索做快一点"
+    Note over LLM: Think Before Coding 触发
+    LLM-->>U: 呈现3种解读：<br/>1.响应时间(< 100ms)<br/>2.并发吞吐量<br/>3.感知速度(UX)
+    LLM-->>U: 声明假设：当前搜索约 500ms，主要是数据库查询
+    U->>LLM: 选择方向1，目标 100ms 以内
+    LLM->>Code: 精准实现：添加索引 + 缓存高频查询
+    Code-->>LLM: 实现完成
+    LLM-->>U: 报告：P99 降至 85ms，diff 仅含索引和缓存两处
+    </div>
+      <div class="caption">图 5-3：Think Before Coding 的交互时序</div>
+    </div>
+
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-3 中的消息箭头）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>用户</td><td>（用户输入）</td><td>LLM</td><td>"把搜索做快一点"</td><td>模糊请求，未指定"快"的维度</td></tr>
+        <tr><td>2</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §1</span></td><td>(内部)</td><td>触发 Think Before Coding</td><td>识别到歧义，不立即实现</td></tr>
+        <tr><td>3</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §1</span></td><td>用户</td><td>呈现 3 种解读 + 当前状态假设</td><td>显式声明而非隐式选择，等待用户确认</td></tr>
+        <tr><td>4</td><td>用户</td><td>（用户输入）</td><td>LLM</td><td>选择解读1，目标 100ms</td><td>用户澄清后需求变为可验证目标</td></tr>
+        <tr><td>5</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §2,3</span></td><td>代码库</td><td>精准最小实现</td><td>Simplicity First + Surgical Changes 联动约束</td></tr>
+        <tr><td>6</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §4</span></td><td>用户</td><td>P99 降至 85ms，干净 diff</td><td>Goal-Driven Execution：报告可验证结果</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>代价与局限：</strong>此原则增加了每次任务的对话回合数，对于边界清晰的简单请求（"把变量名 x 改为 userId"）引入了不必要的摩擦。原则末尾的"Tradeoff Note"承认了这一点，但"何时跳过此原则"的判断被留给了用户，缺乏自动区分"简单 vs 复杂"需求的机制。</p>
+  </div>
+
+  <!-- 模块 2 -->
+  <h4 id="section-5-3-2">5.3.2 Goal-Driven Execution 原则</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 CLAUDE.md · ## 4. Goal-Driven Execution</span>
+      <span>🏷️ 验证驱动循环</span>
+      <span>⏱️ 多步任务开始时 / 接收模糊任务描述时触发</span>
+    </div>
+    <p><strong>要解决的问题：</strong>LLM 面对"修复认证系统"这类任务时，没有明确的"完成"定义，既可能做得太少（只改了一个小 bug）也可能做得太多（重写整个认证模块）。更严重的是，当 LLM 无法自主判断完成标准时，需要不断打断用户确认，破坏工作流的专注度。Karpathy 指出 LLM 擅长"循环到达成目标"，但前提是目标必须是可检测的。</p>
+    <p><strong>解决方案：</strong>原则要求将每个任务转化为"写出能验证的测试，然后让它通过"的结构。关键机制是"验证步骤必须先于实现步骤出现"——在多步计划中，每个步骤形如 <code>[动作] → verify: [检查]</code>。这为 LLM 提供了一个无需人工确认就能退出循环的条件，使无人值守的长任务成为可能。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant LLM as LLM（受原则约束）
+    participant Test as 测试套件
+
+    U->>LLM: "修一下排序在有重复分数时的 bug"
+    Note over LLM: Goal-Driven Execution 触发
+    LLM-->>U: 提出计划：<br/>Step1 写重现测试 → verify: 测试失败<br/>Step2 修复排序 → verify: 测试通过<br/>Step3 回归 → verify: 全套测试绿色
+    U->>LLM: 确认计划
+    LLM->>Test: Step1: 编写 test_sort_with_duplicate_scores()
+    Test-->>LLM: 测试失败（重现了 bug）
+    Note over LLM: verify 通过，继续
+    LLM->>Test: Step2: 修复 sort_scores()，加二级排序键
+    Test-->>LLM: 测试通过
+    LLM->>Test: Step3: 运行全部测试
+    Test-->>LLM: 全部绿色
+    LLM-->>U: 完成报告：bug 已修复，3 步验证均通过
+    </div>
+      <div class="caption">图 5-4：Goal-Driven Execution 的验证循环时序</div>
+    </div>
+
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-4 中的消息箭头）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>用户</td><td>（用户输入）</td><td>LLM</td><td>"修排序 bug"</td><td>任务描述缺乏验证标准</td></tr>
+        <tr><td>2</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §4</span></td><td>(内部)</td><td>触发 Goal-Driven Execution</td><td>识别多步任务，构建带验证的计划</td></tr>
+        <tr><td>3</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §4</span></td><td>用户</td><td>3 步计划 + 每步 verify 标准</td><td>计划提前呈现，用户可修正方向</td></tr>
+        <tr><td>4</td><td>用户</td><td>（用户输入）</td><td>LLM</td><td>确认计划</td><td>用户一次性确认，之后 LLM 自主循环</td></tr>
+        <tr><td>5</td><td>LLM</td><td><span class="file-link" data-file="EXAMPLES.md">EXAMPLES.md §4</span></td><td>测试套件</td><td>编写重现测试</td><td>先写测试，verify 测试应该失败</td></tr>
+        <tr><td>6</td><td>测试套件</td><td>（运行时）</td><td>LLM</td><td>测试失败</td><td>verify step1 通过（成功重现 bug）</td></tr>
+        <tr><td>7</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §2,3</span></td><td>测试套件</td><td>修复实现</td><td>Simplicity First：最小改动修复，不过度重构</td></tr>
+        <tr><td>8</td><td>测试套件</td><td>（运行时）</td><td>LLM</td><td>测试通过</td><td>verify step2 通过</td></tr>
+        <tr><td>9</td><td>LLM</td><td>（内部）</td><td>测试套件</td><td>运行全套回归测试</td><td>verify step3：确保无副作用</td></tr>
+        <tr><td>10</td><td>LLM</td><td><span class="file-link" data-file="CLAUDE.md">CLAUDE.md §4</span></td><td>用户</td><td>完成报告</td><td>所有 verify 步骤通过，自主完成无需人工介入</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>代价与局限：</strong>验证循环依赖项目有测试基础设施；对于没有测试的遗留项目，LLM 必须同时创建测试框架和修复 bug，增加了任务复杂度。此外，"写出重现测试"这一步本身可能存在歧义——如果 LLM 对 bug 理解错误，会写出一个能通过但测的是错误场景的测试，原则无法检测这一情况。</p>
+  </div>
+
+  <!-- 模块 3 -->
+  <h4 id="section-5-3-3">5.3.3 Claude Code Plugin 分发机制</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 .claude-plugin/plugin.json + marketplace.json</span>
+      <span>🏷️ 两阶段安装（市场注册 → 插件安装）</span>
+      <span>⏱️ 用户执行 /plugin 命令时触发</span>
+    </div>
+    <p><strong>要解决的问题：</strong>原版项目的唯一安装方式是"手动复制 CLAUDE.md 到项目目录"——这意味着每个新项目都要重复操作，且原则更新时所有项目的副本都要手动同步。multica-ai fork 增加了 Claude Code 插件市场支持，目标是让原则像 npm 包一样：安装一次全局生效，更新时统一维护。</p>
+    <p><strong>解决方案：</strong>两个 JSON 文件构成两阶段安装流程：<code>marketplace.json</code> 描述"这个仓库是一个插件市场"（包含 plugins 数组和插件元数据），<code>plugin.json</code> 描述"这个插件包含哪些 Skill"（通过 skills[] 数组指向 SKILL.md 路径）。用户先用 <code>/plugin marketplace add</code> 注册市场源，再用 <code>/plugin install</code> 安装具体插件；Claude Code 读取 plugin.json 的 skills[] 路径，将 SKILL.md 内容加载为全局可用技能。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant CC as Claude Code
+    participant MKT as marketplace.json
+    participant PLG as plugin.json
+    participant SK as SKILL.md
+
+    U->>CC: /plugin marketplace add forrestchang/andrej-karpathy-skills
+    CC->>MKT: GET marketplace.json（从 GitHub）
+    MKT-->>CC: {plugins: [{name, source, description}]}
+    CC-->>U: 市场源已添加
+    U->>CC: /plugin install andrej-karpathy-skills@karpathy-skills
+    CC->>PLG: 读取 .claude-plugin/plugin.json
+    PLG-->>CC: {skills: ["./skills/karpathy-guidelines"]}
+    CC->>SK: 读取 skills/karpathy-guidelines/SKILL.md
+    SK-->>CC: 原则内容（四条行为约束）
+    CC-->>U: 插件安装完成，全局生效
+    </div>
+      <div class="caption">图 5-5：Claude Code Plugin 两阶段安装时序</div>
+    </div>
+
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-5 中的消息箭头）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>用户</td><td>（命令行）</td><td>Claude Code</td><td>/plugin marketplace add</td><td>第一阶段：注册市场源</td></tr>
+        <tr><td>2</td><td>Claude Code</td><td>（内部）</td><td>marketplace.json</td><td>HTTP GET</td><td>从 GitHub 拉取市场清单</td></tr>
+        <tr><td>3</td><td>marketplace.json</td><td><span class="file-link" data-file="marketplace.json">.claude-plugin/marketplace.json</span></td><td>Claude Code</td><td>返回 plugins 数组</td><td>描述插件名称、来源路径、描述</td></tr>
+        <tr><td>4</td><td>Claude Code</td><td>（内部）</td><td>用户</td><td>市场源已添加</td><td>第一阶段完成</td></tr>
+        <tr><td>5</td><td>用户</td><td>（命令行）</td><td>Claude Code</td><td>/plugin install</td><td>第二阶段：安装具体插件</td></tr>
+        <tr><td>6</td><td>Claude Code</td><td>（内部）</td><td>plugin.json</td><td>读取插件元数据</td><td>找到 skills[] 路径配置</td></tr>
+        <tr><td>7</td><td>plugin.json</td><td><span class="file-link" data-file="plugin.json">.claude-plugin/plugin.json</span></td><td>Claude Code</td><td>{skills: ["./skills/karpathy-guidelines"]}</td><td>指向 SKILL.md 所在目录</td></tr>
+        <tr><td>8</td><td>Claude Code</td><td>（内部）</td><td>SKILL.md</td><td>读取技能内容</td><td>加载实际原则文本</td></tr>
+        <tr><td>9</td><td>SKILL.md</td><td><span class="file-link" data-file="SKILL.md">skills/karpathy-guidelines/SKILL.md</span></td><td>Claude Code</td><td>四条行为约束原则</td><td>内容与 CLAUDE.md 相同</td></tr>
+        <tr><td>10</td><td>Claude Code</td><td>（内部）</td><td>用户</td><td>安装完成</td><td>原则全局注册，新会话自动生效</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>代价与局限：</strong>两阶段安装比"复制文件"多一个步骤，初次使用有一定认知负担。更重要的是：插件安装后原则内容以 Claude Code 本地缓存形式存在，当 upstream 仓库更新原则时，用户需要手动重新安装才能获取更新——没有自动更新机制。此外，这套分发机制依赖 Claude Code 的插件系统 API，对于不使用 Claude Code 的用户完全不可用。</p>
+  </div>
+
+  <!-- 模块 4 -->
+  <h4 id="section-5-3-4">5.3.4 Cursor Rule（alwaysApply）激活机制</h4>
+  <div class="module-card">
+    <div class="module-meta">
+      <span>📁 .cursor/rules/karpathy-guidelines.mdc</span>
+      <span>🏷️ 声明式持续注入</span>
+      <span>⏱️ Cursor 打开任意文件 / 创建会话时自动触发</span>
+    </div>
+    <p><strong>要解决的问题：</strong>Claude Code 的 CLAUDE.md 在项目目录级别生效，开发者如果只使用 Cursor，需要一种等价但 Cursor 原生的方式来持续注入原则。更重要的是，手动把原则粘贴到每个新对话的 prompt 里既繁琐又容易遗忘。</p>
+    <p><strong>解决方案：</strong>Cursor Rule 的 frontmatter 字段 <code>alwaysApply: true</code> 是关键设计：它告诉 Cursor 无论当前打开的是哪个文件、发起的是什么类型的对话，都将这条规则注入到 LLM 上下文。这意味着开发者无需"记住"激活原则这件事——只要规则文件存在于 <code>.cursor/rules/</code>，它就总是生效。规则正文与 <code>CLAUDE.md</code> 内容完全相同，维护者手动保持两者同步。</p>
+
+    <div class="diagram-container">
+      <div class="mermaid">
+sequenceDiagram
+    participant Dev as 开发者
+    participant Cursor as Cursor IDE
+    participant MDC as karpathy-guidelines.mdc
+    participant LLM as LLM
+
+    Dev->>Cursor: 打开项目（已有 .cursor/rules/karpathy-guidelines.mdc）
+    Cursor->>MDC: 扫描 .cursor/rules/ 目录
+    MDC-->>Cursor: frontmatter {alwaysApply: true, description: "..."}
+    Note over Cursor: alwaysApply:true → 标记为持续注入规则
+    Dev->>Cursor: 发起任意对话（"解释这段代码"）
+    Cursor->>LLM: system prompt = 规则正文（四条原则） + 用户消息
+    LLM-->>Cursor: 受原则约束的回复
+    Cursor-->>Dev: 展示结果
+    Note over Dev,Cursor: 无论是编码、解释还是重构任务，原则均已注入
+    </div>
+      <div class="caption">图 5-6：Cursor Rule alwaysApply 自动激活时序</div>
+    </div>
+
+    <p class="seq-table-caption"><strong>时序对照表</strong>（对应图 5-6 中的消息箭头）</p>
+    <table class="seq-table">
+      <thead><tr><th>#</th><th>发起方</th><th>发起方所在文件</th><th>接收方</th><th>消息/返回</th><th>本步说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>开发者</td><td>（操作）</td><td>Cursor IDE</td><td>打开项目</td><td>规则文件已提前放入 .cursor/rules/</td></tr>
+        <tr><td>2</td><td>Cursor IDE</td><td>（内部）</td><td>karpathy-guidelines.mdc</td><td>扫描规则目录</td><td>读取所有 .mdc 文件的 frontmatter</td></tr>
+        <tr><td>3</td><td>karpathy-guidelines.mdc</td><td><span class="file-link" data-file="karpathy-guidelines.mdc">.cursor/rules/karpathy-guidelines.mdc</span></td><td>Cursor IDE</td><td>frontmatter: alwaysApply=true</td><td>触发条件判断：alwaysApply → 持续注入</td></tr>
+        <tr><td>4</td><td>Cursor IDE</td><td>（内部）</td><td>(内部)</td><td>标记规则为持续注入</td><td>后续所有会话自动包含此规则</td></tr>
+        <tr><td>5</td><td>开发者</td><td>（用户输入）</td><td>Cursor IDE</td><td>任意对话请求</td><td>无需显式引用规则</td></tr>
+        <tr><td>6</td><td>Cursor IDE</td><td>（内部）</td><td>LLM</td><td>system prompt = 规则正文 + 用户消息</td><td>原则自动注入，开发者无感知</td></tr>
+        <tr><td>7</td><td>LLM</td><td>（运行时）</td><td>Cursor IDE</td><td>受约束的回复</td><td>四条原则约束下的编码行为</td></tr>
+        <tr><td>8</td><td>Cursor IDE</td><td>（内部）</td><td>开发者</td><td>展示结果</td><td>用户无需知道原则何时何地被注入</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>代价与局限：</strong>alwaysApply 无法区分任务类型——无论是重构复杂模块还是请 LLM "把这段注释翻译成中文"，都会携带完整的原则约束，使简单任务的上下文变重。与 Agent Skill 相比，Rule 没有"按需关闭"的便捷方式（只能临时禁用或删除文件）。另外，alwaysApply 规则与 CLAUDE.md 的内容同步是纯手动的，如果上游仓库更新原则，需要开发者主动拉取最新 .mdc 文件。</p>
+  </div>
+
+  <!-- 6 方案评价 -->
+  <h2 id="section-6">6 方案评价</h2>
+
+  <div class="eval-grid">
+    <div class="eval-card strength">
+      <h4 id="section-6-1">6.1 优势分析</h4>
+      <ul>
+        <li><strong>安装成本接近零</strong>：Claude Code 两条命令、Cursor 复制一个文件、通用场景 curl 一行，无需配置任何工具链</li>
+        <li><strong>可验证的效果指标</strong>：是否生效不需要主观判断，直接看 diff —— 如果 diff 只包含请求相关的行，原则在起作用</li>
+        <li><strong>跨工具通用</strong>：同一套原则同时覆盖 Claude Code 和 Cursor，用户不需要为每个工具重新学一套规范</li>
+        <li><strong>可合并、可扩展</strong>：append 到已有指令文件，再加上项目特定章节，形成"基础层 + 项目层"的双层约束</li>
+        <li><strong>原则互相独立</strong>：四条原则各自解决独立问题，可以单独使用某一条而不影响其他</li>
+        <li><strong>来源权威</strong>：原则提炼自 Karpathy 的实际使用观察，不是理论推导，具有较高的实践可信度</li>
+      </ul>
+    </div>
+    <div class="eval-card weakness">
+      <h4 id="section-6-2">6.2 局限分析</h4>
+      <ul>
+        <li><strong>静态规则，无法自适应</strong>：原则无法根据任务类型动态调整松紧，简单任务和复杂任务承受同等约束力</li>
+        <li><strong>无更新通知机制</strong>：安装后如果 upstream 更新原则，用户不会收到通知，需要手动同步多个分发格式文件</li>
+        <li><strong>效果依赖 LLM 遵守</strong>：原则是"软约束"——LLM 可能在某些情况下忽略，尤其是在非常长的上下文中原则可能被推出注意力窗口</li>
+        <li><strong>四种格式需手动同步</strong>：CLAUDE.md、.mdc、SKILL.md 内容相同但独立存储，维护者改动时需要手动同步三个文件</li>
+        <li><strong>Goal-Driven 依赖测试基础设施</strong>：对没有测试的项目，验证原则的价值大打折扣；为遗留项目引入测试本身就是一个独立任务</li>
+        <li><strong>无量化评估工具</strong>：项目提供的"如何判断是否在起作用"的指标（diff 是否干净）是定性的，没有提供自动化评估工具</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 7 版本化维护区 -->
+  <h2 id="section-7">7 版本化维护区</h2>
+
+  <h3 id="section-7-1">7.1 本文观察基线</h3>
+  <p>本文以开源仓库 <a href="https://github.com/multica-ai/andrej-karpathy-skills" target="_blank" rel="noopener">multica-ai/andrej-karpathy-skills</a> 的 <strong>main</strong> 分支为参照；基线日期 <strong>2026-05-31</strong>。</p>
+
+</main>
+
+<!-- ─── Interactive Panel System ─────────────────────────────────────────── -->
+<div class="code-backdrop" id="codeBackdrop"></div>
+<div class="code-panel" id="codePanel">
+  <div class="panel-resize-grip" id="panelResizeGrip"></div>
+  <div class="code-panel-header">
+    <button class="panel-nav-btn" id="panelNavBack" title="后退" disabled>‹</button>
+    <button class="panel-nav-btn" id="panelNavFwd"  title="前进" disabled>›</button>
+    <span class="code-panel-path" id="codePanelPath"></span>
+    <span class="code-panel-badge" id="codePanelBadge"></span>
+    <a id="panelGhLink" class="panel-gh-link" href="#" target="_blank" rel="noopener" style="display:none">⤢ 在浏览器中打开</a>
+    <button class="panel-pin-btn" id="panelPin" title="固定面板">📌</button>
+    <button class="code-panel-close" id="codePanelClose" title="关闭 (Esc)">×</button>
+  </div>
+  <div id="iframePanelBody">
+    <div class="iframe-loading" id="iframeLoader">
+      <div class="iframe-spin"></div>
+      <span>正在加载 GitHub 页面…</span>
+    </div>
+    <iframe id="githubIframe" src="" title="GitHub"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  </div>
+  <div id="termPanelBody"></div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryBorderColor: '#2563eb',
+      primaryTextColor: '#1a1a2e',
+      lineColor: '#6b7280',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#f8f9fa',
+      fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, sans-serif',
+      fontSize: '14px'
+    },
+    sequence: { diagramMarginX: 20, diagramMarginY: 20, actorMargin: 60, mirrorActors: false, messageAlign: 'center' },
+    flowchart: { curve: 'basis', padding: 20 }
+  });
+  hljs.highlightAll();
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = document.querySelectorAll('h2[id], h3[id], h4[id]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) current = s.id; });
+    tocLinks.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+  });
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const FILE_MAP = {
+    'CLAUDE.md':                                  'CLAUDE.md',
+    '★ CLAUDE.md':                               'CLAUDE.md',
+    'CLAUDE.md §1':                               'CLAUDE.md',
+    'CLAUDE.md §2,3':                             'CLAUDE.md',
+    'CLAUDE.md §4':                               'CLAUDE.md',
+    'CLAUDE.md §1. Think Before Coding':          'CLAUDE.md',
+    'CLAUDE.md §4. Goal-Driven Execution':        'CLAUDE.md',
+    'README.md':                                  'README.md',
+    'README.zh.md':                               'README.zh.md',
+    'EXAMPLES.md':                                'EXAMPLES.md',
+    'EXAMPLES.md §4':                             'EXAMPLES.md',
+    'CURSOR.md':                                  'CURSOR.md',
+    'plugin.json':                                '.claude-plugin/plugin.json',
+    '★ plugin.json':                             '.claude-plugin/plugin.json',
+    '.claude-plugin/plugin.json':                 '.claude-plugin/plugin.json',
+    'marketplace.json':                           '.claude-plugin/marketplace.json',
+    '.claude-plugin/marketplace.json':            '.claude-plugin/marketplace.json',
+    'karpathy-guidelines.mdc':                    '.cursor/rules/karpathy-guidelines.mdc',
+    '★ karpathy-guidelines.mdc':                 '.cursor/rules/karpathy-guidelines.mdc',
+    '.cursor/rules/karpathy-guidelines.mdc':      '.cursor/rules/karpathy-guidelines.mdc',
+    'SKILL.md':                                   'skills/karpathy-guidelines/SKILL.md',
+    '★ SKILL.md':                                'skills/karpathy-guidelines/SKILL.md',
+    'skills/karpathy-guidelines/SKILL.md':        'skills/karpathy-guidelines/SKILL.md',
+  };
+
+  const PROJECT_TERMS = {
+    'Think Before Coding': {
+      tags: ['行为原则', '防御性思考'],
+      def: '要求 LLM 在写代码前明确说明假设、呈现多种解读方案、在存在更简单路径时主动提出异议。核心是把"默默选择后立即执行"变成"显式声明再等确认"。',
+      mechanics: [
+        '明确列出前提假设，避免隐式选择某种解读',
+        '当需求存在歧义时，呈现多种解释方案而非自行决定',
+        '遇到更简单的路径时主动说出来，不要只是执行',
+        '遇到真正困惑的地方停下来，命名不清楚的是什么再继续',
+      ],
+      related: ['Simplicity First', 'Goal-Driven Execution'],
+      files: ['CLAUDE.md', 'EXAMPLES.md'],
+      patterns: ['Think Before Coding', '编码前思考'],
+    },
+    'Simplicity First': {
+      tags: ['行为原则', '反过度工程'],
+      def: '只写解决当前问题所需的最少代码，禁止添加推测性功能、不必要的抽象、以及任何"以防万一"的代码。判断标准：资深工程师会不会说"这太复杂了"。',
+      mechanics: [
+        '不添加被明确要求以外的功能',
+        '不为单次使用的代码创建抽象层或设计模式',
+        '如果 200 行能写成 50 行，重写它',
+        '等到真正需要时再引入复杂性，而不是"以备将来"',
+      ],
+      related: ['Think Before Coding', 'Surgical Changes'],
+      files: ['CLAUDE.md', 'EXAMPLES.md'],
+      patterns: ['Simplicity First', '简洁优先'],
+    },
+    'Surgical Changes': {
+      tags: ['行为原则', '最小侵入'],
+      def: '编辑现有代码时，只碰必须碰的部分；只清理自己改动造成的孤儿代码。每一行修改都应该能直接追溯到用户的请求。',
+      mechanics: [
+        '不"改进"相邻的代码、注释或格式',
+        '匹配现有代码风格，即使自己更偏向不同的写法',
+        '发现与任务无关的死代码时提及但不删除',
+        '删除因自己改动而变成孤儿的导入/变量/函数',
+      ],
+      related: ['Simplicity First', 'Think Before Coding'],
+      files: ['CLAUDE.md', 'EXAMPLES.md'],
+      patterns: ['Surgical Changes', '精准修改'],
+    },
+    'Goal-Driven Execution': {
+      tags: ['行为原则', '可验证目标'],
+      def: '将指令式任务转化为可验证的目标，用"写出重现 bug 的测试再让它通过"代替"修复 bug"。成功标准越清晰，LLM 越能在无人监督下自主循环完成任务。',
+      mechanics: [
+        '"修复 bug" → "写出重现测试，然后让它通过"',
+        '多步任务先列出带 verify 步骤的计划，再动手',
+        '弱标准（"让它能跑"）需要持续人工干预',
+        '强标准让 LLM 能无人值守地自主完成',
+      ],
+      related: ['Think Before Coding'],
+      files: ['CLAUDE.md', 'EXAMPLES.md'],
+      patterns: ['Goal-Driven Execution', '目标驱动执行'],
+    },
+    'Claude Code Plugin': {
+      tags: ['分发格式', 'Claude Code'],
+      def: '通过 Claude Code 插件市场分发的全局安装方式。由 <code>plugin.json</code> 和 <code>marketplace.json</code> 两个 JSON 清单驱动，安装后对所有项目全局生效，无需在每个项目复制文件。',
+      mechanics: [
+        '/plugin marketplace add 将仓库注册为插件市场源',
+        '/plugin install 从市场安装，将 SKILL.md 内容注册为全局技能',
+        '无需在每个项目里维护副本',
+      ],
+      related: ['CLAUDE.md (per-project)', 'Cursor Rule'],
+      files: ['plugin.json', 'marketplace.json'],
+      patterns: ['Claude Code Plugin', 'Claude Code 插件'],
+    },
+    'Cursor Rule': {
+      tags: ['分发格式', 'Cursor'],
+      def: '存储为 <code>karpathy-guidelines.mdc</code>，frontmatter 设置 <code>alwaysApply: true</code>，在 Cursor 中打开任意文件时自动将原则注入 LLM 会话上下文，无需手动触发。',
+      mechanics: [
+        'alwaysApply: true 使规则在所有 Cursor 会话中持续生效',
+        '存入 .cursor/rules/ 目录即可，无需额外配置',
+        '内容与 CLAUDE.md 保持一致（手动维护同步）',
+      ],
+      related: ['CLAUDE.md (per-project)', 'Claude Code Plugin', 'Agent Skill'],
+      files: ['karpathy-guidelines.mdc'],
+      patterns: ['Cursor Rule', 'alwaysApply'],
+    },
+    'CLAUDE.md (per-project)': {
+      tags: ['分发格式', '项目级'],
+      def: '按项目安装的指令文件，Claude Code 启动时自动读取。适合需要将 Karpathy 原则与项目特定规则合并的场景，只影响当前项目。',
+      mechanics: [
+        'curl 一行命令下载到项目根目录',
+        '可 append 合并到已有 CLAUDE.md，不需要替换',
+        '只影响当前项目，不污染其他项目配置',
+      ],
+      related: ['Claude Code Plugin', 'Cursor Rule'],
+      files: ['CLAUDE.md'],
+      patterns: ['CLAUDE.md'],
+    },
+    'Agent Skill': {
+      tags: ['分发格式', 'Cursor'],
+      def: '存储为 <code>SKILL.md</code>，放在 <code>~/.cursor/skills/</code> 后成为可复用技能。与 Cursor Rule 的区别：Rule 总是生效，Skill 按需加载，不干扰日常简单对话。',
+      mechanics: [
+        '将 skills/karpathy-guidelines/ 目录复制或符号链接到 ~/.cursor/skills/',
+        'Agent 在判断任务需要行为指导时主动加载',
+        '不影响不需要原则约束的简单对话',
+      ],
+      related: ['Cursor Rule', 'CLAUDE.md (per-project)'],
+      files: ['SKILL.md'],
+      patterns: ['Agent Skill'],
+    },
+  };
+
+  const GH_REPO   = 'multica-ai/andrej-karpathy-skills';
+  const GH_BRANCH = 'main';
+  const GH1S_BASE = 'https://github1s.com/' + GH_REPO;
+  const GH_BASE   = 'https://github.com/'   + GH_REPO;
+
+  const backdrop     = document.getElementById('codeBackdrop');
+  const panel        = document.getElementById('codePanel');
+  const closeBtn     = document.getElementById('codePanelClose');
+  const pathEl       = document.getElementById('codePanelPath');
+  const badgeEl      = document.getElementById('codePanelBadge');
+  const ghLink       = document.getElementById('panelGhLink');
+  const iframeBody   = document.getElementById('iframePanelBody');
+  const iframeLoader = document.getElementById('iframeLoader');
+  const iframeEl     = document.getElementById('githubIframe');
+  const termBody     = document.getElementById('termPanelBody');
+  const resizeGrip   = document.getElementById('panelResizeGrip');
+  const navBack      = document.getElementById('panelNavBack');
+  const navFwd       = document.getElementById('panelNavFwd');
+  const pinBtn       = document.getElementById('panelPin');
+
+  const navHistory = [];
+  let navIndex = -1;
+  function updateNavBtns() {
+    navBack.disabled = navIndex <= 0;
+    navFwd.disabled  = navIndex >= navHistory.length - 1;
+  }
+  function pushNav(entry) {
+    navHistory.splice(navIndex + 1);
+    navHistory.push(entry);
+    navIndex = navHistory.length - 1;
+    updateNavBtns();
+  }
+  navBack.addEventListener('click', () => {
+    if (navIndex > 0) { navIndex--; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  navFwd.addEventListener('click', () => {
+    if (navIndex < navHistory.length - 1) { navIndex++; _loadEntry(navHistory[navIndex]); updateNavBtns(); }
+  });
+  function _loadEntry(e) {
+    if (e.type === 'github') _openGitHubPanel(e.path, e.label);
+    else if (e.type === 'term') _openTermPanelInternal(e.key);
+  }
+
+  let pinned = false;
+  pinBtn.addEventListener('click', () => {
+    pinned = !pinned;
+    pinBtn.classList.toggle('active', pinned);
+    pinBtn.title = pinned ? '取消固定' : '固定面板';
+    panel.classList.toggle('pinned', pinned);
+    if (pinned) {
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    } else if (panel.classList.contains('open')) {
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
+
+  function openPanel() {
+    panel.classList.add('open');
+    if (!pinned) { backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  }
+  function _doClose() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    if (iframeEl) { iframeEl.src = ''; iframeEl.style.display = 'none'; }
+    iframeBody.style.display = 'none';
+    termBody.style.display   = 'none';
+    navHistory.length = 0; navIndex = -1; updateNavBtns();
+  }
+  function closePanel() { if (!pinned) _doClose(); }
+  function forceClose()  {
+    pinned = false; pinBtn.classList.remove('active'); pinBtn.title = '固定面板';
+    panel.classList.remove('pinned'); _doClose();
+  }
+  closeBtn.addEventListener('click', forceClose);
+  backdrop.addEventListener('click', closePanel);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') forceClose(); });
+
+  let resizing = false, rsX = 0, rsW = 0, rsOverlay = null;
+  resizeGrip.addEventListener('mousedown', e => {
+    resizing = true; rsX = e.clientX; rsW = panel.offsetWidth;
+    resizeGrip.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ew-resize';
+    rsOverlay = document.createElement('div');
+    rsOverlay.style.cssText = 'position:absolute;inset:0;z-index:9999;cursor:ew-resize;';
+    panel.appendChild(rsOverlay);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const newW = Math.max(300, Math.min(window.innerWidth * 0.96, rsW + (rsX - e.clientX)));
+    panel.style.width = newW + 'px';
+    panel.style.transition = 'none';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!resizing) return;
+    resizing = false;
+    resizeGrip.classList.remove('dragging');
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    panel.style.transition = '';
+    if (rsOverlay) { rsOverlay.remove(); rsOverlay = null; }
+  });
+
+  function _openGitHubPanel(ghPath, label) {
+    panel.dataset.type   = 'github';
+    pathEl.textContent   = label || ghPath;
+    badgeEl.textContent  = 'github1s';
+    ghLink.href          = GH_BASE + '/blob/' + GH_BRANCH + '/' + ghPath;
+    ghLink.style.display = '';
+    iframeBody.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;';
+    termBody.style.display = 'none';
+    iframeLoader.style.display = 'flex';
+    iframeLoader.innerHTML = '<div class="iframe-spin"></div><span>正在加载 GitHub 页面…</span>';
+    iframeEl.style.display = 'none';
+    iframeEl.src = '';
+    openPanel();
+    const tid = setTimeout(() => {
+      if (iframeEl.style.display === 'none') {
+        iframeLoader.innerHTML =
+          '<div style="text-align:center;padding:24px">' +
+          '<p style="color:#f38ba8;margin-bottom:14px">⚠ github1s.com 加载超时</p>' +
+          '<a href="' + ghLink.href + '" target="_blank" rel="noopener" ' +
+          'style="color:#89b4fa;font-size:13px;text-decoration:none;border:1px solid #89b4fa44;padding:4px 12px;border-radius:4px">' +
+          '在新标签页中打开 →</a></div>';
+      }
+    }, 10000);
+    setTimeout(() => {
+      iframeEl.onload = () => {
+        clearTimeout(tid);
+        iframeLoader.style.display = 'none';
+        iframeEl.style.flex = '1';
+        iframeEl.style.display = 'block';
+      };
+      iframeEl.src = GH1S_BASE + '/blob/' + GH_BRANCH + '/' + ghPath;
+    }, 60);
+  }
+  function openGitHubPanel(ghPath, label) {
+    pushNav({ type: 'github', path: ghPath, label: label || ghPath });
+    _openGitHubPanel(ghPath, label);
+  }
+
+  function renderTermHTML(key) {
+    const t = PROJECT_TERMS[key]; if (!t) return '';
+    const tags  = (t.tags  || []).map(g => '<span class="term-tag">'  + g + '</span>').join('');
+    const mech  = (t.mechanics || []).map(m => '<li>' + m + '</li>').join('');
+    const rels  = (t.related || []).map(r => '<button class="term-rel-btn" data-term="' + r + '">' + r + '</button>').join('');
+    const files = (t.files  || []).filter(f => FILE_MAP[f]).map(f =>
+      '<button class="term-file-btn" data-file="' + FILE_MAP[f] + '">' + f + '</button>').join('');
+    return '<div class="term-tags">' + tags + '</div>' +
+      '<div class="term-title-h">' + key + '</div>' +
+      '<div class="term-def">'  + t.def + '</div>' +
+      (mech  ? '<div class="term-sec">实现机制</div><ul class="term-mechanics">' + mech + '</ul>' : '') +
+      (rels  ? '<div class="term-sec">相关概念</div><div class="term-related-list">' + rels + '</div>' : '') +
+      (files ? '<div class="term-sec" style="margin-top:14px">关键文件</div><div class="term-files-list">' + files + '</div>' : '');
+  }
+  function _openTermPanelInternal(key) {
+    panel.dataset.type   = 'term';
+    pathEl.textContent   = key;
+    badgeEl.textContent  = '术语解释';
+    ghLink.style.display = 'none';
+    iframeBody.style.display = 'none';
+    termBody.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow-y:auto;padding:20px 22px 32px;';
+    termBody.innerHTML = renderTermHTML(key);
+    termBody.querySelectorAll('.term-rel-btn[data-term]').forEach(btn =>
+      btn.addEventListener('click', () => openTermPanel(btn.dataset.term)));
+    termBody.querySelectorAll('.term-file-btn[data-file]').forEach(btn =>
+      btn.addEventListener('click', () => openGitHubPanel(btn.dataset.file, btn.textContent.trim())));
+    openPanel();
+  }
+  function openTermPanel(key) {
+    if (!PROJECT_TERMS[key]) return;
+    pushNav({ type: 'term', key });
+    _openTermPanelInternal(key);
+  }
+
+  document.addEventListener('click', function (e) {
+    const fileEl = e.target.closest('[data-file]:not(.term-file-btn)');
+    const termEl = e.target.closest('.term-link[data-term]');
+    if (fileEl && fileEl.dataset.file) {
+      e.preventDefault();
+      openGitHubPanel(fileEl.dataset.file, fileEl.dataset.label || fileEl.dataset.file);
+    } else if (termEl && PROJECT_TERMS[termEl.dataset.term]) {
+      e.preventDefault();
+      openTermPanel(termEl.dataset.term);
+    }
+  });
+
+  document.querySelectorAll('code:not(pre code)').forEach(el => {
+    if (el.dataset.file || el.classList.contains('file-link')) return;
+    const raw = el.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (ghPath) {
+      el.classList.add('file-link');
+      el.dataset.file  = ghPath;
+      el.dataset.label = raw.replace(/^★\s*/, '');
+      el.title = '在 GitHub 中查看';
+    }
+  });
+
+  document.querySelectorAll('.cast-table td:first-child').forEach(td => {
+    if (td.querySelector('.file-link')) return;
+    const raw    = td.textContent.trim();
+    const ghPath = FILE_MAP[raw];
+    if (!ghPath) return;
+    const label  = raw.replace(/^★\s*/, '');
+    const btn    = document.createElement('span');
+    btn.className    = 'file-link';
+    btn.dataset.file  = ghPath;
+    btn.dataset.label = label;
+    btn.title         = '在 GitHub 中查看';
+    btn.textContent   = raw;
+    btn.style.cursor  = 'pointer';
+    td.innerHTML = '';
+    td.appendChild(btn);
+  });
+
+  const termPatterns = [];
+  for (const [key, t] of Object.entries(PROJECT_TERMS)) {
+    for (const pat of (t.patterns || [])) termPatterns.push({ pat, key });
+  }
+  termPatterns.sort((a, b) => b.pat.length - a.pat.length);
+  if (termPatterns.length > 0) {
+    const TERM_RE = new RegExp(
+      termPatterns.map(({ pat }) => pat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+    const PAT_KEY = Object.fromEntries(termPatterns.map(({ pat, key }) => [pat, key]));
+    const SKIP_TAGS = new Set(['CODE','PRE','A','SCRIPT','STYLE','BUTTON',
+      'H1','H2','H3','H4','TEXTAREA','INPUT','SELECT','TITLE']);
+    const content = document.querySelector('.content');
+    if (content) {
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          let p = node.parentNode;
+          while (p && p !== content) {
+            if (SKIP_TAGS.has(p.tagName) ||
+                p.classList.contains('term-link') ||
+                p.classList.contains('file-link') ||
+                p.classList.contains('mermaid') ||
+                p.classList.contains('diagram-container')) return NodeFilter.FILTER_REJECT;
+            p = p.parentNode;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const nodes = []; let n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      nodes.forEach(textNode => {
+        const text = textNode.textContent;
+        TERM_RE.lastIndex = 0;
+        if (!TERM_RE.test(text)) return;
+        TERM_RE.lastIndex = 0;
+        const frag = document.createDocumentFragment();
+        let last = 0, m;
+        while ((m = TERM_RE.exec(text)) !== null) {
+          if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+          const key = PAT_KEY[m[0]];
+          if (key) {
+            const sp = document.createElement('span');
+            sp.className = 'term-link'; sp.dataset.term = key; sp.textContent = m[0];
+            frag.appendChild(sp);
+          } else {
+            frag.appendChild(document.createTextNode(m[0]));
+          }
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        textNode.parentNode.replaceChild(frag, textNode);
+      });
+    }
+  }
+})();
+
+(function () {
+  const toc     = document.getElementById('tocNav');
+  const btn     = document.getElementById('tocToggle');
+  const content = document.querySelector('.content');
+  if (!toc || !btn) return;
+  let collapsed = false;
+  btn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    toc.classList.toggle('collapsed', collapsed);
+    content.classList.toggle('toc-collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.title       = collapsed ? '展开目录' : '收起目录';
+  });
+})();
+
+(function () {
+  document.querySelectorAll('.diagram-container').forEach(container => {
+    const zoomBtn = document.createElement('button');
+    zoomBtn.className   = 'diagram-zoom-btn';
+    zoomBtn.title       = '放大查看';
+    zoomBtn.textContent = '⤢';
+    container.appendChild(zoomBtn);
+
+    function openLightbox() {
+      const svg = container.querySelector('.mermaid svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const w = rect.width  * 1.5;
+      const h = rect.height * 1.5;
+      const lightbox = document.createElement('div');
+      lightbox.className = 'diagram-lightbox';
+      const inner = document.createElement('div');
+      inner.className   = 'diagram-lightbox-inner';
+      inner.style.width    = Math.min(w + 48, window.innerWidth  * 0.92) + 'px';
+      inner.style.maxHeight = (window.innerHeight * 0.9) + 'px';
+      inner.style.overflow = 'auto';
+      inner.style.padding  = '20px';
+      const cloneSvg = svg.cloneNode(true);
+      cloneSvg.setAttribute('width',  w);
+      cloneSvg.setAttribute('height', h);
+      cloneSvg.style.display = 'block';
+      function close() { lightbox.remove(); }
+      lightbox.addEventListener('click', e => { if (e.target === lightbox) close(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+      });
+      inner.appendChild(cloneSvg);
+      lightbox.appendChild(inner);
+      document.body.appendChild(lightbox);
+    }
+
+    zoomBtn.addEventListener('click', e => { e.stopPropagation(); openLightbox(); });
+    container.addEventListener('click', openLightbox);
+  });
+})();
+</script>
+</body>
+</html>
